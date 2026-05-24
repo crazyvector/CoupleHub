@@ -22,6 +22,30 @@
   gap: 2px;
 }
 
+:global(.theme-his) .navItemActive .activeDot {
+  background-color: var(--color-blue);
+  box-shadow: 0 0 8px rgba(162, 210, 255, 0.4);
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: var(--color-rose);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(255, 0, 0, 0.3);
+}
+
+:global(.theme-his) .badge {
+  background: var(--color-blue);
+}
+
 /* Ascunde scrollbar pe Webkit */
 .nav::-webkit-scrollbar {
   display: none;

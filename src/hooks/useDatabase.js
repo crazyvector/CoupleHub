@@ -10,7 +10,9 @@ import {
   query, 
   orderBy,
   getDocs,
-  getDoc
+  getDoc,
+  limit,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Capacitor } from '@capacitor/core';
@@ -20,6 +22,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 const MOODS_COL = 'moods';
 const EVENTS_COL = 'events';
 const SYSTEM_COL = 'system';
+const MESSAGES_COL = 'messages';
 const NOTIFICATIONS_COL = 'notifications';
 const PROFILES_COL = 'profiles';
 const MEMORIES_COL = 'memories';
@@ -618,4 +621,112 @@ export function useCustomCoupons() {
   };
 
   return { coupons, addCoupon, useCoupon, deleteCoupon, loading };
+}
+
+// ==========================================
+// Hook: Unread Messages Count
+// ==========================================
+export function useUnreadMessagesCount(role) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const partnerRole = role === 'his' ? 'her' : 'his';
+    // Observăm doar mesajele trimise de partener care nu sunt citite
+    const q = query(
+      collection(db, MESSAGES_COL), 
+      where('sender', '==', partnerRole), 
+      where('read', '==', false)
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCount(snapshot.docs.length);
+    });
+
+    return () => unsubscribe();
+  }, [role]);
+
+  return count;
+}
+// Hook: Chat (Private Messages)
+// ==========================================
+export function useChat(role) {
+  const [messages, setMessages] = useState([]);
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // 1. Ascultare mesaje
+  useEffect(() => {
+    const q = query(collection(db, MESSAGES_COL), orderBy('timestamp', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMessages(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Ascultare Typing Status
+  useEffect(() => {
+    const dRef = doc(db, SYSTEM_COL, 'typing_status');
+    const unsubscribe = onSnapshot(dRef, (dSnap) => {
+      if (dSnap.exists()) {
+        const data = dSnap.data();
+        const partnerRole = role === 'his' ? 'her' : 'his';
+        const partnerTimestamp = data[partnerRole] || 0;
+        // Consideram typing activ doar daca a tastat in ultimele 3 secunde
+        setPartnerTyping(Date.now() - partnerTimestamp < 3000);
+      }
+    });
+    return () => unsubscribe();
+  }, [role]);
+
+  // Trimite mesaj
+  const sendMessage = async (text) => {
+    if (!text.trim()) return;
+    await addDoc(collection(db, MESSAGES_COL), {
+      text: text.trim(),
+      sender: role,
+      timestamp: new Date().toISOString(),
+      read: false,
+      reaction: null
+    });
+  };
+
+  // Setează isTyping
+  const setTyping = async () => {
+    const dRef = doc(db, SYSTEM_COL, 'typing_status');
+    await setDoc(dRef, { [role]: Date.now() }, { merge: true });
+  };
+
+  // Marchează mesajele primite ca citite
+  const markAsRead = async () => {
+    const partnerRole = role === 'his' ? 'her' : 'his';
+    const unreadMessages = messages.filter(m => m.sender === partnerRole && !m.read);
+    
+    if (unreadMessages.length > 0) {
+      const readAt = new Date().toISOString();
+      await Promise.all(
+        unreadMessages.map(m => updateDoc(doc(db, MESSAGES_COL, m.id), { 
+          read: true,
+          readAt: readAt
+        }))
+      );
+    }
+  };
+
+  // Adaugă/Șterge o reacție (long press)
+  const setReaction = async (messageId, emoji) => {
+    const dRef = doc(db, MESSAGES_COL, messageId);
+    await updateDoc(dRef, { reaction: emoji });
+  };
+
+  return { 
+    messages, 
+    partnerTyping, 
+    sendMessage, 
+    setTyping, 
+    markAsRead, 
+    setReaction,
+    loading 
+  };
 }

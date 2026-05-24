@@ -4,6 +4,7 @@ import styles from './BottomNav.module.css';
 
 const navItems = [
   { to: '/',         icon: '🏠', label: 'Acasă',    id: 'nav-home' },
+  { to: '/chat',     icon: '💬', label: 'Mesaje',   id: 'nav-chat' },
   { to: '/cupoane',  icon: '🎟️', label: 'Cupoane',  id: 'nav-coupons' },
   { to: '/mood',     icon: '💭', label: 'Eu',        id: 'nav-mood' },
   { to: '/memories', icon: '🗺️', label: 'Amintiri', id: 'nav-memories' },
@@ -12,9 +13,14 @@ const navItems = [
   { to: '/profile',  icon: '⚙️', label: 'Profil',   id: 'nav-profile' },
 ];
 
-export default function BottomNav() {
+import { useUnreadMessagesCount } from '../../hooks/useDatabase';
+
+export default function BottomNav({ role }) {
   const location = useLocation();
   const navRef = useRef(null);
+  
+  // Dacă role nu e trimis, get unread va da return 0 in principiu
+  const unreadCount = useUnreadMessagesCount(role || 'his');
 
   useEffect(() => {
     if (!navRef.current) return;
@@ -23,6 +29,10 @@ export default function BottomNav() {
       activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   }, [location.pathname]);
+
+  if (location.pathname === '/chat') {
+    return null;
+  }
 
   return (
     <nav ref={navRef} className={styles.nav} aria-label="Navigare principală">
@@ -39,7 +49,12 @@ export default function BottomNav() {
             className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
             aria-current={isActive ? 'page' : undefined}
           >
-            <span className={styles.navIcon} aria-hidden="true">{icon}</span>
+            <div style={{ position: 'relative' }}>
+              <span className={styles.navIcon} aria-hidden="true">{icon}</span>
+              {to === '/chat' && unreadCount > 0 && (
+                <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
+            </div>
             <span className={styles.navLabel}>{label}</span>
             {isActive && <span className={styles.activeDot} aria-hidden="true" />}
           </NavLink>

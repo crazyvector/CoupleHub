@@ -137,8 +137,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
         animRef.current = requestAnimationFrame(animate);
       } else {
         const finalRotation = rotationRef.current % (2 * Math.PI);
-        const normalizedAngle = (2 * Math.PI - finalRotation) % (2 * Math.PI);
-        const winnerIndex = Math.floor(normalizedAngle / ARC) % ITEM_COUNT;
+        const relativeAngle = (1.5 * Math.PI - finalRotation + 2 * Math.PI) % (2 * Math.PI);
+        const winnerIndex = Math.floor(relativeAngle / ARC) % ITEM_COUNT;
         setResult(items[winnerIndex]);
         setIsSpinning(false);
         setTimeout(() => setShowResult(true), 200);

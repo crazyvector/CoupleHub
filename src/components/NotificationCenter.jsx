@@ -91,7 +91,15 @@ export default function NotificationCenter() {
   }, [isOpen]);
 
   const handleToggle = () => {
-    setIsOpen(!isOpen);
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
+      notifications.forEach((n) => {
+        if (n.sender !== role && !(n.readBy || []).includes(role)) {
+          markAsRead(n.id, role);
+        }
+      });
+    }
   };
 
   const handleNotificationClick = async (notif) => {

@@ -116,19 +116,19 @@ export default function CalendarPage() {
             {dayEvents.map(ev => (
               <div 
                 key={ev.id} 
-                className={styles.dayEventTag} 
+                className={styles.dayEventDot} 
                 style={{ 
-                  backgroundColor: ev.importance === 'High' ? '#FF6B6B' 
-                                 : ev.importance === 'Medium' ? '#FFD93D' 
-                                 : '#4D96FF',
-                  color: ev.importance === 'Medium' ? '#000' : '#fff'
+                  color: ev.importance === 'High' ? '#FF6B6B' 
+                       : ev.importance === 'Medium' ? '#FFD93D' 
+                       : '#4D96FF'
                 }}
+                title={ev.name}
                 onClick={(e) => {
                   e.stopPropagation();
                   openEditEvent(ev, e);
                 }}
               >
-                {ev.name}
+                ♥
               </div>
             ))}
           </div>
@@ -241,6 +241,16 @@ export default function CalendarPage() {
                     <option value="yearly">În fiecare an</option>
                   </select>
                 </div>
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Detalii (opțional)</label>
+                <textarea 
+                  value={newEvent.details || ''} 
+                  onChange={e => setNewEvent({...newEvent, details: e.target.value})} 
+                  placeholder="Mai multe detalii despre eveniment..."
+                  rows={3}
+                  style={{width: '100%', boxSizing: 'border-box', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', resize: 'none', fontFamily: 'inherit'}}
+                />
               </div>
               <div className={styles.inputGroup}>
                 <label>Importanță</label>

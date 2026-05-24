@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import BottomNav from './components/layout/BottomNav';
@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
+import { query, collection, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { db } from './firebase';
 
 // Lazy loading
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -17,6 +19,7 @@ const TruthDarePage = lazy(() => import('./pages/TruthDarePage'));
 const MoodPage      = lazy(() => import('./pages/MoodPage'));
 const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
 const CalendarPage  = lazy(() => import('./pages/CalendarPage'));
+const MessagesPage  = lazy(() => import('./pages/MessagesPage'));
 
 // Loading fallback
 function PageLoader() {
@@ -109,6 +112,56 @@ function LocalNotificationManager() {
   return null;
 }
 
+function ChatNotificationManager({ role }) {
+  const [lastMessageId, setLastMessageId] = useState(null);
+
+  useEffect(() => {
+    const partnerRole = role === 'his' ? 'her' : 'his';
+    
+    const q = query(
+      collection(db, 'messages'),
+      where('sender', '==', partnerRole),
+      where('read', '==', false),
+      orderBy('timestamp', 'desc'),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (!snapshot.empty) {
+        const newMsg = snapshot.docs[0].data();
+        const newMsgId = snapshot.docs[0].id;
+        
+        // Dacă e un mesaj nou pe care nu l-am notificat deja și NU suntem pe pagina de chat
+        if (lastMessageId !== newMsgId && window.location.pathname !== '/chat') {
+          setLastMessageId(newMsgId);
+          
+          try {
+            const perm = await LocalNotifications.requestPermissions();
+            if (perm.display === 'granted') {
+              const partnerName = role === 'his' ? 'Ana' : 'Andrei';
+              await LocalNotifications.schedule({
+                notifications: [{
+                  title: `💬 Mesaj nou de la ${partnerName}`,
+                  body: newMsg.text,
+                  id: Math.floor(Math.random() * 100000),
+                  schedule: { at: new Date(Date.now() + 1000) },
+                  smallIcon: 'ic_stat_icon_config_sample'
+                }]
+              });
+            }
+          } catch (e) {
+            console.error("Chat push notif error:", e);
+          }
+        }
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [role, lastMessageId]);
+
+  return null;
+}
+
 // Aplicația principală (autentificată ca 'her' sau 'his')
 function MainApp({ role, getDiaryPassphrase }) {
   const passphrase = getDiaryPassphrase();
@@ -120,8 +173,10 @@ function MainApp({ role, getDiaryPassphrase }) {
   return (
     <BrowserRouter>
       <LocalNotificationManager />
+      <ChatNotificationManager role={role} />
       <div className="app-background" aria-hidden="true" />
       <NotificationCenter role={role} />
+
       
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
@@ -134,6 +189,7 @@ function MainApp({ role, getDiaryPassphrase }) {
             <Route path="/truth-dare"  element={<TruthDarePage role={role} />} />
             <Route path="/calendar" element={<CalendarPage role={role} />} />
             <Route path="/profile"  element={<ProfilePage role={role} />} />
+            <Route path="/chat"     element={<MessagesPage role={role} />} />
             <Route path="*"         element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

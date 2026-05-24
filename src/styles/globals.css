@@ -26,6 +26,9 @@
   --color-lavender-dark: #A88EFF;
   --color-lavender-light: #E4D9FF;
 
+  --color-blue: #7CA1FF;
+  --color-purple: #A58FFF;
+
   --color-mint: #B5EAD7;
   --color-mint-dark: #7DD6B4;
   --color-mint-light: #DAFAED;
@@ -163,6 +166,8 @@ html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
   height: 100%;
+  width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
@@ -172,6 +177,7 @@ body {
   line-height: 1.6;
   min-height: 100%;
   min-height: 100dvh;
+  width: 100%;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -180,6 +186,8 @@ body {
 #root {
   min-height: 100vh;
   min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }

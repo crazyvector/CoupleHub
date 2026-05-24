@@ -31,7 +31,7 @@ function LiveTimer() {
 
   return (
     <div className={styles.timerContainer}>
-      <h2 className={styles.timerTitle}>Sărbătorim împreună de:</h2>
+      <h2 className={styles.timerTitle}>Suntem împreună de:</h2>
       <div className={styles.timerGrid}>
         <div className={styles.timeBox}>
           <span className={styles.timeValue}>{time.days}</span>
@@ -228,7 +228,9 @@ export default function DashboardPage({ role }) {
           className="animate-pulse"
           style={{ 
             width: '100%', padding: '16px', borderRadius: '16px', 
-            background: 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', 
+            background: role === 'his' 
+              ? 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)' 
+              : 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', 
             color: '#fff', fontWeight: '900', fontSize: '1.2rem', 
             border: 'none', boxShadow: 'var(--shadow-md)', cursor: 'pointer',
             textTransform: 'uppercase', letterSpacing: '1px'

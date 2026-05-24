@@ -437,19 +437,18 @@
 
 .dayEvents {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
 }
 
-.dayEventTag {
-  font-size: 0.6rem;
-  padding: 2px 4px;
-  border-radius: 4px;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: bold;
+.dayEventDot {
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .modalOverlay {
   position: fixed;
