@@ -59,7 +59,17 @@ function LiveTimer() {
 
 export default function DashboardPage({ role }) {
   const { events, loading } = useEvents();
-  const { profile } = useProfiles(role);
+  const { profile, updateProfile } = useProfiles(role);
+  
+  const [localStress, setLocalStress] = useState(0);
+  const [localAnger, setLocalAnger] = useState(0);
+
+  useEffect(() => {
+    if (profile) {
+      setLocalStress(profile.stressLevel || 0);
+      setLocalAnger(profile.angerLevel || 0);
+    }
+  }, [profile?.stressLevel, profile?.angerLevel]);
   
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
@@ -207,6 +217,82 @@ export default function DashboardPage({ role }) {
       <div style={{ margin: '0 var(--space-5) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <VirtualBaristaButton role={role} />
         <ScratchCard compact={true} />
+        
+        {/* BUZZER */}
+        <button 
+          onClick={async () => {
+            const buzzMsg = `🐝 Bzzzz! ${myName} îți trimite un Buzz! Bună dimineața sau... trezește-te!`;
+            await addNotification('BUZZ! 🐝', buzzMsg, role);
+            alert('Buzz trimis cu succes!');
+          }}
+          className="animate-pulse"
+          style={{ 
+            width: '100%', padding: '16px', borderRadius: '16px', 
+            background: 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', 
+            color: '#fff', fontWeight: '900', fontSize: '1.2rem', 
+            border: 'none', boxShadow: 'var(--shadow-md)', cursor: 'pointer',
+            textTransform: 'uppercase', letterSpacing: '1px'
+          }}
+        >
+          Buzzer Bună Dimineața 🐝
+        </button>
+
+        {/* STATUS SLIDERS */}
+        <div style={{ background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>Starea Noastră 📊</h3>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+              <span>Stresul tău: {localStress}% 🤯</span>
+            </label>
+            <input 
+              type="range" min="0" max="100" 
+              value={localStress}
+              onChange={(e) => setLocalStress(parseInt(e.target.value))}
+              onMouseUp={() => updateProfile({ stressLevel: localStress })}
+              onTouchEnd={() => updateProfile({ stressLevel: localStress })}
+              style={{ width: '100%', accentColor: '#A88EFF' }}
+            />
+            
+            <label style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+              <span>Nervii tăi: {localAnger}% 😡</span>
+            </label>
+            <input 
+              type="range" min="0" max="100" 
+              value={localAnger}
+              onChange={(e) => setLocalAnger(parseInt(e.target.value))}
+              onMouseUp={() => updateProfile({ angerLevel: localAnger })}
+              onTouchEnd={() => updateProfile({ angerLevel: localAnger })}
+              style={{ width: '100%', accentColor: '#FF8FAB' }}
+            />
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+              Starea lui {partnerName}:
+            </p>
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                <span>Stres 🤯</span>
+                <span>{targetProfile?.stressLevel || 0}%</span>
+              </div>
+              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                <div style={{ width: `${targetProfile?.stressLevel || 0}%`, background: '#A88EFF', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+              </div>
+            </div>
+            
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                <span>Nervi 😡</span>
+                <span>{targetProfile?.angerLevel || 0}%</span>
+              </div>
+              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                <div style={{ width: `${targetProfile?.angerLevel || 0}%`, background: '#FF8FAB', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

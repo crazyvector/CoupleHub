@@ -34,6 +34,81 @@ function PageLoader() {
   );
 }
 
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { useEvents } from './hooks/useDatabase';
+
+// Manager pentru notificări locale (sincronizare cu Calendarul)
+function LocalNotificationManager() {
+  const { events } = useEvents();
+
+  useEffect(() => {
+    async function syncNotifications() {
+      if (!events || events.length === 0) return;
+      
+      try {
+        // Solicităm permisiuni
+        const permStatus = await LocalNotifications.requestPermissions();
+        if (permStatus.display !== 'granted') return;
+
+        // Ștergem toate notificările locale programate (pentru a le recrea actualizate)
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.length > 0) {
+          await LocalNotifications.cancel({ notifications: pending.notifications });
+        }
+
+        const now = new Date();
+        const notificationsToSchedule = [];
+
+        events.forEach(event => {
+          if (!event.date) return;
+          const [year, month, day] = event.date.split('-');
+          const eventDate = new Date(year, month - 1, day, 9, 0, 0); // 9:00 AM în ziua evenimentului
+          const oneDayBefore = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
+
+          // ID-uri unice bazate pe timestamp pentru a programa
+          const hashId = (str) => {
+            let h = 0;
+            for(let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+            return Math.abs(h);
+          };
+          
+          const eventIdNum = hashId(event.id);
+
+          if (oneDayBefore > now) {
+            notificationsToSchedule.push({
+              title: `🗓️ Mâine: ${event.name}`,
+              body: 'Nu uita de evenimentul de mâine!',
+              id: eventIdNum + 1,
+              schedule: { at: oneDayBefore },
+              smallIcon: 'ic_stat_icon_config_sample',
+            });
+          }
+
+          if (eventDate > now) {
+            notificationsToSchedule.push({
+              title: `🗓️ Astăzi: ${event.name}`,
+              body: 'Azi e ziua cea mare!',
+              id: eventIdNum + 2,
+              schedule: { at: eventDate },
+              smallIcon: 'ic_stat_icon_config_sample',
+            });
+          }
+        });
+
+        if (notificationsToSchedule.length > 0) {
+          await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+        }
+      } catch (e) {
+        console.error("Local Notifications error:", e);
+      }
+    }
+
+    syncNotifications();
+  }, [events]);
+
+  return null;
+}
+
 // Aplicația principală (autentificată ca 'her' sau 'his')
 function MainApp({ role, getDiaryPassphrase }) {
   const passphrase = getDiaryPassphrase();
@@ -44,6 +119,7 @@ function MainApp({ role, getDiaryPassphrase }) {
 
   return (
     <BrowserRouter>
+      <LocalNotificationManager />
       <div className="app-background" aria-hidden="true" />
       <NotificationCenter role={role} />
       

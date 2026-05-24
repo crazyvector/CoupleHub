@@ -5,10 +5,11 @@ import styles from './GamesPage.module.css'; // ← exact același CSS ca GamesP
 // ============================================================
 // drawWheel — identic cu GamesPage, doar accent colors diferite
 // ============================================================
-function drawWheel(canvas, rotation, items, centerEmoji = '🎭', defaultColor = '#A78BFA') {
+const drawWheel = (canvas, rotation, items, centerEmoji = '🎭', defaultColor = '#A78BFA') => {
   const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width / dpr;
+  const H = canvas.height / dpr;
   const cx = W / 2;
   const cy = H / 2;
   const R = Math.min(cx, cy) - 4;
@@ -47,11 +48,13 @@ function drawWheel(canvas, rotation, items, centerEmoji = '🎭', defaultColor =
     ctx.rotate(midAngle);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${Math.floor(R / (ITEM_COUNT * 0.8))}px Nunito, sans-serif`;
+    const rawFontSize = Math.floor(R / (ITEM_COUNT * 0.8));
+    const fontSize = Math.max(12, Math.min(24, rawFontSize));
+    ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
     ctx.shadowColor = 'rgba(0,0,0,0.4)';
     ctx.shadowBlur = 3;
-    const label = item.label.length > 16 ? item.label.slice(0, 14) + '…' : item.label;
-    ctx.fillText(label, R - 12, 5);
+    const maxWidth = R - 30;
+    ctx.fillText(item.label, R - 15, 5, maxWidth);
     ctx.restore();
   });
 

@@ -6,10 +6,11 @@ import styles from './GamesPage.module.css';
 // Roata Norocului — Canvas-based
 // ============================================================
 
-function drawWheel(canvas, rotation, items) {
+const drawWheel = (canvas, rotation, items) => {
   const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width / dpr;
+  const H = canvas.height / dpr;
   const cx = W / 2;
   const cy = H / 2;
   const R = Math.min(cx, cy) - 4;
@@ -52,10 +53,13 @@ function drawWheel(canvas, rotation, items) {
     ctx.rotate(midAngle);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#3D2C2C';
-    ctx.font = `bold ${Math.floor(R / (ITEM_COUNT * 0.8))}px Nunito, sans-serif`;
+    const rawFontSize = Math.floor(R / (ITEM_COUNT * 0.8));
+    const fontSize = Math.max(12, Math.min(24, rawFontSize));
+    ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
     ctx.shadowColor = 'rgba(255,255,255,0.5)';
     ctx.shadowBlur = 3;
-    ctx.fillText(item.label, R - 12, 5);
+    const maxWidth = R - 30; // Leave some padding
+    ctx.fillText(item.label, R - 12, 5, maxWidth);
     ctx.restore();
   });
 
