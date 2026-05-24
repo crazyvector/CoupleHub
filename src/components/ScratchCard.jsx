@@ -1,24 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSystemState } from '../hooks/useDatabase';
-import { getDailyScratchCard } from '../data/scratchCards';
+import { useSystemState, useDailyQuote } from '../hooks/useDatabase';
+import { useAuth } from '../hooks/useAuth';
 import styles from '../pages/MemoriesPage.module.css';
 
 export default function ScratchCard() {
+  const { role } = useAuth();
   const { systemState, setScratchRevealed } = useSystemState();
+  const { quote, loading } = useDailyQuote();
+  
   const canvasRef = useRef(null);
   const isDrawingRef = useRef(false);
   const [scratchPercent, setScratchPercent] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const animFrameRef = useRef(null);
 
-  const fallbackCard = getDailyScratchCard();
-  const dailyCard = systemState.scratchCards?.customCard || fallbackCard;
+  const customCard = systemState.scratchCards?.customCard;
+  const dailyMessage = customCard ? customCard.message : (quote || "Se încarcă surpriza...");
+  const dailyEmoji = customCard ? customCard.emoji : "💌";
 
   useEffect(() => {
-    if (systemState.scratchCards?.revealed !== isRevealed) {
-      setIsRevealed(systemState.scratchCards?.revealed || false);
+    const revealedForRole = systemState.scratchCards?.[role]?.revealed;
+    if (revealedForRole !== isRevealed) {
+      setIsRevealed(revealedForRole || false);
     }
-  }, [systemState.scratchCards]);
+  }, [systemState.scratchCards, role]);
 
   useEffect(() => {
     if (isRevealed) return;
@@ -73,10 +78,10 @@ export default function ScratchCard() {
       if (percent >= 60) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         setIsRevealed(true);
-        setScratchRevealed(true);
+        setScratchRevealed(role, true);
       }
     });
-  }, [isRevealed, setScratchRevealed]);
+  }, [isRevealed, setScratchRevealed, role]);
 
   return (
     <div className={styles.scratchSection}>
@@ -91,8 +96,8 @@ export default function ScratchCard() {
       <div className={styles.scratchCardWrapper}>
         <div className={`${styles.scratchReveal} ${isRevealed ? styles.scratchRevealVisible : ''}`}>
           <div className={styles.scratchPlaceholder}>
-             <span style={{ fontSize: '3rem' }}>{dailyCard.emoji}</span>
-             <p className={styles.scratchMessage}>{dailyCard.message}</p>
+             <span style={{ fontSize: '3rem' }}>{dailyEmoji}</span>
+             <p className={styles.scratchMessage}>{dailyMessage}</p>
           </div>
         </div>
 

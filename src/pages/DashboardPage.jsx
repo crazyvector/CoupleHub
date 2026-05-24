@@ -60,6 +60,10 @@ function LiveTimer() {
 export default function DashboardPage({ role }) {
   const { events, loading } = useEvents();
   const { profile } = useProfiles(role);
+  
+  const targetRole = role === 'her' ? 'his' : 'her';
+  const { profile: targetProfile } = useProfiles(targetRole);
+
   const navigate = useNavigate();
 
   const isProfileIncomplete = profile && !profile.isConfigured;
@@ -68,6 +72,10 @@ export default function DashboardPage({ role }) {
   const { addNotification } = useNotifications();
   const [isWritingCompliment, setIsWritingCompliment] = useState(false);
   const [complimentText, setComplimentText] = useState('');
+
+  // Numele din profile
+  const myName = profile?.name || (role === 'her' ? 'Ana' : 'Andrei');
+  const partnerName = targetProfile?.name || (targetRole === 'her' ? 'Ana' : 'Andrei');
 
   // Complimentul zilei (fallback)
   const compliments = [
@@ -80,7 +88,6 @@ export default function DashboardPage({ role }) {
   const complimentZilei = compliments[new Date().getDay() % compliments.length];
 
   const customCompliments = systemState?.customCompliments || {};
-  const targetRole = role === 'her' ? 'his' : 'her';
   const complimentPrimit = customCompliments[role];
   const complimentScrisDeMine = customCompliments[targetRole];
 
@@ -88,8 +95,7 @@ export default function DashboardPage({ role }) {
     if (!complimentText.trim()) return;
     await setCustomCompliment(targetRole, complimentText.trim());
     if (role) {
-      const authorName = role === 'her' ? 'Ana' : 'Andrei';
-      await addNotification('Compliment Nou 💌', `Auzi, ${authorName} a vrut să îți spună ceva frumos: "${complimentText.trim()}"`, role);
+      await addNotification('Compliment Nou 💌', `Auzi, ${myName} a vrut să îți spună ceva frumos: "${complimentText.trim()}"`, role);
     }
     setComplimentText('');
     setIsWritingCompliment(false);
@@ -119,7 +125,7 @@ export default function DashboardPage({ role }) {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Acasă 💕</h1>
-          <p className={styles.subtitle}>Bine ai venit!</p>
+          <p className={styles.subtitle}>Bine ai venit, {myName}!</p>
         </div>
       </header>
 
@@ -149,7 +155,7 @@ export default function DashboardPage({ role }) {
           <p className={styles.complimentText}>
             "{complimentPrimit || complimentZilei}"
           </p>
-          {complimentPrimit && <span className={styles.complimentAuthor}>De la {role === 'her' ? 'Andrei' : 'Ana'}</span>}
+          {complimentPrimit && <span className={styles.complimentAuthor}>De la {partnerName}</span>}
           <div className={styles.openCalendarBtn} style={{marginTop: '10px'}}>{isWritingCompliment ? 'Anulează' : 'Scrie-i tu ceva ›'}</div>
         </div>
 
@@ -184,13 +190,13 @@ export default function DashboardPage({ role }) {
           <textarea 
             value={complimentText}
             onChange={(e) => setComplimentText(e.target.value)}
-            placeholder={`Scrie ceva frumos pentru ${role === 'her' ? 'Andrei' : 'Ana'}...`}
-            style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            placeholder={`Scrie ceva frumos pentru ${partnerName}...`}
+            style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: '#ffffff', color: '#000000', fontSize: '1rem' }}
           />
           <button 
             onClick={handleSendCompliment}
             disabled={!complimentText.trim()}
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-color)', color: 'white', fontWeight: 'bold', border: 'none', opacity: !complimentText.trim() ? 0.5 : 1 }}
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-color)', color: role === 'her' ? '#000000' : '#ffffff', fontWeight: 'bold', border: 'none', opacity: !complimentText.trim() ? 0.5 : 1 }}
           >
             Trimite Complimentul 💌
           </button>

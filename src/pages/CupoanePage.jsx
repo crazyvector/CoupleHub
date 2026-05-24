@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useCustomCoupons, useNotifications } from '../hooks/useDatabase';
+import { useCustomCoupons, useNotifications, useProfiles } from '../hooks/useDatabase';
 import styles from './CupoanePage.module.css';
 
 // ============================================================
@@ -356,6 +356,7 @@ export default function CupoanePage() {
   const { role } = useAuth();
   const { coupons, addCoupon, useCoupon, deleteCoupon, loading } = useCustomCoupons();
   const { addNotification } = useNotifications();
+  const { profile } = useProfiles(role);
   
   const [activeTab, setActiveTab] = useState('received'); // 'received' sau 'created'
   const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -370,19 +371,21 @@ export default function CupoanePage() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // Cupoane trimise de partener pentru mine (eu sunt target)
   const receivedCoupons = coupons.filter(c => c.target === role);
-  // Cupoane create de mine pentru partener (eu sunt author)
   const createdCoupons = coupons.filter(c => c.author === role);
 
   const handleConfirmRedeem = async (note) => {
     if (!selectedCoupon) return;
     setIsRedeeming(true);
-
+    
     try {
-      const msg = `Am folosit cuponul "${selectedCoupon.title}"!` + (note ? `\n📝 Notă: "${note}"` : '');
-      if (role) {
-        await addNotification('Cupon Folosit 🎟️', msg, role);
+      const myName = profile?.name || (role === 'her' ? 'Ana' : 'Andrei');
+      const targetRoleForNotif = selectedCoupon.author;
+      const msg = `${myName} a folosit cuponul "${selectedCoupon.title}"!` + (note ? `\n📝 Notă: "${note}"` : '');
+      
+      if (targetRoleForNotif) {
+        // addNotification(title, body, sender, customTargetRole)
+        await addNotification('Cupon Folosit 🎟️', msg, role, targetRoleForNotif);
       }
       
       await useCoupon(selectedCoupon.id, note);
@@ -424,11 +427,12 @@ export default function CupoanePage() {
     setIsRedeeming(true);
     
     try {
-      const authorName = role === 'her' ? 'Ana' : 'Andrei';
+      const myName = profile?.name || (role === 'her' ? 'Ana' : 'Andrei');
+      const targetRole = role === 'her' ? 'his' : 'her';
       const msg = `"${suggestionText.trim()}"`;
       
-      await addNotification('Sugestie Cupon Nou 💡', `Auzi, ${authorName} și-ar dori un cupon pentru: ${msg}`, role);
-      await addNotification('Sugestie Cupon Nou 💡', `${authorName} a propus un cupon: ${msg}`, role, 'admin');
+      await addNotification('Sugestie Cupon Nou 💡', `Auzi, ${myName} și-ar dori un cupon pentru: ${msg}`, targetRole);
+      await addNotification('Sugestie Cupon Nou 💡', `${myName} a propus un cupon: ${msg}`, role, 'admin');
       
       showToast('Sugestia ta a fost trimisă cu succes! 🎉');
     } catch (e) {

@@ -25,7 +25,7 @@ export default function ProfilePage({ role }) {
   useEffect(() => {
     if (profile) {
       setFormData({
-        name: profile.name || '',
+        name: profile.name || (role === 'her' ? 'Ana' : 'Andrei'),
         nickname: profile.nickname || '',
         age: profile.age || '',
         favoriteColor: profile.favoriteColor || '#ffb5c8',
@@ -33,7 +33,7 @@ export default function ProfilePage({ role }) {
       });
       setAvatarUrl(profile.avatarUrl || null);
     }
-  }, [profile]);
+  }, [profile, role]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

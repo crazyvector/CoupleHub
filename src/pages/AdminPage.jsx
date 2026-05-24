@@ -22,9 +22,9 @@ export default function AdminPage({ onLogout }) {
   };
 
   const handleResetScratch = async () => {
-    if (window.confirm('Ești sigur că vrei să acoperi la loc lozul răzuit?')) {
-      await setScratchRevealed(false);
-      alert('Lozul a fost resetat!');
+    if (window.confirm('Ești sigur că vrei să acoperi la loc lozurile răzuite?')) {
+      await setScratchRevealed(null, false);
+      alert('Lozurile au fost resetate pentru amândoi!');
     }
   };
 

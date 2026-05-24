@@ -1,7 +1,7 @@
 import { useState, useContext, createContext, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { encryptText, decryptText } from '../hooks/useCrypto';
-import { useMoods, useDiary, useNotifications } from '../hooks/useDatabase';
+import { useMoods, useDiary, useNotifications, useProfiles } from '../hooks/useDatabase';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import styles from './MoodPage.module.css';
 
@@ -11,22 +11,28 @@ export const DiaryPassContext = createContext(null);
 // ============================================================
 // Date & constante
 // ============================================================
-const MOODS = [
-  { id: 'angry',   emoji: '😠', label: 'Supărată',     color: '#FFB5B5', intensity: 1 },
-  { id: 'awful',   emoji: '😔', label: 'Tristă',       color: '#B5C8FF', intensity: 2 },
-  { id: 'meh',     emoji: '😐', label: 'Meh',          color: '#C8D8FF', intensity: 3 },
-  { id: 'okay',    emoji: '🙂', label: 'Ok',            color: '#FFCBA4', intensity: 4 },
-  { id: 'good',    emoji: '😊', label: 'Bine',          color: '#B5EAD7', intensity: 5 },
-  { id: 'great',   emoji: '😄', label: 'Super',         color: '#FFB5C8', intensity: 6 },
-  { id: 'amazing', emoji: '🥰', label: 'Îndrăgostită', color: '#C8B6FF', intensity: 7 },
-  { id: 'custom',  emoji: '✍️', label: 'Altceva...',    color: '#E0E0E0', intensity: 0 },
-];
+const getMoods = (role) => {
+  const isAna = role === 'her';
+  return [
+    { id: 'angry',   emoji: '😠', label: isAna ? 'Supărată' : 'Supărat',     color: '#FFB5B5', intensity: 1 },
+    { id: 'awful',   emoji: '😔', label: isAna ? 'Tristă' : 'Trist',       color: '#B5C8FF', intensity: 2 },
+    { id: 'meh',     emoji: '😐', label: 'Meh',          color: '#C8D8FF', intensity: 3 },
+    { id: 'okay',    emoji: '🙂', label: 'Ok',            color: '#FFCBA4', intensity: 4 },
+    { id: 'good',    emoji: '😊', label: 'Bine',          color: '#B5EAD7', intensity: 5 },
+    { id: 'great',   emoji: '😄', label: 'Super',         color: '#FFB5C8', intensity: 6 },
+    { id: 'amazing', emoji: '🥰', label: isAna ? 'Îndrăgostită' : 'Îndrăgostit', color: '#C8B6FF', intensity: 7 },
+    { id: 'custom',  emoji: '✍️', label: 'Altceva...',    color: '#E0E0E0', intensity: 0 },
+  ];
+};
 
-const FEELINGS = [
-  '😴 Obosită', '💪 Energică', '🤗 Fericită', '🥺 Sensibilă',
-  '😤 Frustrată', '🌸 Relaxată', '🦋 Entuziasmată', '🥶 Frig',
-  '🤒 Răcită', '💕 Îndrăgostită', '🎉 Sărbătorind', '🧘 Meditativă',
-];
+const getFeelings = (role) => {
+  const isAna = role === 'her';
+  return [
+    `😴 Obosit${isAna ? 'ă' : ''}`, `💪 Energic${isAna ? 'ă' : ''}`, `🤗 Fericit${isAna ? 'ă' : ''}`, `🥺 Sensibil${isAna ? 'ă' : ''}`,
+    `😤 Frustrat${isAna ? 'ă' : ''}`, `🌸 Relaxat${isAna ? 'ă' : ''}`, `🦋 Entuziasmat${isAna ? 'ă' : ''}`, `🥶 Frig`,
+    `🤒 Răcit${isAna ? 'ă' : ''}`, `💕 Îndrăgostit${isAna ? 'ă' : ''}`, `🎉 Sărbătorind`, `🧘 Meditativ${isAna ? 'ă' : ''}`,
+  ];
+};
 
 // ============================================================
 // COMPONENTĂ PENTRU ISTORIC CU SWIPE-TO-DELETE
@@ -92,12 +98,17 @@ function SwipeableMoodItem({ entry, moodDef, onDelete }) {
 function MoodTracker({ role }) {
   const { moods: moodHistory, addMood, deleteMood, loading } = useMoods(role);
   const { addNotification } = useNotifications(role);
+  const { profile } = useProfiles(role); // Profile of current user
+  
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedFeelings, setSelectedFeelings] = useState([]);
   const [customMoodText, setCustomMoodText] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const roleMoods = getMoods(role);
+  const roleFeelings = getFeelings(role);
 
   const toggleFeeling = (feeling) => {
     setSelectedFeelings(prev =>
@@ -111,6 +122,7 @@ function MoodTracker({ role }) {
     if (!selectedMood) return;
     setSending(true);
 
+    const myName = profile?.name || (role === 'her' ? 'Ana' : 'Andrei');
     const actualMoodLabel = selectedMood.id === 'custom' ? (customMoodText || 'Stare nedefinită') : selectedMood.label;
     
     // Construiește mesajul
@@ -118,10 +130,11 @@ function MoodTracker({ role }) {
       ? `\n💭 ${selectedFeelings.join(', ')}`
       : '';
     const noteStr = note.trim() ? `\n\n📝 "${note.trim()}"` : '';
-    const msg = `Sunt ${actualMoodLabel}${feelingsStr}${noteStr}`;
+    const msg = `Sunt ${actualMoodLabel.toLowerCase()}${feelingsStr}${noteStr}`;
+    const notificationTitle = `${myName} și-a actualizat starea 💕`;
 
     // Trimite notificare In-App
-    await addNotification('Stare nouă 💕', msg, role);
+    await addNotification(notificationTitle, msg, role);
 
     // Salvează în Firebase
     await addMood({
@@ -148,13 +161,13 @@ function MoodTracker({ role }) {
         <span className={`${styles.moodGreetingEmoji} animate-float`}>💝</span>
         <div>
           <h2 className={styles.moodTitle}>Cum te simți?</h2>
-          <p className={styles.moodSubtitle}>El va primi o notificare cu starea ta ✨</p>
+          <p className={styles.moodSubtitle}>{role === 'Ana' ? 'El' : 'Ea'} va primi o notificare cu starea ta ✨</p>
         </div>
       </div>
 
       {/* Selector mood principal */}
       <div className={styles.moodGrid} role="group" aria-label="Selectează starea de spirit">
-        {MOODS.map((mood) => (
+        {roleMoods.map((mood) => (
           <button
             key={mood.id}
             id={`mood-${mood.id}`}
@@ -195,7 +208,7 @@ function MoodTracker({ role }) {
 
           <p className={styles.feelingsTitle}>Mai exact? <span>(opțional)</span></p>
           <div className={styles.feelingsGrid}>
-            {FEELINGS.map((feeling) => (
+            {roleFeelings.map((feeling) => (
               <button
                 key={feeling}
                 className={`${styles.feelingChip} ${selectedFeelings.includes(feeling) ? styles.feelingChipSelected : ''}`}
@@ -246,7 +259,7 @@ function MoodTracker({ role }) {
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px' }}>Glisează stânga sau dreapta pentru a șterge</p>
           <div className={styles.historyList}>
             {moodHistory.slice(0, 7).map((entry, i) => {
-              const moodDef = MOODS.find(m => m.id === entry.mood) || MOODS[0];
+              const moodDef = roleMoods.find(m => m.id === entry.mood) || roleMoods[0];
               return (
                 <SwipeableMoodItem 
                   key={entry.id || i} 

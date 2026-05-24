@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   collection, 
   doc, 
@@ -13,6 +13,8 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 // Collections
 const MOODS_COL = 'moods';
@@ -116,7 +118,8 @@ export function useEvents() {
   useEffect(() => {
     const q = query(collection(db, EVENTS_COL), orderBy('date', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Punem ...doc.data() primul pentru ca id: doc.id sa suprascrie orice 'id' salvat din greseala in document
+      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
       setEvents(data);
       setLoading(false);
     });
@@ -124,18 +127,22 @@ export function useEvents() {
   }, []);
 
   const addEvent = async (eventData) => {
+    // Nu salvam field-ul 'id' in interiorul bazei de date
+    const { id, ...dataToSave } = eventData;
     await addDoc(collection(db, EVENTS_COL), {
-      ...eventData,
+      ...dataToSave,
       createdAt: new Date().toISOString()
     });
   };
 
   const deleteEvent = async (id) => {
+    if (!id) return;
     await deleteDoc(doc(db, EVENTS_COL, id));
   };
 
   const updateEvent = async (id, eventData) => {
     const { id: _id, ...dataWithoutId } = eventData;
+    if (!id) return;
     await setDoc(doc(db, EVENTS_COL, id), {
       ...dataWithoutId,
       updatedAt: new Date().toISOString()
@@ -181,16 +188,38 @@ export function useSystemState() {
     const unsubscribe2 = onSnapshot(doc(db, SYSTEM_COL, 'scratchCards'), (d) => {
       if (d.exists()) {
         const data = d.data();
-        // Resetare automată dacă s-a răzuit într-o zi anterioară
-        if (data.revealedAt) {
-          const revDate = new Date(data.revealedAt);
-          if (revDate.toDateString() !== new Date().toDateString()) {
-            setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { revealed: false, revealedAt: null }, { merge: true });
+        let needsReset = false;
+
+        ['his', 'her'].forEach(role => {
+          if (data[role]?.revealedAt) {
+            const revDate = new Date(data[role].revealedAt);
+            const revTargetTime = new Date(revDate);
+            if (revDate.getHours() < 8) {
+              revTargetTime.setDate(revTargetTime.getDate() - 1);
+            }
+            
+            const now = new Date();
+            const nowTargetTime = new Date(now);
+            if (now.getHours() < 8) {
+              nowTargetTime.setDate(nowTargetTime.getDate() - 1);
+            }
+
+            if (revTargetTime.toDateString() !== nowTargetTime.toDateString()) {
+              needsReset = true;
+            }
           }
+        });
+
+        if (needsReset) {
+          setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+            his: { revealed: false, revealedAt: null },
+            her: { revealed: false, revealedAt: null },
+            customCard: null 
+          }, { merge: true });
         }
         setSystemState(prev => ({ ...prev, scratchCards: data }));
       } else {
-        setSystemState(prev => ({ ...prev, scratchCards: { revealed: false } }));
+        setSystemState(prev => ({ ...prev, scratchCards: { his: { revealed: false }, her: { revealed: false } } }));
       }
       setLoading(false);
     });
@@ -226,11 +255,21 @@ export function useSystemState() {
     await setDoc(doc(db, SYSTEM_COL, 'coupons'), {});
   };
 
-  const setScratchRevealed = async (revealed) => {
-    await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
-      revealed,
-      revealedAt: revealed ? new Date().toISOString() : null
-    }, { merge: true });
+  const setScratchRevealed = async (role, revealed) => {
+    if (!role) {
+      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+        his: { revealed: false, revealedAt: null },
+        her: { revealed: false, revealedAt: null },
+        customCard: null
+      }, { merge: true });
+    } else {
+      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+        [role]: {
+          revealed,
+          revealedAt: revealed ? new Date().toISOString() : null
+        }
+      }, { merge: true });
+    }
   };
 
   const setSystemStateDirectly = async (data) => {
@@ -278,15 +317,48 @@ export function useSystemState() {
 // ==========================================
 export function useNotifications(currentRole) {
   const [notifications, setNotifications] = useState([]);
-  
+  const isInitialLoad = useRef(true);
+  const permissionChecked = useRef(false);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform() && !permissionChecked.current) {
+      LocalNotifications.requestPermissions().then((res) => {
+        permissionChecked.current = true;
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (!currentRole) return;
     const q = query(collection(db, NOTIFICATIONS_COL), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Filtrează doar notificările destinate acestui cont
       const mine = all.filter(n => !n.targetRole || n.targetRole === currentRole);
       setNotifications(mine);
+
+      // Verificăm dacă sunt documente adăugate recent (doar după load-ul inițial)
+      if (!isInitialLoad.current && Capacitor.isNativePlatform()) {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const data = change.doc.data();
+            const target = data.targetRole || (data.sender === 'his' ? 'her' : 'his');
+            if (target === currentRole && data.sender !== currentRole) {
+              // Trimite notificare locală
+              LocalNotifications.schedule({
+                notifications: [
+                  {
+                    title: data.title || 'Notificare nouă',
+                    body: data.body || '',
+                    id: Math.floor(Math.random() * 2000000000)
+                  }
+                ]
+              });
+            }
+          }
+        });
+      }
+
+      isInitialLoad.current = false;
     });
     return () => unsubscribe();
   }, [currentRole]);
@@ -449,6 +521,52 @@ export function useWheelItems(wheelType) { // 'food' or 'date'
 
   return { items, addItem, deleteItem, loading };
 }
+
+// ==========================================
+// Hook: Daily Quote (Surpriza Zilei cu citate din DB)
+// ==========================================
+export function useDailyQuote() {
+  const [quote, setQuote] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuote = async () => {
+      try {
+        const now = new Date();
+        const targetTime = new Date(now);
+        // Dacă e înainte de ora 8:00 dimineața, folosim citatul de ieri
+        if (now.getHours() < 8) {
+          targetTime.setDate(targetTime.getDate() - 1);
+        }
+        
+        const start = new Date(targetTime.getFullYear(), 0, 0);
+        const diff = targetTime - start;
+        const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        // 100 citate în baza de date
+        const quoteIndex = dayOfYear % 100;
+        
+        const q = query(collection(db, 'daily_quotes'));
+        const snapshot = await getDocs(q);
+        const allQuotes = snapshot.docs.map(d => d.data());
+        
+        if (allQuotes.length > 0) {
+          const indexToUse = dayOfYear % allQuotes.length;
+          const found = allQuotes.find(q => q.index === indexToUse) || allQuotes[0];
+          setQuote(found.text);
+        }
+      } catch (err) {
+        console.error("Eroare la preluarea citatului:", err);
+      }
+      setLoading(false);
+    };
+    
+    fetchQuote();
+  }, []);
+
+  return { quote, loading };
+}
+
 // ==========================================
 // Hook: Custom Coupons
 // ==========================================

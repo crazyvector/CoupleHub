@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useNotifications } from '../hooks/useDatabase';
+import { useNotifications, useProfiles } from '../hooks/useDatabase';
 import { useAuth } from '../hooks/useAuth';
 import styles from './NotificationCenter.module.css';
 
-function SwipeableNotification({ n, role, onRead, onDelete }) {
+function SwipeableNotification({ n, role, onRead, onDelete, senderName }) {
   const [translateX, setTranslateX] = useState(0);
   const startX = useRef(null);
   const isDragging = useRef(false);
@@ -23,8 +23,7 @@ function SwipeableNotification({ n, role, onRead, onDelete }) {
 
   const handleTouchMove = (e) => {
     if (!isDragging.current) return;
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - startX.current;
+    const diff = e.touches[0].clientX - startX.current;
     
     // allow dragging left or right
     setTranslateX(diff);
@@ -56,7 +55,7 @@ function SwipeableNotification({ n, role, onRead, onDelete }) {
     >
       <h4 className={styles.itemTitle}>{n.title}</h4>
       <p className={styles.itemBody}>{n.body}</p>
-      <span className={styles.itemTime}>{timeStr} • {n.sender === 'his' ? 'De la el' : 'De la ea'}</span>
+      <span className={styles.itemTime}>{timeStr} • {n.sender === role ? 'De la tine' : `De la ${senderName}`}</span>
     </li>
   );
 }
@@ -64,6 +63,11 @@ function SwipeableNotification({ n, role, onRead, onDelete }) {
 export default function NotificationCenter() {
   const { role } = useAuth();
   const { notifications, markAsRead, deleteNotification } = useNotifications(role);
+  
+  const { profile: myProfile } = useProfiles(role);
+  const targetRole = role === 'her' ? 'his' : 'her';
+  const { profile: targetProfile } = useProfiles(targetRole);
+
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -120,15 +124,22 @@ export default function NotificationCenter() {
             <div className={styles.empty}>Nu ai nicio notificare.</div>
           ) : (
             <ul className={styles.list}>
-              {notifications.map((n) => (
-                <SwipeableNotification
-                  key={n.id}
-                  n={n}
-                  role={role}
-                  onRead={handleNotificationClick}
-                  onDelete={deleteNotification}
-                />
-              ))}
+              {notifications.map((n) => {
+                const senderName = n.sender === role ? myProfile?.name : targetProfile?.name;
+                const defaultSenderName = n.sender === 'her' ? 'Ana' : (n.sender === 'his' ? 'Andrei' : 'Sistem');
+                const finalSenderName = senderName || defaultSenderName;
+                
+                return (
+                  <SwipeableNotification
+                    key={n.id}
+                    n={n}
+                    role={role}
+                    onRead={handleNotificationClick}
+                    onDelete={deleteNotification}
+                    senderName={finalSenderName}
+                  />
+                );
+              })}
             </ul>
           )}
         </div>

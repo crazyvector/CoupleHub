@@ -21,7 +21,7 @@ export default function CalendarPage() {
   const { events, addEvent, deleteEvent, updateEvent, loading } = useEvents();
   
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newEvent, setNewEvent] = useState({ id: null, name: '', date: '', details: '', importance: 'Medium' });
+  const [newEvent, setNewEvent] = useState({ id: null, name: '', date: '', details: '', importance: 'Medium', recurrence: 'none' });
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const handleSaveEvent = async (e) => {
@@ -34,25 +34,34 @@ export default function CalendarPage() {
       await addEvent(newEvent);
     }
     setShowAddModal(false);
-    setNewEvent({ id: null, name: '', date: '', details: '', importance: 'Medium' });
+    setNewEvent({ id: null, name: '', date: '', details: '', importance: 'Medium', recurrence: 'none' });
   };
 
   const openAddForDate = (dateString) => {
-    setNewEvent({ id: null, name: '', date: dateString, details: '', importance: 'Medium' });
+    setNewEvent({ id: null, name: '', date: dateString, details: '', importance: 'Medium', recurrence: 'none' });
     setShowAddModal(true);
   };
 
   const openEditEvent = (ev, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setNewEvent(ev);
     setShowAddModal(true);
   };
 
   const handleDeleteEvent = async (id, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (window.confirm("Sigur vrei să ștergi acest eveniment?")) {
       await deleteEvent(id);
       setShowAddModal(false);
+    }
+  };
+
+  const handleDayClick = (dateStr, dayEvents) => {
+    if (dayEvents.length > 0) {
+      // Deschide direct editarea pentru primul eveniment
+      openEditEvent(dayEvents[0]);
+    } else {
+      openAddForDate(dateStr);
     }
   };
 
@@ -69,7 +78,30 @@ export default function CalendarPage() {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dayEvents = events.filter(ev => ev.date === dateStr);
+      
+      const dayEvents = events.filter(ev => {
+        if (ev.date === dateStr) return true;
+        if (!ev.recurrence || ev.recurrence === 'none') return false;
+        
+        const evDateObj = new Date(ev.date);
+        const cellDateObj = new Date(year, month, d);
+        
+        // Nu afisam repetari inainte de data cand a fost creat evenimentul
+        if (cellDateObj < evDateObj) return false;
+        
+        if (ev.recurrence === 'weekly') {
+          const diffTime = cellDateObj - evDateObj;
+          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays % 7 === 0;
+        }
+        if (ev.recurrence === 'monthly') {
+          return cellDateObj.getDate() === evDateObj.getDate();
+        }
+        if (ev.recurrence === 'yearly') {
+          return cellDateObj.getDate() === evDateObj.getDate() && cellDateObj.getMonth() === evDateObj.getMonth();
+        }
+        return false;
+      });
       
       const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
 
@@ -77,7 +109,7 @@ export default function CalendarPage() {
         <div 
           key={d} 
           className={`${styles.calendarDay} ${isToday ? styles.calendarToday : ''}`}
-          onClick={() => openAddForDate(dateStr)}
+          onClick={() => handleDayClick(dateStr, dayEvents)}
         >
           <span className={styles.dayNumber}>{d}</span>
           <div className={styles.dayEvents}>
@@ -85,8 +117,16 @@ export default function CalendarPage() {
               <div 
                 key={ev.id} 
                 className={styles.dayEventTag} 
-                style={{ backgroundColor: ev.importance === 'High' ? 'var(--color-rose)' : ev.importance === 'Medium' ? 'var(--color-sky)' : 'var(--color-lavender)' }}
-                onClick={(e) => openEditEvent(ev, e)}
+                style={{ 
+                  backgroundColor: ev.importance === 'High' ? '#FF6B6B' 
+                                 : ev.importance === 'Medium' ? '#FFD93D' 
+                                 : '#4D96FF',
+                  color: ev.importance === 'Medium' ? '#000' : '#fff'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEditEvent(ev, e);
+                }}
               >
                 {ev.name}
               </div>
@@ -104,6 +144,9 @@ export default function CalendarPage() {
   if (loading) {
     return <div className={styles.page}><div className={styles.loading}>Se încarcă Calendarul...</div></div>;
   }
+
+  // Toate evenimentele din ziua curent selectata in modal
+  const selectedDayEvents = newEvent.date ? events.filter(ev => ev.date === newEvent.date) : [];
 
   return (
     <div className={styles.page}>
@@ -141,14 +184,63 @@ export default function CalendarPage() {
         <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
             <h3 className={styles.modalTitle}>{newEvent.id ? 'Editează Eveniment ✏️' : 'Adaugă Eveniment ✨'}</h3>
+            
+            {selectedDayEvents.length > 1 && (
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '10px', scrollbarWidth: 'none' }}>
+                {selectedDayEvents.map((ev, idx) => (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => setNewEvent(ev)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      background: newEvent.id === ev.id ? 'var(--color-rose-dark)' : '#f0f0f0',
+                      color: newEvent.id === ev.id ? '#fff' : '#333',
+                      border: 'none',
+                      whiteSpace: 'nowrap',
+                      fontSize: '0.85rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {ev.name || `Eveniment ${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {(newEvent.id || selectedDayEvents.length > 0) && (
+              <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => openAddForDate(newEvent.date)}
+                  style={{ background: 'none', border: 'none', color: '#FF6B6B', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  + Adaugă alt eveniment în această zi
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleSaveEvent} className={styles.form}>
               <div className={styles.inputGroup}>
                 <label>Nume Eveniment</label>
                 <input type="text" value={newEvent.name} onChange={e => setNewEvent({...newEvent, name: e.target.value})} required />
               </div>
-              <div className={styles.inputGroup}>
-                <label>Data</label>
-                <input type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} required />
+              <div className={styles.inputGroup} style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Data</label>
+                  <input type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} required style={{width: '100%', boxSizing: 'border-box'}}/>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Repetare</label>
+                  <select value={newEvent.recurrence || 'none'} onChange={e => setNewEvent({...newEvent, recurrence: e.target.value})} style={{width: '100%', boxSizing: 'border-box'}}>
+                    <option value="none">Doar o dată</option>
+                    <option value="weekly">La 7 zile</option>
+                    <option value="monthly">În fiecare lună</option>
+                    <option value="yearly">În fiecare an</option>
+                  </select>
+                </div>
               </div>
               <div className={styles.inputGroup}>
                 <label>Importanță</label>
@@ -159,9 +251,14 @@ export default function CalendarPage() {
                 </select>
               </div>
               <div className={styles.modalActions}>
-                {newEvent.id && (
-                  <button type="button" className={styles.deleteBtnRed} onClick={(e) => handleDeleteEvent(newEvent.id, e)}>Șterge</button>
-                )}
+                <button 
+                  type="button" 
+                  className={styles.deleteBtnRed} 
+                  onClick={(e) => newEvent.id ? handleDeleteEvent(newEvent.id, e) : null}
+                  style={{ opacity: newEvent.id ? 1 : 0.3, pointerEvents: newEvent.id ? 'auto' : 'none' }}
+                >
+                  Șterge
+                </button>
                 <button type="button" className={styles.cancelBtn} onClick={() => setShowAddModal(false)}>Anulează</button>
                 <button type="submit" className={styles.saveBtn}>Salvează</button>
               </div>
