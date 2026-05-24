@@ -1,0 +1,21 @@
+--- src/hooks/useDatabase.js
++++ src/hooks/useDatabase.js
+@@ -165,8 +165,6 @@
+       else {
+         setSystemState(prev => ({ ...prev, coupons: {} }));
+       }
+-    }, (err) => {
+-      console.warn("Coupons snapshot blocked:", err.message);
+     });
+ 
+     const unsubscribe2 = onSnapshot(doc(db, SYSTEM_COL, 'scratchCards'), (d) => {
+@@ -181,9 +179,6 @@
+         setSystemState(prev => ({ ...prev, scratchCards: { revealed: false } }));
+       }
+       setLoading(false);
+-    }, (err) => {
+-      console.warn("Scratch snapshot blocked:", err.message);
+-      setLoading(false);
+     });
+ 
+     return () => { unsubscribe1(); unsubscribe2(); };

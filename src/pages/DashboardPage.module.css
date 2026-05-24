@@ -1,0 +1,239 @@
+.page {
+  min-height: 100dvh;
+  padding: 0 var(--space-5) calc(100px + env(safe-area-inset-bottom, 0px));
+  margin-top: var(--space-4);
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.header {
+  margin-bottom: var(--space-4);
+  margin-top: env(safe-area-inset-top, 20px);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.bentoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(140px, auto);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.bentoTile {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.bentoTile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.tileHero {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-dark) 100%);
+  color: var(--text-on-rose);
+  border: none;
+  align-items: center;
+  text-align: center;
+}
+
+.tileCompliment {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: var(--bg-card);
+}
+
+.tileCalendar {
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.tileScratch {
+  grid-column: 1 / -1;
+  padding: 0; /* ScratchCard handles its own padding/layout */
+}
+
+/* Timer Styles */
+.timerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.timerTitle {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.timerGrid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: rgba(255, 255, 255, 0.2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  width: 100%;
+}
+
+.timeBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 45px;
+}
+
+.timeValue {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.timeLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.timeSeparator {
+  font-size: 1.4rem;
+  font-weight: bold;
+  opacity: 0.6;
+  margin-top: -12px;
+}
+
+/* Compliment Tile */
+.tileIcon {
+  font-size: 2rem;
+  margin-bottom: var(--space-2);
+}
+
+.complimentText {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* Calendar Tile */
+.tileHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.tileHeader .tileIcon {
+  font-size: 1.2rem;
+  margin: 0;
+}
+.tileTitle {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.nextEventPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nextEventName {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.complimentAuthor {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.nextEventDays {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-rose-dark);
+}
+
+.noEventsText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.openCalendarBtn {
+  margin-top: var(--space-3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-rose-dark);
+  text-align: right;
+}
+
+/* Onboarding */
+.onboardingPrompt {
+  background: var(--bg-card);
+  border: 2px solid var(--color-rose);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(255, 181, 200, 0.3);
+  animation: slide-down 0.5s ease-out;
+}
+
+.onboardingIcon {
+  font-size: 2.5rem;
+}
+
+.onboardingBtn {
+  margin-top: var(--space-2);
+  background: var(--color-rose-dark);
+  color: var(--text-on-rose);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+}

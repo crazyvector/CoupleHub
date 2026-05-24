@@ -1,0 +1,168 @@
+/* ============================================================
+   VIRTUAL BARISTA
+   ============================================================ */
+.baristaSection {
+  padding: 0 var(--space-5);
+}
+
+.barista {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Stars background */
+.barista::before {
+  content: '✨ 💫 ✨ 💫 ✨';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 0.8rem;
+  opacity: 0.15;
+  letter-spacing: 4px;
+  color: var(--color-rose);
+}
+
+.baristaHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.baristaIcon {
+  font-size: 1.8rem;
+  animation: pulse-glow 2s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { text-shadow: 0 0 0 rgba(255, 220, 100, 0); }
+  50% { text-shadow: 0 0 20px var(--color-rose); }
+}
+
+.baristaTitle {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.baristaSubtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+/* Chips selector */
+.baristaActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.baristaChip {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.baristaChipActive {
+  background: var(--color-rose);
+  border-color: var(--color-rose-dark);
+  color: var(--text-on-rose);
+}
+
+.baristaChip:active {
+  transform: scale(0.95);
+}
+
+/* Butonul principal */
+.baristaBtn {
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, var(--color-rose) 0%, var(--color-peach) 100%);
+  color: var(--text-primary);
+  box-shadow: 0 4px 20px rgba(255, 181, 200, 0.4);
+  transition: all var(--transition-spring);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  letter-spacing: 0.01em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.baristaBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(255, 181, 200, 0.55);
+}
+
+.baristaBtn:active {
+  transform: scale(0.97);
+}
+
+.baristaSending {
+  opacity: 0.8;
+  background: linear-gradient(135deg, #E0D0FF 0%, #D0E8FF 100%);
+}
+
+.baristaSent {
+  background: linear-gradient(135deg, var(--color-mint), #7DD6B4);
+  color: #1A5C3A;
+  box-shadow: 0 4px 20px rgba(181, 234, 215, 0.5);
+}
+
+.baristaError {
+  background: linear-gradient(135deg, #FFD0D0, #FFE0D0);
+  color: #8B2020;
+}
+
+.baristaBtnIcon {
+  font-size: 1.2rem;
+  animation: float 2.5s ease-in-out infinite;
+}
+
+.baristaSentCount {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: var(--space-3);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.loadingSpinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

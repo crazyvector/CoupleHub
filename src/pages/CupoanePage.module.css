@@ -1,0 +1,459 @@
+.page {
+  padding: 0 20px calc(100px + env(safe-area-inset-bottom, 0px)) 20px;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  position: relative;
+  overflow-x: hidden;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.confettiCanvas {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+  margin-top: calc(env(safe-area-inset-top, 20px) + 20px);
+}
+
+.headerText {
+  text-align: left;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.statsRow {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.statBadge {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  min-width: 90px;
+}
+
+.statBadgeUsed {
+  background: var(--bg-primary);
+  opacity: 0.8;
+}
+
+.suggestionBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  gap: 2px;
+  min-width: 80px;
+}
+.suggestionBtn:active {
+  transform: scale(0.95);
+}
+.suggestionBtnIcon {
+  font-size: 1.2rem;
+}
+
+.statNumber {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.statBadgeUsed .statNumber {
+  color: #2D7D46;
+}
+
+.progressSection {
+  background: var(--bg-card);
+  padding: 15px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-sm);
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+}
+
+.progressBar {
+  height: 10px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFB5C8, #C8B6FF);
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.dividerSection {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.dividerLine {
+  height: 1px;
+  background: var(--border-color);
+  flex: 1;
+}
+
+.dividerText {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.couponsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.couponCard {
+  position: relative;
+  display: flex;
+  background: var(--bg-card);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border: 2px dashed transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.couponCard:active {
+  transform: scale(0.98);
+}
+
+.couponAvailable {
+  border-color: var(--coupon-color);
+}
+
+.couponUsed {
+  filter: grayscale(0.8) opacity(0.7);
+  cursor: default;
+}
+
+.couponUsed:active {
+  transform: none;
+}
+
+.couponNotchLeft, .couponNotchRight {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background-color: var(--bg-primary);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.couponNotchLeft {
+  left: -10px;
+  border-right: 2px dashed var(--coupon-color);
+}
+
+.couponNotchRight {
+  right: -10px;
+  border-left: 2px dashed var(--coupon-color);
+}
+
+.couponUsed .couponNotchLeft { border-color: #aaa; }
+.couponUsed .couponNotchRight { border-color: #aaa; }
+
+.couponDivider {
+  position: absolute;
+  left: 90px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background-image: linear-gradient(to bottom, var(--coupon-color) 50%, transparent 50%);
+  background-size: 2px 10px;
+  background-repeat: repeat-y;
+  opacity: 0.3;
+}
+
+.couponLeft {
+  width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255,255,255,0.5), transparent);
+  border-right: 1px solid rgba(0,0,0,0.05);
+}
+
+.couponEmoji {
+  font-size: 3rem;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+.couponRight {
+  flex: 1;
+  padding: 20px 25px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.couponMeta {
+  margin-bottom: 5px;
+}
+
+.couponStatus {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+}
+
+.couponTitle {
+  font-size: 1.3rem;
+  margin: 0 0 5px 0;
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+}
+
+.couponDescription {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.couponTap {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--coupon-color);
+}
+
+.couponUsedDate {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.usedOverlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.2);
+  z-index: 1;
+}
+
+/* Modale */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 400px;
+  border-radius: 24px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.modalEmoji {
+  font-size: 4rem;
+  margin-bottom: 10px;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  margin: 0 0 20px 0;
+}
+
+.modalCouponPreview {
+  background: rgba(0,0,0,0.03);
+  padding: 15px;
+  border-radius: 12px;
+  border-left: 4px solid var(--coupon-color);
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.modalCouponPreview strong {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.modalCouponPreview p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.modalNoteWrapper {
+  text-align: left;
+  margin-bottom: 25px;
+}
+
+.noteLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.noteInput {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.noteInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.modalActions {
+  display: flex;
+  gap: 15px;
+}
+
+.modalBtn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.modalBtn:active {
+  transform: scale(0.96);
+}
+
+.modalBtnCancel {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.modalBtnConfirm {
+  background: var(--color-rose);
+  color: var(--text-on-rose);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-button);
+}
+
+.modalBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loadingSpinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 20px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-mint-dark);
+  color: #1A5C3A;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  text-align: center;
+  max-width: 90vw;
+  font-size: 0.9rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

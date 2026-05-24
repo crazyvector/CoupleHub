@@ -1,0 +1,733 @@
+.page {
+  min-height: 100dvh;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.header {
+  padding: calc(var(--space-8) + env(safe-area-inset-top, 20px)) var(--space-5) var(--space-4);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* ---- Tab Bar ---- */
+.tabBar {
+  display: flex;
+  margin: 0 var(--space-5) var(--space-4);
+  background: var(--color-rose-pale);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  transition: all var(--transition-spring);
+  font-size: 0.85rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:active { transform: scale(0.95); }
+
+.tabActive {
+  background: var(--bg-card);
+  color: var(--color-rose-dark);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+.tabLabel {
+  font-size: 0.78rem;
+  font-weight: inherit;
+}
+
+.tabContent {
+  padding: 0 var(--space-5);
+}
+
+/* ============================================================
+   MOOD TRACKER
+   ============================================================ */
+.moodSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.moodGreeting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+}
+
+.moodGreetingEmoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.moodTitle {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.moodSubtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Grid 3x2 mood buttons */
+.moodGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.moodBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.moodBtn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: var(--shadow-md);
+}
+
+.moodBtn:active {
+  transform: scale(0.95);
+}
+
+.moodBtnSelected {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 143, 171, 0.25);
+}
+
+.moodEmoji {
+  font-size: 2.2rem;
+  line-height: 1;
+  display: block;
+}
+
+.moodLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ---- Feelings chips ---- */
+.feelingsSection {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.feelingsTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.customMoodInput {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+
+.feelingsTitle span {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.feelingsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.feelingChip {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.feelingChipSelected {
+  background: var(--mood-color, var(--color-rose-pale));
+  border-color: var(--mood-color, var(--color-rose));
+  color: var(--text-primary);
+  transform: scale(1.05);
+  filter: brightness(0.9);
+}
+
+/* ---- Note section ---- */
+.noteSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.noteLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.noteTextarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition-base);
+  line-height: 1.6;
+}
+
+.noteTextarea:focus {
+  border-color: var(--color-rose);
+  box-shadow: 0 0 0 3px rgba(255, 181, 200, 0.2);
+}
+
+.noteCount {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ---- Send button ---- */
+.sendMoodBtn {
+  width: 100%;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  font-weight: 800;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-rose), var(--color-peach));
+  color: var(--text-primary);
+  box-shadow: var(--shadow-button);
+  transition: all var(--transition-spring);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sendMoodBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.sendMoodBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendMoodSending {
+  background: linear-gradient(135deg, var(--color-lavender), var(--color-sky));
+}
+
+.sendMoodSent {
+  background: linear-gradient(135deg, var(--color-mint), #7DD6B4);
+  color: #1A5C3A;
+}
+
+/* ---- History ---- */
+.historySection {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+}
+
+.historyTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-3);
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.historyItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.historyItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.historyEmoji {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.historyContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.historyLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: block;
+}
+
+.historyNote {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.historyDate {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.historyDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+/* ============================================================
+   JURNAL PRIVAT
+   ============================================================ */
+.diarySection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.diaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.diaryHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.diaryTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.diarySubtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.diaryStats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-rose-pale);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(255, 181, 200, 0.3);
+}
+
+.diaryStat {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-rose-dark);
+  line-height: 1;
+}
+
+.diaryStatLabel {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Security badge */
+.securityBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: linear-gradient(135deg, #F0FFF6, #F5F0FF);
+  border: 1px solid rgba(181, 234, 215, 0.5);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.75rem;
+  color: #2D6640;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Editor */
+.diaryEditor {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.diaryEditorHeader {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--color-rose-pale);
+}
+
+.diaryEditorDate {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.diaryTextarea {
+  width: 100%;
+  padding: var(--space-4);
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  line-height: 1.7;
+}
+
+.diaryEditorFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card-hover);
+}
+
+.diaryWordCount {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.diarySaveBtn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-rose), var(--color-peach));
+  color: var(--text-primary);
+  transition: all var(--transition-spring);
+  box-shadow: var(--shadow-sm);
+}
+
+.diarySaveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.diarySavingBtn {
+  background: linear-gradient(135deg, var(--color-lavender), var(--color-sky));
+}
+
+/* Entries list */
+.diaryEntries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.diaryEntriesTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-1);
+}
+
+.diaryEntry {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: box-shadow var(--transition-base);
+}
+
+.diaryEntryOpen {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(255, 181, 200, 0.4);
+}
+
+.diaryEntryHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.diaryEntryHeader:hover {
+  background: var(--bg-card-hover);
+}
+
+.diaryEntryMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.diaryEntryDate {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.diaryEntryTime {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.diaryEntryRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.diaryEntryWords {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--color-rose-pale);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+.diaryEntryArrow {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  width: 20px;
+  text-align: center;
+}
+
+.diaryEntryContent {
+  padding: var(--space-4);
+  border-top: 1px dashed var(--border-color);
+  background: var(--bg-primary);
+}
+
+.diaryDecrypting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.diaryEntryText {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diaryEntryActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
+}
+
+.deleteEntryBtn {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.deleteEntryBtn:hover {
+  background: #FFF0F0;
+  color: #C94040;
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.deleteConfirm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.deleteYes {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  background: #FF6B6B;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.deleteNo {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+/* Empty & loading states */
+.diaryEmpty, .diaryLoading {
+  text-align: center;
+  padding: var(--space-8) var(--space-5);
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.diaryLoading {
+  flex-direction: row;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+/* No passphrase state */
+.diaryNoPass {
+  text-align: center;
+  padding: var(--space-10) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.diaryNoPassTitle {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.diaryNoPassMsg {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 280px;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

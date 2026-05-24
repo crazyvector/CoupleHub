@@ -1,0 +1,29 @@
+{
+  "name": "Couple Hub 💕",
+  "short_name": "Couple Hub",
+  "description": "Aplicația noastră secretă de cuplu",
+  "theme_color": "#FFB5C8",
+  "background_color": "#FFF8F0",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
