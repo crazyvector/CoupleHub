@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  addDoc, 
-  deleteDoc, 
+import {
+  collection,
+  doc,
+  setDoc,
+  addDoc,
+  deleteDoc,
   updateDoc,
-  onSnapshot, 
-  query, 
+  onSnapshot,
+  query,
   orderBy,
   getDocs,
   getDoc,
@@ -200,7 +200,7 @@ export function useSystemState() {
             if (revDate.getHours() < 8) {
               revTargetTime.setDate(revTargetTime.getDate() - 1);
             }
-            
+
             const now = new Date();
             const nowTargetTime = new Date(now);
             if (now.getHours() < 8) {
@@ -214,10 +214,10 @@ export function useSystemState() {
         });
 
         if (needsReset) {
-          setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+          setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
             his: { revealed: false, revealedAt: null },
             her: { revealed: false, revealedAt: null },
-            customCard: null 
+            customCard: null
           }, { merge: true });
         }
         setSystemState(prev => ({ ...prev, scratchCards: data }));
@@ -249,8 +249,8 @@ export function useSystemState() {
 
 
   const setCouponUsed = async (couponId, note) => {
-    await setDoc(doc(db, SYSTEM_COL, 'coupons'), { 
-      [couponId]: { usedAt: new Date().toISOString(), note } 
+    await setDoc(doc(db, SYSTEM_COL, 'coupons'), {
+      [couponId]: { usedAt: new Date().toISOString(), note }
     }, { merge: true });
   };
 
@@ -260,13 +260,13 @@ export function useSystemState() {
 
   const setScratchRevealed = async (role, revealed) => {
     if (!role) {
-      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
         his: { revealed: false, revealedAt: null },
         her: { revealed: false, revealedAt: null },
         customCard: null
       }, { merge: true });
     } else {
-      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
         [role]: {
           revealed,
           revealedAt: revealed ? new Date().toISOString() : null
@@ -289,12 +289,12 @@ export function useSystemState() {
     const docRef = doc(db, SYSTEM_COL, 'barista');
     const dSnap = await getDoc(docRef);
     const today = new Date().toDateString();
-    
+
     let currentCount = 0;
     if (dSnap.exists() && dSnap.data()[role]?.date === today) {
       currentCount = dSnap.data()[role].count || 0;
     }
-    
+
     await setDoc(docRef, {
       [role]: { count: currentCount + 1, date: today }
     }, { merge: true });
@@ -305,7 +305,7 @@ export function useSystemState() {
   };
 
   const setCustomScratchCard = async (customCard) => {
-    await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), { 
+    await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
       customCard,
       revealed: false,
       revealedAt: null
@@ -373,7 +373,7 @@ export function useNotifications(currentRole) {
       body,
       sender,
       targetRole, // cui ii este destinata
-      readBy: [], 
+      readBy: [],
       timestamp: new Date().toISOString()
     });
   };
@@ -541,18 +541,18 @@ export function useDailyQuote() {
         if (now.getHours() < 8) {
           targetTime.setDate(targetTime.getDate() - 1);
         }
-        
+
         const start = new Date(targetTime.getFullYear(), 0, 0);
         const diff = targetTime - start;
         const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-        
+
         // 100 citate în baza de date
         const quoteIndex = dayOfYear % 100;
-        
+
         const q = query(collection(db, 'daily_quotes'));
         const snapshot = await getDocs(q);
         const allQuotes = snapshot.docs.map(d => d.data());
-        
+
         if (allQuotes.length > 0) {
           const indexToUse = dayOfYear % allQuotes.length;
           const found = allQuotes.find(q => q.index === indexToUse) || allQuotes[0];
@@ -563,7 +563,7 @@ export function useDailyQuote() {
       }
       setLoading(false);
     };
-    
+
     fetchQuote();
   }, []);
 
@@ -585,9 +585,9 @@ export function useCustomCoupons() {
         if (item.isUsed && item.usedAt) {
           const usedDate = new Date(item.usedAt).toDateString();
           if (usedDate !== new Date().toDateString()) {
-             // S-a folosit în altă zi, deci se resetează azi!
-             updateDoc(doc(db, CUSTOM_COUPONS_COL, docSnap.id), { isUsed: false, usedAt: null, note: null });
-             item.isUsed = false;
+            // S-a folosit în altă zi, deci se resetează azi!
+            updateDoc(doc(db, CUSTOM_COUPONS_COL, docSnap.id), { isUsed: false, usedAt: null, note: null });
+            item.isUsed = false;
           }
         }
         return item;
@@ -633,11 +633,11 @@ export function useUnreadMessagesCount(role) {
     const partnerRole = role === 'his' ? 'her' : 'his';
     // Observăm doar mesajele trimise de partener care nu sunt citite
     const q = query(
-      collection(db, MESSAGES_COL), 
-      where('sender', '==', partnerRole), 
+      collection(db, MESSAGES_COL),
+      where('sender', '==', partnerRole),
       where('read', '==', false)
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCount(snapshot.docs.length);
     });
@@ -684,7 +684,21 @@ export function useChat(role) {
   const sendMessage = async (text) => {
     if (!text.trim()) return;
     await addDoc(collection(db, MESSAGES_COL), {
+      type: 'text',
       text: text.trim(),
+      sender: role,
+      timestamp: new Date().toISOString(),
+      read: false,
+      reaction: null
+    });
+  };
+
+  // Trimite sticker
+  const sendSticker = async (stickerUrl) => {
+    if (!stickerUrl) return;
+    await addDoc(collection(db, MESSAGES_COL), {
+      type: 'sticker',
+      stickerUrl,
       sender: role,
       timestamp: new Date().toISOString(),
       read: false,
@@ -702,11 +716,11 @@ export function useChat(role) {
   const markAsRead = async () => {
     const partnerRole = role === 'his' ? 'her' : 'his';
     const unreadMessages = messages.filter(m => m.sender === partnerRole && !m.read);
-    
+
     if (unreadMessages.length > 0) {
       const readAt = new Date().toISOString();
       await Promise.all(
-        unreadMessages.map(m => updateDoc(doc(db, MESSAGES_COL, m.id), { 
+        unreadMessages.map(m => updateDoc(doc(db, MESSAGES_COL, m.id), {
           read: true,
           readAt: readAt
         }))
@@ -720,13 +734,97 @@ export function useChat(role) {
     await updateDoc(dRef, { reaction: emoji });
   };
 
-  return { 
-    messages, 
-    partnerTyping, 
-    sendMessage, 
-    setTyping, 
-    markAsRead, 
+  return {
+    messages,
+    partnerTyping,
+    sendMessage,
+    sendSticker,
+    setTyping,
+    markAsRead,
     setReaction,
-    loading 
+    loading
   };
+}
+
+// ==========================================
+// Hook: App Version Checker
+// ==========================================
+export function useAppVersion() {
+  const [latestVersion, setLatestVersion] = useState(null);
+  const [downloadUrl, setDownloadUrl] = useState(null);
+
+  // Variabila care definește versiunea locală. 
+  // Schimbă aici la următorul build (ex: "1.0.1")
+  // Ruleaza apoi: npm run build && npx cap sync
+  // Pune in google drive noul .apk
+  // Pune versiunea curenta in system.app_version in firebase
+  const localVersion = "1.0.6";
+
+  useEffect(() => {
+    const dRef = doc(db, 'system', 'app_version');
+    const unsubscribe = onSnapshot(dRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setLatestVersion(data.version);
+        setDownloadUrl(data.downloadUrl);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  return { latestVersion, downloadUrl, localVersion };
+}
+
+// ==========================================
+// Hook: To-Do List (Personal)
+// ==========================================
+export function useTodos(role) {
+  const [todos, setTodos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!role) return;
+    const q = query(
+      collection(db, 'todos'),
+      where('role', '==', role)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTodos(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("Eroare la încărcarea To-Do list:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [role]);
+
+  const addTodo = async (todoData) => {
+    await addDoc(collection(db, 'todos'), {
+      ...todoData,
+      role,
+      isCompleted: false,
+      completedAt: null,
+      createdAt: new Date().toISOString()
+    });
+  };
+
+  const updateTodo = async (id, updates) => {
+    await updateDoc(doc(db, 'todos', id), updates);
+  };
+
+  const toggleTodoStatus = async (id, currentStatus) => {
+    await updateDoc(doc(db, 'todos', id), {
+      isCompleted: !currentStatus,
+      completedAt: !currentStatus ? new Date().toISOString() : null
+    });
+  };
+
+  const deleteTodo = async (id) => {
+    await deleteDoc(doc(db, 'todos', id));
+  };
+
+  return { todos, addTodo, updateTodo, toggleTodoStatus, deleteTodo, loading };
 }

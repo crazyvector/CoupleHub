@@ -7,6 +7,7 @@ const navItems = [
   { to: '/chat',     icon: '💬', label: 'Mesaje',   id: 'nav-chat' },
   { to: '/cupoane',  icon: '🎟️', label: 'Cupoane',  id: 'nav-coupons' },
   { to: '/mood',     icon: '💭', label: 'Eu',        id: 'nav-mood' },
+  { to: '/todo',     icon: '📝', label: 'To-Do',    id: 'nav-todo' },
   { to: '/memories', icon: '🗺️', label: 'Amintiri', id: 'nav-memories' },
   { to: '/games',      icon: '💡', label: 'Idei',     id: 'nav-games' },
   { to: '/truth-dare', icon: '🎭', label: 'T or D',   id: 'nav-truthdare' },

@@ -9,10 +9,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 import { query, collection, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db } from './firebase';
+import { Capacitor } from '@capacitor/core';
 
 // Lazy loading
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-import CupoanePage from './pages/CupoanePage';
+const CupoanePage = lazy(() => import('./pages/CupoanePage'));
 const MemoriesPage  = lazy(() => import('./pages/MemoriesPage'));
 const GamesPage     = lazy(() => import('./pages/GamesPage'));
 const TruthDarePage = lazy(() => import('./pages/TruthDarePage'));
@@ -20,6 +21,7 @@ const MoodPage      = lazy(() => import('./pages/MoodPage'));
 const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
 const CalendarPage  = lazy(() => import('./pages/CalendarPage'));
 const MessagesPage  = lazy(() => import('./pages/MessagesPage'));
+const TodoPage      = lazy(() => import('./pages/TodoPage'));
 
 // Loading fallback
 function PageLoader() {
@@ -38,65 +40,129 @@ function PageLoader() {
 }
 
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { useEvents } from './hooks/useDatabase';
+import { Badge } from '@capawesome/capacitor-badge';
+import { useEvents, useTodos, useNotifications } from './hooks/useDatabase';
 
-// Manager pentru notificări locale (sincronizare cu Calendarul)
-function LocalNotificationManager() {
+// Manager pentru notificări locale (Calendar + To-Do) și In-App (Clopoțel)
+function AppNotificationManager({ role }) {
   const { events } = useEvents();
+  const { todos, updateTodo } = useTodos(role);
+  const { addNotification } = useNotifications(role);
 
   useEffect(() => {
     async function syncNotifications() {
       if (!events || events.length === 0) return;
-      
       try {
         // Solicităm permisiuni
         const permStatus = await LocalNotifications.requestPermissions();
         if (permStatus.display !== 'granted') return;
 
-        // Ștergem toate notificările locale programate (pentru a le recrea actualizate)
+        // Ștergem toate notificările locale programate
         const pending = await LocalNotifications.getPending();
         if (pending.notifications.length > 0) {
           await LocalNotifications.cancel({ notifications: pending.notifications });
         }
 
-        const now = new Date();
         const notificationsToSchedule = [];
+        const now = new Date();
 
-        events.forEach(event => {
-          if (!event.date) return;
-          const [year, month, day] = event.date.split('-');
-          const eventDate = new Date(year, month - 1, day, 9, 0, 0); // 9:00 AM în ziua evenimentului
-          const oneDayBefore = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
+        // 1. Sincronizare Evenimente din Calendar
+        if (events && events.length > 0) {
+          events.forEach(event => {
+            const [year, month, day] = event.date.split('-');
+            const eventDate = new Date(year, month - 1, day, 9, 0, 0); // 9:00 AM
+            const oneDayBefore = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
-          // ID-uri unice bazate pe timestamp pentru a programa
-          const hashId = (str) => {
-            let h = 0;
-            for(let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
-            return Math.abs(h);
-          };
-          
-          const eventIdNum = hashId(event.id);
+            const hashId = (str) => {
+              let h = 0;
+              for(let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+              return Math.abs(h) % 100000000;
+            };
+            const eventIdNum = hashId(event.id);
 
-          if (oneDayBefore > now) {
-            notificationsToSchedule.push({
-              title: `🗓️ Mâine: ${event.name}`,
-              body: 'Nu uita de evenimentul de mâine!',
-              id: eventIdNum + 1,
-              schedule: { at: oneDayBefore },
-              smallIcon: 'ic_stat_icon_config_sample',
-            });
+            if (oneDayBefore > now) {
+              notificationsToSchedule.push({
+                title: `🗓️ Mâine: ${event.name}`,
+                body: 'Nu uita de evenimentul de mâine!',
+                id: eventIdNum + 1,
+                schedule: { at: oneDayBefore },
+                smallIcon: 'ic_stat_icon_config_sample',
+              });
+            }
+
+            if (eventDate > now) {
+              notificationsToSchedule.push({
+                title: `🗓️ Astăzi: ${event.name}`,
+                body: 'Azi e ziua cea mare!',
+                id: eventIdNum + 2,
+                schedule: { at: eventDate },
+                smallIcon: 'ic_stat_icon_config_sample',
+              });
+            }
+          });
+        }
+
+        // 2. Sincronizare To-Do List (Deadline-uri)
+        if (todos && todos.length > 0) {
+          for (const todo of todos) {
+            if (todo.isCompleted || !todo.deadline) continue;
+            
+            const dlDate = new Date(todo.deadline);
+            if (isNaN(dlDate.getTime())) continue;
+
+            const hashId = (str) => {
+              let h = 0;
+              for(let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+              return (Math.abs(h) % 100000000) + 100000000; // Offset for todos
+            };
+            const todoIdNum = hashId(todo.id);
+
+            // A) Notificare pe telefon (Push)
+            // Dimineața în ziua deadline-ului (dacă deadline-ul e mai târziu de ora 09:00)
+            const morningOf = new Date(dlDate.getFullYear(), dlDate.getMonth(), dlDate.getDate(), 9, 0, 0);
+            if (morningOf > now && dlDate > morningOf) {
+              notificationsToSchedule.push({
+                title: `📅 Task pentru azi: ${todo.title}`,
+                body: `Ai termen limită astăzi la ora ${dlDate.toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}`,
+                id: todoIdNum + 1,
+                schedule: { at: morningOf },
+                smallIcon: 'ic_stat_icon_config_sample',
+              });
+            }
+
+            // Cu 1 oră înainte
+            const oneHourBefore = new Date(dlDate.getTime() - 60 * 60 * 1000);
+            if (oneHourBefore > now) {
+              notificationsToSchedule.push({
+                title: `⏳ Deadline în curând: ${todo.title}`,
+                body: 'A mai rămas o oră pentru a finaliza acest task!',
+                id: todoIdNum + 2,
+                schedule: { at: oneHourBefore },
+                smallIcon: 'ic_stat_icon_config_sample',
+              });
+            }
+
+            // B) Notificare în aplicație (Clopoțel)
+            // Doar dacă e în viitor, ca să nu dăm notificare pentru ceva deja expirat
+            if (dlDate > now) {
+              // Verificăm ziua de azi
+              const isToday = dlDate.toDateString() === now.toDateString();
+              const isWithinHour = (dlDate - now) <= 60 * 60 * 1000;
+
+              // Notificare dimineața sau la deschiderea app dacă e ziua deadline-ului
+              if (isToday && !todo.inAppNotifiedToday) {
+                await addNotification(`Task pentru azi: ${todo.title}`, `Ai termen limită la ${dlDate.toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}`, role, role);
+                await updateTodo(todo.id, { inAppNotifiedToday: true });
+              }
+
+              // Notificare cu 1 oră înainte (dacă a intrat în app în acest interval)
+              if (isWithinHour && !todo.inAppNotified1Hour) {
+                await addNotification(`Deadline în curând: ${todo.title}`, `A mai rămas mai puțin de o oră!`, role, role);
+                await updateTodo(todo.id, { inAppNotified1Hour: true });
+              }
+            }
           }
-
-          if (eventDate > now) {
-            notificationsToSchedule.push({
-              title: `🗓️ Astăzi: ${event.name}`,
-              body: 'Azi e ziua cea mare!',
-              id: eventIdNum + 2,
-              schedule: { at: eventDate },
-              smallIcon: 'ic_stat_icon_config_sample',
-            });
-          }
-        });
+        }
 
         if (notificationsToSchedule.length > 0) {
           await LocalNotifications.schedule({ notifications: notificationsToSchedule });
@@ -107,7 +173,7 @@ function LocalNotificationManager() {
     }
 
     syncNotifications();
-  }, [events]);
+  }, [events, todos]);
 
   return null;
 }
@@ -162,6 +228,62 @@ function ChatNotificationManager({ role }) {
   return null;
 }
 
+// Global Badge Manager
+function GlobalBadgeManager({ role }) {
+  const [unreadMsg, setUnreadMsg] = useState(0);
+  const [unreadNotif, setUnreadNotif] = useState(0);
+
+  useEffect(() => {
+    const partnerRole = role === 'his' ? 'her' : 'his';
+    
+    // Listen to Unread Messages
+    const qMsg = query(
+      collection(db, 'messages'),
+      where('sender', '==', partnerRole),
+      where('read', '==', false)
+    );
+    const unMsg = onSnapshot(qMsg, (snap) => setUnreadMsg(snap.docs.length));
+
+    // Listen to Unread Notifications
+    const qNotif = query(collection(db, 'notifications'), orderBy('timestamp', 'desc'));
+    const unNotif = onSnapshot(qNotif, (snap) => {
+      const all = snap.docs.map(doc => doc.data());
+      const mine = all.filter(n => !n.targetRole || n.targetRole === role);
+      const unreadCount = mine.filter(n => !n.readBy?.includes(role)).length;
+      setUnreadNotif(unreadCount);
+    });
+
+    return () => { unMsg(); unNotif(); };
+  }, [role]);
+
+  useEffect(() => {
+    const updateBadge = async () => {
+      try {
+        // Capacitor-badge requires checking if supported and requesting permissions
+        const support = await Badge.isSupported();
+        if (!support.isSupported) return;
+        
+        let perm = await Badge.checkPermissions();
+        if (perm.display !== 'granted') {
+          perm = await Badge.requestPermissions();
+        }
+        
+        if (perm.display === 'granted') {
+          await Badge.set({ count: unreadMsg + unreadNotif });
+        }
+      } catch (e) {
+        console.error("Badge update error", e);
+      }
+    };
+    
+    if (Capacitor.isNativePlatform()) {
+      updateBadge();
+    }
+  }, [unreadMsg, unreadNotif]);
+
+  return null;
+}
+
 // Aplicația principală (autentificată ca 'her' sau 'his')
 function MainApp({ role, getDiaryPassphrase }) {
   const passphrase = getDiaryPassphrase();
@@ -172,8 +294,7 @@ function MainApp({ role, getDiaryPassphrase }) {
 
   return (
     <BrowserRouter>
-      <LocalNotificationManager />
-      <ChatNotificationManager role={role} />
+      <GlobalBadgeManager role={role} />
       <div className="app-background" aria-hidden="true" />
       <NotificationCenter role={role} />
 
@@ -181,20 +302,27 @@ function MainApp({ role, getDiaryPassphrase }) {
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/"         element={<DashboardPage role={role} />} />
-            <Route path="/cupoane"  element={<CupoanePage />} />
-            <Route path="/memories" element={<MemoriesPage role={role} />} />
-            <Route path="/mood"     element={<MoodPage passphrase={passphrase} role={role} />} />
-            <Route path="/games"      element={<GamesPage role={role} />} />
-            <Route path="/truth-dare"  element={<TruthDarePage role={role} />} />
-            <Route path="/calendar" element={<CalendarPage role={role} />} />
-            <Route path="/profile"  element={<ProfilePage role={role} />} />
-            <Route path="/chat"     element={<MessagesPage role={role} />} />
-            <Route path="*"         element={<Navigate to="/" replace />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            
+            <Route path="/" element={<ProtectedRoute><DashboardPage role={role} /></ProtectedRoute>} />
+            <Route path="/cupoane" element={<ProtectedRoute><CupoanePage role={role} /></ProtectedRoute>} />
+            <Route path="/memories" element={<ProtectedRoute><MemoriesPage role={role} /></ProtectedRoute>} />
+            <Route path="/games" element={<ProtectedRoute><GamesPage role={role} /></ProtectedRoute>} />
+            <Route path="/truth-dare" element={<ProtectedRoute><TruthDarePage role={role} /></ProtectedRoute>} />
+            <Route path="/mood" element={<ProtectedRoute><MoodPage role={role} /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage role={role} /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarPage role={role} /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><MessagesPage role={role} /></ProtectedRoute>} />
+            <Route path="/todo" element={<ProtectedRoute><TodoPage role={role} /></ProtectedRoute>} />
+            
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
-      <BottomNav role={role} />
+      {role && role !== 'admin' && <BottomNav role={role} />}
+      {role && role !== 'admin' && <AppNotificationManager role={role} />}
+      {role && role !== 'admin' && <ChatNotificationManager role={role} />}
     </BrowserRouter>
   );
 }

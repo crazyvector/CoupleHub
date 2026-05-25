@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useChat, useProfiles } from '../hooks/useDatabase';
 import styles from './MessagesPage.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
+import { stickerPacks } from '../utils/stickers';
 
 const REACTIONS = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
 
@@ -11,7 +12,7 @@ const DEFAULT_AVATAR_HER = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&
 
 export default function MessagesPage({ role }) {
   const navigate = useNavigate();
-  const { messages, partnerTyping, sendMessage, setTyping, markAsRead, setReaction, loading } = useChat(role);
+  const { messages, partnerTyping, sendMessage, sendSticker, setTyping, markAsRead, setReaction, loading } = useChat(role);
   
   const partnerRole = role === 'his' ? 'her' : 'his';
   const { profile: myProfile } = useProfiles(role);
@@ -19,6 +20,9 @@ export default function MessagesPage({ role }) {
 
   const [text, setText] = useState('');
   const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [showPartnerProfile, setShowPartnerProfile] = useState(false);
+  const [isStickerDrawerOpen, setIsStickerDrawerOpen] = useState(false);
+  const [activeStickerTab, setActiveStickerTab] = useState(stickerPacks[0].id);
   
   const chatEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -43,6 +47,12 @@ export default function MessagesPage({ role }) {
     if (!text.trim()) return;
     await sendMessage(text);
     setText('');
+    setIsStickerDrawerOpen(false);
+  };
+
+  const handleSendSticker = async (url) => {
+    await sendSticker(url);
+    setIsStickerDrawerOpen(false);
   };
 
   const handleTextChange = (e) => {
@@ -98,13 +108,13 @@ export default function MessagesPage({ role }) {
         <button onClick={() => navigate(-1)} className={styles.backBtn} aria-label="Înapoi">
           🔙
         </button>
-        <h1 className={styles.title}>
+        <h1 className={styles.title} onClick={() => setShowPartnerProfile(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img 
             src={partnerProfile?.avatarUrl || (role === 'his' ? DEFAULT_AVATAR_HER : DEFAULT_AVATAR_HIS)} 
             alt={partnerName} 
             className={styles.headerAvatar} 
           />
-          {partnerName}
+          {partnerProfile?.nickname || partnerName}
         </h1>
       </header>
 
@@ -130,6 +140,7 @@ export default function MessagesPage({ role }) {
                 <img src={msgAvatarUrl} alt="avatar" className={styles.messageAvatar} />
                 <div 
                   className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
+                  style={msg.type === 'sticker' ? { background: 'transparent', padding: 0, boxShadow: 'none' } : {}}
                   onTouchStart={() => handleTouchStart(msg.id)}
                   onTouchEnd={handleTouchEnd}
                   onTouchMove={handleTouchEnd}
@@ -137,7 +148,11 @@ export default function MessagesPage({ role }) {
                   onMouseUp={handleTouchEnd}
                   onMouseLeave={handleTouchEnd}
                 >
-                  {msg.text}
+                  {msg.type === 'sticker' ? (
+                    <img src={msg.stickerUrl} alt="Sticker" className={styles.messageSticker} />
+                  ) : (
+                    msg.text
+                  )}
                   
                   {msg.reaction && (
                     <div className={`${styles.reaction} ${isMine ? styles.reactionMine : styles.reactionTheirs}`}>
@@ -178,8 +193,45 @@ export default function MessagesPage({ role }) {
         <div ref={chatEndRef} />
       </div>
 
-      <form className={styles.inputArea} onSubmit={handleSend}>
-        <TextareaAutosize
+      <div style={{ position: 'relative' }}>
+        {isStickerDrawerOpen && (
+          <div className={`${styles.stickerDrawer} animate-slide-up`}>
+            <div className={styles.stickerTabs}>
+              {stickerPacks.map(pack => (
+                <button 
+                  key={pack.id}
+                  type="button"
+                  className={`${styles.stickerTab} ${activeStickerTab === pack.id ? styles.stickerTabActive : ''}`}
+                  onClick={() => setActiveStickerTab(pack.id)}
+                >
+                  {pack.name}
+                </button>
+              ))}
+            </div>
+            <div className={styles.stickerGrid}>
+              {stickerPacks.find(p => p.id === activeStickerTab)?.stickers.map((url, idx) => (
+                <img 
+                  key={idx} 
+                  src={url} 
+                  alt="Sticker" 
+                  className={styles.stickerItem} 
+                  onClick={() => handleSendSticker(url)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <form className={styles.inputArea} onSubmit={handleSend}>
+          <button 
+            type="button" 
+            className={styles.stickerBtn} 
+            onClick={() => setIsStickerDrawerOpen(!isStickerDrawerOpen)}
+          >
+            {isStickerDrawerOpen ? '⌨️' : '😀'}
+          </button>
+          
+          <TextareaAutosize
           className={styles.textInput}
           placeholder="Scrie un mesaj..."
           value={text}
@@ -196,6 +248,7 @@ export default function MessagesPage({ role }) {
           ➤
         </button>
       </form>
+      </div>
 
       {/* Meniu Reacții Overlay */}
       {selectedMessageId && (
@@ -216,6 +269,49 @@ export default function MessagesPage({ role }) {
               onClick={() => handleReactionSelect(null)}
             >
               ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profil Partener Modal */}
+      {showPartnerProfile && (
+        <div className={styles.partnerProfileOverlay} onClick={() => setShowPartnerProfile(false)}>
+          <div className={`${styles.partnerProfileModal} animate-scale-in`} onClick={e => e.stopPropagation()}>
+            <button className={styles.closeModalBtn} onClick={() => setShowPartnerProfile(false)}>✕</button>
+            <div className={styles.modalAvatarWrapper}>
+              <img 
+                src={partnerProfile?.avatarUrl || (role === 'his' ? DEFAULT_AVATAR_HER : DEFAULT_AVATAR_HIS)} 
+                alt={partnerName} 
+                className={styles.modalAvatar}
+              />
+            </div>
+            <h2 className={styles.modalName}>{partnerProfile?.name || partnerName}</h2>
+            {partnerProfile?.nickname && <p className={styles.modalNickname}>"{partnerProfile.nickname}"</p>}
+            
+            <div className={styles.modalDetails}>
+              {partnerProfile?.age && (
+                <div className={styles.modalDetailRow}>
+                  <span>🎂 Zi de naștere:</span>
+                  <strong>{new Date(partnerProfile.age).toLocaleDateString('ro-RO')}</strong>
+                </div>
+              )}
+              {partnerProfile?.favoriteColor && (
+                <div className={styles.modalDetailRow}>
+                  <span>🎨 Culoare preferată:</span>
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: partnerProfile.favoriteColor, border: '1px solid #ccc' }} />
+                </div>
+              )}
+            </div>
+
+            {partnerProfile?.bio && (
+              <div className={styles.modalBio}>
+                <p>"{partnerProfile.bio}"</p>
+              </div>
+            )}
+
+            <button className={styles.backFromModalBtn} onClick={() => setShowPartnerProfile(false)}>
+              Înapoi la chat
             </button>
           </div>
         </div>

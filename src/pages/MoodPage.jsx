@@ -198,7 +198,7 @@ function MoodTracker({ role }) {
               <label className={styles.noteLabel}>Spune-mi mai exact ce simți...</label>
               <input
                 type="text"
-                placeholder="Ex: Sunt foarte confuză..."
+                placeholder={role === 'her' ? "Ex: Sunt foarte confuză..." : "Ex: Sunt foarte confuz..."}
                 value={customMoodText}
                 onChange={e => setCustomMoodText(e.target.value)}
                 className={styles.noteTextarea}
@@ -224,7 +224,7 @@ function MoodTracker({ role }) {
           {/* Notă scurtă */}
           <div className={styles.noteSection}>
             <label className={styles.noteLabel} htmlFor="mood-note">
-              Adaugă un mesaj pentru el:
+              Adaugă un mesaj pentru {role === 'her' ? 'el' : 'ea'}:
             </label>
             <textarea
               id="mood-note"

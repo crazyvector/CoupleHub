@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 
 import { useAuth } from '../hooks/useAuth';
-import { useProfiles } from '../hooks/useDatabase';
+import { useProfiles, useAppVersion } from '../hooks/useDatabase';
 import styles from './ProfilePage.module.css';
 
 export default function ProfilePage({ role }) {
   const { logout, updatePassword } = useAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
+  const { latestVersion, downloadUrl, localVersion } = useAppVersion();
   
   const [passwordData, setPasswordData] = useState({ newPass: '', confirmPass: '' });
   const [isChangingPass, setIsChangingPass] = useState(false);
@@ -272,6 +273,24 @@ export default function ProfilePage({ role }) {
         <button className={styles.logoutBtn} onClick={logout}>
           Deconectare
         </button>
+      </div>
+
+      {/* Version Checker */}
+      <div style={{ textAlign: 'center', marginTop: '20px', paddingBottom: '30px', color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: '0.8rem', margin: 0 }}>Versiunea aplicației: <strong>{localVersion}</strong></p>
+        
+        {latestVersion && latestVersion !== localVersion && (
+          <div style={{ marginTop: '15px', background: '#FFF0F5', padding: '15px', borderRadius: '12px', border: '1px solid #FFB5C8' }}>
+            <p style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.9rem', margin: '0 0 10px 0' }}>
+              ⚠️ Este disponibilă o versiune nouă ({latestVersion})!
+            </p>
+            {downloadUrl && (
+              <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', padding: '10px 20px', background: 'var(--color-rose-dark)', color: 'white', borderRadius: '20px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                Descarcă Update-ul
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

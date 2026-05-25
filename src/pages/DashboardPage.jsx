@@ -111,17 +111,47 @@ export default function DashboardPage({ role }) {
     setIsWritingCompliment(false);
   };
 
-  // Următorul Eveniment
+  // Următorul Eveniment (cu suport pentru repetare)
   const nextEvent = useMemo(() => {
     if (!events.length) return null;
     const now = new Date();
     now.setHours(0,0,0,0);
-    const futureEvents = events.filter(e => new Date(e.date) >= now).sort((a, b) => new Date(a.date) - new Date(b.date));
-    return futureEvents.length > 0 ? futureEvents[0] : null;
+    
+    let upcoming = [];
+    events.forEach(e => {
+      let baseDate = new Date(e.date);
+      baseDate.setHours(0,0,0,0);
+      
+      let nextOccur = new Date(baseDate);
+      if (e.recurrence === 'yearly') {
+        nextOccur.setFullYear(now.getFullYear());
+        if (nextOccur < now) nextOccur.setFullYear(now.getFullYear() + 1);
+      } else if (e.recurrence === 'monthly') {
+        nextOccur.setFullYear(now.getFullYear());
+        nextOccur.setMonth(now.getMonth());
+        if (nextOccur < now) nextOccur.setMonth(now.getMonth() + 1);
+      } else if (e.recurrence === 'weekly') {
+        if (nextOccur < now) {
+          const diffTime = now.getTime() - nextOccur.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const weeksToAdd = Math.ceil(diffDays / 7);
+          nextOccur.setDate(nextOccur.getDate() + weeksToAdd * 7);
+        }
+      }
+      
+      if (nextOccur >= now) {
+        upcoming.push({ ...e, nextDate: nextOccur });
+      }
+    });
+    
+    upcoming.sort((a, b) => a.nextDate - b.nextDate);
+    return upcoming.length > 0 ? upcoming[0] : null;
   }, [events]);
 
-  const calculateDaysLeft = (dateString) => {
-    const diff = new Date(dateString) - new Date();
+  const calculateDaysLeft = (dateObj) => {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const diff = dateObj - now;
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
@@ -178,7 +208,7 @@ export default function DashboardPage({ role }) {
           {nextEvent ? (
             <div className={styles.nextEventPreview}>
               <h4 className={styles.nextEventName}>{nextEvent.name}</h4>
-              <span className={styles.nextEventDays}>{calculateDaysLeft(nextEvent.date)} zile</span>
+              <span className={styles.nextEventDays}>{calculateDaysLeft(nextEvent.nextDate)} zile</span>
             </div>
           ) : (
             <p className={styles.noEventsText}>Niciun eveniment programat.</p>
