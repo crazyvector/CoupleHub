@@ -1,0 +1,93 @@
+.container {
+  padding: 20px;
+  padding-top: 50px;
+  padding-bottom: 180px;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.backBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 15px;
+}
+
+.mediaCard {
+  background: var(--bg-card);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  position: relative;
+}
+.mediaCard:active {
+  transform: scale(0.95);
+}
+
+.poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+}
+
+.cardInfo {
+  padding: 10px;
+}
+
+.cardTitle {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+  gap: 15px;
+  color: var(--text-secondary);
+}
+
+.emptyState h2 {
+  color: var(--text-primary);
+  margin: 0;
+}

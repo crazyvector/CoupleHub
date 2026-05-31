@@ -647,6 +647,131 @@ export function useUnreadMessagesCount(role) {
 
   return count;
 }
+
+// ============== MOVIES PREFERENCES & SEARCH ==============
+export const saveMoviePreference = async (role, movie, preference) => {
+  try {
+    const prefRef = doc(db, 'movie_preferences', `${role}_${movie.id}`);
+    await setDoc(prefRef, {
+      role,
+      movieId: movie.id,
+      title: movie.title || movie.name,
+      poster_path: movie.poster_path,
+      genres: movie.genres || [],
+      preference,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error saving movie pref", error);
+  }
+};
+
+export const removeMoviePreference = async (role, movieId) => {
+  try {
+    const prefRef = doc(db, 'movie_preferences', `${role}_${movieId}`);
+    await deleteDoc(prefRef);
+  } catch (error) {
+    console.error("Error removing movie pref", error);
+  }
+};
+
+export function useWatchlistMovies(role) {
+  const [watchlistMovies, setWatchlistMovies] = useState([]);
+
+  useEffect(() => {
+    if (!role) return;
+    const q = query(
+      collection(db, 'movie_preferences'),
+      where('role', '==', role),
+      where('preference', '==', 'watchlist')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const movies = snap.docs.map(doc => ({
+        id: doc.data().movieId,
+        ...doc.data()
+      }));
+      // Sort by timestamp desc locally
+      movies.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setWatchlistMovies(movies);
+    });
+    return () => unsub();
+  }, [role]);
+
+  return watchlistMovies;
+}
+
+export function useMoviePreferences(role) {
+  const [likedGenres, setLikedGenres] = useState([]);
+
+  useEffect(() => {
+    if (!role) return;
+    const q = query(
+      collection(db, 'movie_preferences'),
+      where('role', '==', role),
+      where('preference', '==', 'like')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const allGenres = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.genres) {
+          data.genres.forEach(g => allGenres.push(g.id));
+        }
+      });
+      // Calculate top 3 genres
+      const counts = allGenres.reduce((acc, val) => {
+        acc[val] = (acc[val] || 0) + 1;
+        return acc;
+      }, {});
+      const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+      setLikedGenres(sorted.slice(0, 3));
+    });
+    return () => unsub();
+  }, [role]);
+
+  return likedGenres;
+}
+
+export function useMovieSearches(role) {
+  const [searches, setSearches] = useState([]);
+
+  useEffect(() => {
+    if (!role) return;
+    const ref = doc(db, 'system', `searches_${role}`);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setSearches(snap.data().history || []);
+      } else {
+        setSearches([]);
+      }
+    });
+    return () => unsub();
+  }, [role]);
+
+  const addSearch = async (queryStr) => {
+    if (!queryStr.trim()) return;
+    try {
+      const ref = doc(db, 'system', `searches_${role}`);
+      const snap = await getDoc(ref);
+      let history = snap.exists() ? snap.data().history || [] : [];
+      // Remove if exists to put it at the top
+      history = history.filter(s => s.toLowerCase() !== queryStr.toLowerCase());
+      history.unshift(queryStr);
+      if (history.length > 10) history = history.slice(0, 10); // Keep last 10
+      await setDoc(ref, { history });
+    } catch (e) { console.error(e); }
+  };
+
+  const removeSearch = async (queryStr) => {
+    try {
+      const ref = doc(db, 'system', `searches_${role}`);
+      const newHistory = searches.filter(s => s !== queryStr);
+      await setDoc(ref, { history: newHistory });
+    } catch (e) { console.error(e); }
+  };
+
+  return { searches, addSearch, removeSearch };
+}
 // Hook: Chat (Private Messages)
 // ==========================================
 export function useChat(role) {
@@ -758,7 +883,7 @@ export function useAppVersion() {
   // Ruleaza apoi: npm run build && npx cap sync
   // Pune in google drive noul .apk
   // Pune versiunea curenta in system.app_version in firebase
-  const localVersion = "1.0.8";
+  const localVersion = "1.0.9";
 
   useEffect(() => {
     const dRef = doc(db, 'system', 'app_version');

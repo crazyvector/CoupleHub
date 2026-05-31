@@ -11,15 +11,13 @@
 
 const SALT_KEY = 'coupleHub_diary_salt';
 
-// Obține sau creează salt-ul unic al dispozitivului
+// Obține salt-ul unic. 
+// A FOST MODIFICAT: Înainte folosea localStorage, dar pe Android/iOS (Capacitor) localStorage 
+// se poate goli între sesiuni, ducând la pierderea cheii de decriptare (bug-ul raportat).
+// Acum folosim un salt fix și determinist pentru a garanta decriptarea pe orice dispozitiv.
 function getOrCreateSalt() {
-  let saltHex = localStorage.getItem(SALT_KEY);
-  if (!saltHex) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
-    localStorage.setItem(SALT_KEY, saltHex);
-  }
-  return Uint8Array.from(saltHex.match(/.{2}/g).map(h => parseInt(h, 16)));
+  const fixedSaltHex = "c72b9698dfa1c3e57b98d2f10b7a4c9e"; // 16 bytes hex
+  return Uint8Array.from(fixedSaltHex.match(/.{2}/g).map(h => parseInt(h, 16)));
 }
 
 // Convertesc string → ArrayBuffer

@@ -105,8 +105,8 @@ export default function MessagesPage({ role }) {
   return (
     <div className={`${styles.page} animate-fade-in`}>
       <header className={styles.header}>
-        <button onClick={() => navigate(-1)} className={styles.backBtn} aria-label="Înapoi">
-          🔙
+        <button onClick={() => navigate(-1)} style={{background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', flexShrink: 0, padding: 0}} aria-label="Înapoi">
+          ←
         </button>
         <h1 className={styles.title} onClick={() => setShowPartnerProfile(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img 

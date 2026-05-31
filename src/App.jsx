@@ -22,6 +22,11 @@ const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
 const CalendarPage  = lazy(() => import('./pages/CalendarPage'));
 const MessagesPage  = lazy(() => import('./pages/MessagesPage'));
 const TodoPage      = lazy(() => import('./pages/TodoPage'));
+const MoviesPage = lazy(() => import('./pages/MoviesPage'));
+const CoupleMatchPage = lazy(() => import('./pages/CoupleMatchPage'));
+const LibraryPage = lazy(() => import('./pages/LibraryPage'));
+const RecommendedMoviesPage = lazy(() => import('./pages/RecommendedMoviesPage'));
+const CatalogPage = lazy(() => import('./pages/CatalogPage'));
 
 // Loading fallback
 function PageLoader() {
@@ -315,7 +320,12 @@ function MainApp({ role, getDiaryPassphrase }) {
             <Route path="/calendar" element={<CalendarPage role={role} />} />
             <Route path="/chat" element={<MessagesPage role={role} />} />
             <Route path="/todo" element={<TodoPage role={role} />} />
-            
+            <Route path="/movies" element={<MoviesPage role={role} />} />
+            <Route path="/movies/match" element={<CoupleMatchPage role={role} />} />
+            <Route path="/movies/library" element={<LibraryPage role={role} />} />
+            <Route path="/movies/recommended" element={<RecommendedMoviesPage role={role} />} />
+            <Route path="/movies/catalog" element={<CatalogPage role={role} />} />
+
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>
