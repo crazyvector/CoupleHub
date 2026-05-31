@@ -758,7 +758,7 @@ export function useAppVersion() {
   // Ruleaza apoi: npm run build && npx cap sync
   // Pune in google drive noul .apk
   // Pune versiunea curenta in system.app_version in firebase
-  const localVersion = "1.0.6";
+  const localVersion = "1.0.8";
 
   useEffect(() => {
     const dRef = doc(db, 'system', 'app_version');

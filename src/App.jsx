@@ -4,7 +4,6 @@ import { useAuth } from './hooks/useAuth';
 import BottomNav from './components/layout/BottomNav';
 import NotificationCenter from './components/NotificationCenter';
 import LoginPage from './pages/LoginPage';
-import AdminPage from './pages/AdminPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 import { query, collection, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
@@ -12,6 +11,7 @@ import { db } from './firebase';
 import { Capacitor } from '@capacitor/core';
 
 // Lazy loading
+const AdminPage     = lazy(() => import('./pages/AdminPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const CupoanePage = lazy(() => import('./pages/CupoanePage'));
 const MemoriesPage  = lazy(() => import('./pages/MemoriesPage'));
@@ -187,15 +187,15 @@ function ChatNotificationManager({ role }) {
     const q = query(
       collection(db, 'messages'),
       where('sender', '==', partnerRole),
-      where('read', '==', false),
-      orderBy('timestamp', 'desc'),
-      limit(1)
+      where('read', '==', false)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       if (!snapshot.empty) {
-        const newMsg = snapshot.docs[0].data();
-        const newMsgId = snapshot.docs[0].id;
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        docs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const newMsg = docs[0];
+        const newMsgId = newMsg.id;
         
         // Dacă e un mesaj nou pe care nu l-am notificat deja și NU suntem pe pagina de chat
         if (lastMessageId !== newMsgId && window.location.pathname !== '/chat') {
@@ -305,16 +305,16 @@ function MainApp({ role, getDiaryPassphrase }) {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/admin" element={<AdminPage />} />
             
-            <Route path="/" element={<ProtectedRoute><DashboardPage role={role} /></ProtectedRoute>} />
-            <Route path="/cupoane" element={<ProtectedRoute><CupoanePage role={role} /></ProtectedRoute>} />
-            <Route path="/memories" element={<ProtectedRoute><MemoriesPage role={role} /></ProtectedRoute>} />
-            <Route path="/games" element={<ProtectedRoute><GamesPage role={role} /></ProtectedRoute>} />
-            <Route path="/truth-dare" element={<ProtectedRoute><TruthDarePage role={role} /></ProtectedRoute>} />
-            <Route path="/mood" element={<ProtectedRoute><MoodPage role={role} /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage role={role} /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><CalendarPage role={role} /></ProtectedRoute>} />
-            <Route path="/chat" element={<ProtectedRoute><MessagesPage role={role} /></ProtectedRoute>} />
-            <Route path="/todo" element={<ProtectedRoute><TodoPage role={role} /></ProtectedRoute>} />
+            <Route path="/" element={<DashboardPage role={role} />} />
+            <Route path="/cupoane" element={<CupoanePage role={role} />} />
+            <Route path="/memories" element={<MemoriesPage role={role} />} />
+            <Route path="/games" element={<GamesPage role={role} />} />
+            <Route path="/truth-dare" element={<TruthDarePage role={role} />} />
+            <Route path="/mood" element={<MoodPage role={role} />} />
+            <Route path="/profile" element={<ProfilePage role={role} />} />
+            <Route path="/calendar" element={<CalendarPage role={role} />} />
+            <Route path="/chat" element={<MessagesPage role={role} />} />
+            <Route path="/todo" element={<TodoPage role={role} />} />
             
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

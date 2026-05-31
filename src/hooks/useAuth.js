@@ -144,5 +144,17 @@ export function useAuth() {
     }
   };
 
-  return { isAuthenticated, isAdmin, isHer, isHis, isLoading, login, logout, updatePassword, resetPassword, role, getDiaryPassphrase };
+  return {
+    isAuthenticated,
+    isAdmin,
+    isHer,
+    isHis,
+    isLoading,
+    login,
+    logout,
+    updatePassword,
+    resetPassword,
+    role,
+    getDiaryPassphrase
+  };
 }
