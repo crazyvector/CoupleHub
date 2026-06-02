@@ -8,57 +8,57 @@ const MUSIC_THEMES = [
     id: 'lofi',
     label: 'Study Lo-Fi',
     icon: '🎧',
-    workPlaylist: 'jfKfPfyJRdk', // lofi girl
-    breakPlaylist: 'rUxyKA_-grg',
+    workPlaylist: 'a5sdsbGKz8U', // Lofi Girl - lofi hip hop mix Part 1
+    breakPlaylist: 'lTRiuFIWV54', // Lofi Girl - 1am study session
   },
   {
     id: 'jazz',
     label: 'Slow Jazz',
     icon: '🎷',
-    workPlaylist: 'Dx5qFachd3A',
-    breakPlaylist: 'fEvM-OUbaKs',
+    workPlaylist: 'neV3EPgvZ3g', // Relaxing Jazz Piano
+    breakPlaylist: 'MYPVQccHhAQ', // Jazz in Autumn Coffee Shop
   },
   {
     id: 'starwars',
     label: 'Star Wars Lo-Fi',
     icon: '⚔️',
-    workPlaylist: 'ck4GCkMPifQ',
-    breakPlaylist: 'cGYyOY4jI_0',
+    workPlaylist: 'TLhMiNMcGJM', // Star Wars lofi beats
+    breakPlaylist: 'MFEG0GiScK8', // Star Wars ambient music
   },
   {
     id: 'dark',
     label: 'Dark Aesthetic',
     icon: '🖤',
-    workPlaylist: '4hOKk-cDzOw',
-    breakPlaylist: 'OsQsG-JYqXw',
+    workPlaylist: 'S_MOd40zlYU', // Dark Academia study playlist
+    breakPlaylist: 'qYnA9wWFHLI', // Dark ambient music
   },
   {
     id: 'classical',
     label: 'Classical Focus',
     icon: '🎻',
-    workPlaylist: 'jgpJVI3tDbY',
-    breakPlaylist: 'JKriGqH7208',
+    workPlaylist: 'mIYzp5rcTvU', // Classical Music for Studying
+    breakPlaylist: 'HSOtku1j600', // Debussy, Chopin, Liszt relaxing
   },
   {
     id: 'rain',
     label: 'Rain & Nature',
     icon: '🌧️',
-    workPlaylist: 'HEP0IEMIz0M',
-    breakPlaylist: 'HEP0IEMIz0M',
+    workPlaylist: 'q76bMs-NwRk', // Rain sounds for studying
+    breakPlaylist: 'jX6kn9_U8qk', // Forest sounds relaxation
   },
   {
     id: 'anime',
     label: 'Anime Lo-Fi',
     icon: '🌸',
-    workPlaylist: 'WDXPJWIgX-o',
-    breakPlaylist: 'v4VE5WjNuMA',
+    workPlaylist: 'tqBbo9pQJdI', // Studio Ghibli jazz hiphop
+    breakPlaylist: '3jWRrafhO7M', // Ghibli relaxing piano
   },
   {
     id: 'coffee',
     label: 'Coffee Shop',
     icon: '☕',
-    workPlaylist: 'h2zkV-l_TbY',
-    breakPlaylist: 'RUogeaUOljA',
+    workPlaylist: 'h2zkV-l_TbY', // Coffee Shop Ambience
+    breakPlaylist: 'c0_ejQQcrwI', // Cafe jazz relax
   },
 ];
 
@@ -302,9 +302,10 @@ export default function StudyLobbyPage({ role }) {
             {isMusicPlaying && (
               <div className={styles.youtubeEmbed}>
                 <iframe
+                  key={`${selectedMusic.id}-${timerMode}`}
                   width="100%"
                   height="60"
-                  src={`https://www.youtube.com/embed/${currentVideoId}?autoplay=1&loop=1`}
+                  src={`https://www.youtube.com/embed/${currentVideoId}?autoplay=1&loop=1&playlist=${currentVideoId}`}
                   title="Study Music"
                   frameBorder="0"
                   allow="autoplay; encrypted-media"
