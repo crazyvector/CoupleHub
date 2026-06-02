@@ -4,6 +4,7 @@ import styles from './BottomNav.module.css';
 
 const navItems = [
   { to: '/',         icon: '🏠', label: 'Acasă',    id: 'nav-home' },
+  { to: '/study',    icon: '📚', label: 'Studiu',   id: 'nav-study' },
   { to: '/chat',     icon: '💬', label: 'Mesaje',   id: 'nav-chat' },
   { to: '/cupoane',  icon: '🎟️', label: 'Cupoane',  id: 'nav-coupons' },
   { to: '/movies',   icon: '🍿', label: 'Filme',    id: 'nav-movies' },

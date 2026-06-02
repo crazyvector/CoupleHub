@@ -28,6 +28,7 @@ const LibraryPage = lazy(() => import('./pages/LibraryPage'));
 const RecommendedMoviesPage = lazy(() => import('./pages/RecommendedMoviesPage'));
 const CatalogPage = lazy(() => import('./pages/CatalogPage'));
 const HomePlannerPage = lazy(() => import('./pages/HomePlannerPage'));
+const StudyLobbyPage = lazy(() => import('./pages/StudyLobbyPage'));
 
 // Loading fallback
 function PageLoader() {
@@ -327,6 +328,7 @@ function MainApp({ role, getDiaryPassphrase }) {
             <Route path="/movies/recommended" element={<RecommendedMoviesPage role={role} />} />
             <Route path="/movies/catalog" element={<CatalogPage role={role} />} />
             <Route path="/home-planner" element={<HomePlannerPage role={role} />} />
+            <Route path="/study" element={<StudyLobbyPage role={role} />} />
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

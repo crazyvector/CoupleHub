@@ -1,0 +1,278 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  collection,
+  doc,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp
+} from 'firebase/firestore';
+import { db } from '../firebase';
+
+const STUDY_LOBBY_DOC = 'study_lobby';
+const STUDY_TASKS_COL = 'study_tasks';
+
+const WORK_DURATION = 50 * 60; // 50 minutes in seconds
+const BREAK_DURATION = 10 * 60; // 10 minutes in seconds
+
+const BONSAI_STAGES = [
+  { id: 'seed',      label: 'Sămânță',           minXP: 0,    emoji: '🌱' },
+  { id: 'sprout',    label: 'Vlăstar',            minXP: 51,   emoji: '🌿' },
+  { id: 'bush',      label: 'Arbust',             minXP: 201,  emoji: '🪴' },
+  { id: 'tree',      label: 'Copac',              minXP: 501,  emoji: '🌲' },
+  { id: 'blossom',   label: 'Bonsai Înflorit',    minXP: 1001, emoji: '🌸' },
+  { id: 'legendary', label: 'Bonsai Legendar',    minXP: 2001, emoji: '✨' },
+];
+
+function getBonsaiStage(xp) {
+  let stage = BONSAI_STAGES[0];
+  for (const s of BONSAI_STAGES) {
+    if (xp >= s.minXP) stage = s;
+  }
+  return stage;
+}
+
+function getNextStage(xp) {
+  for (const s of BONSAI_STAGES) {
+    if (xp < s.minXP) return s;
+  }
+  return null; // Max stage
+}
+
+// ==========================================
+// Hook: Study Lobby (Bonsai + Timer + Presence)
+// ==========================================
+export function useStudyLobby(role) {
+  const [lobbyData, setLobbyData] = useState({
+    bonsaiXP: 0,
+    bonsaiStage: 'seed',
+    sessionsCompleted: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Timer state (local per user, not synced)
+  const [timerSeconds, setTimerSeconds] = useState(WORK_DURATION);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timerMode, setTimerMode] = useState('work'); // 'work' or 'break'
+  const timerRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const pausedSecondsRef = useRef(WORK_DURATION);
+
+  // Presence
+  const [presence, setPresence] = useState({ his: null, her: null });
+
+  // Listen to lobby document
+  useEffect(() => {
+    const docRef = doc(db, STUDY_LOBBY_DOC, 'shared');
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setLobbyData(snapshot.data());
+      } else {
+        // Initialize if doesn't exist
+        setDoc(docRef, {
+          bonsaiXP: 0,
+          bonsaiStage: 'seed',
+          sessionsCompleted: 0,
+        });
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to presence
+  useEffect(() => {
+    const presRef = doc(db, STUDY_LOBBY_DOC, 'presence');
+    const unsubscribe = onSnapshot(presRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPresence(snapshot.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Heartbeat presence (every 30s)
+  useEffect(() => {
+    if (!role) return;
+
+    const updatePresence = async (online) => {
+      const presRef = doc(db, STUDY_LOBBY_DOC, 'presence');
+      await setDoc(presRef, {
+        [role]: {
+          online,
+          lastSeen: Date.now(),
+          currentTask: null,
+        }
+      }, { merge: true });
+    };
+
+    updatePresence(true);
+    const interval = setInterval(() => updatePresence(true), 30000);
+
+    // On unmount, set offline
+    return () => {
+      clearInterval(interval);
+      updatePresence(false);
+    };
+  }, [role]);
+
+  // Timer tick using wall-clock time for accuracy
+  useEffect(() => {
+    if (isRunning) {
+      startTimeRef.current = Date.now();
+      pausedSecondsRef.current = timerSeconds;
+
+      timerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        const remaining = pausedSecondsRef.current - elapsed;
+
+        if (remaining <= 0) {
+          clearInterval(timerRef.current);
+          setTimerSeconds(0);
+          setIsRunning(false);
+          handleTimerComplete();
+        } else {
+          setTimerSeconds(remaining);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isRunning, timerMode]);
+
+  const handleTimerComplete = async () => {
+    if (timerMode === 'work') {
+      // Work session completed → add XP
+      const partnerRole = role === 'his' ? 'her' : 'his';
+      const partnerOnline = presence[partnerRole]?.online &&
+        (Date.now() - (presence[partnerRole]?.lastSeen || 0)) < 60000;
+      const xpGain = partnerOnline ? 15 : 10;
+
+      const lobbyRef = doc(db, STUDY_LOBBY_DOC, 'shared');
+      const newXP = (lobbyData.bonsaiXP || 0) + xpGain;
+      const newStage = getBonsaiStage(newXP);
+
+      await updateDoc(lobbyRef, {
+        bonsaiXP: newXP,
+        bonsaiStage: newStage.id,
+        sessionsCompleted: (lobbyData.sessionsCompleted || 0) + 1,
+      });
+
+      // Switch to break
+      setTimerMode('break');
+      setTimerSeconds(BREAK_DURATION);
+    } else {
+      // Break completed → back to work
+      setTimerMode('work');
+      setTimerSeconds(WORK_DURATION);
+    }
+  };
+
+  const startTimer = () => setIsRunning(true);
+  const pauseTimer = () => setIsRunning(false);
+  const resetTimer = () => {
+    setIsRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setTimerMode('work');
+    setTimerSeconds(WORK_DURATION);
+  };
+
+  const skipToBreak = () => {
+    setIsRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setTimerMode('break');
+    setTimerSeconds(BREAK_DURATION);
+  };
+
+  const skipToWork = () => {
+    setIsRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setTimerMode('work');
+    setTimerSeconds(WORK_DURATION);
+  };
+
+  // Update current task in presence
+  const setCurrentTask = async (taskTitle) => {
+    const presRef = doc(db, STUDY_LOBBY_DOC, 'presence');
+    await setDoc(presRef, {
+      [role]: {
+        online: true,
+        lastSeen: Date.now(),
+        currentTask: taskTitle || null,
+      }
+    }, { merge: true });
+  };
+
+  const currentStage = getBonsaiStage(lobbyData.bonsaiXP || 0);
+  const nextStage = getNextStage(lobbyData.bonsaiXP || 0);
+
+  return {
+    // Bonsai
+    bonsaiXP: lobbyData.bonsaiXP || 0,
+    bonsaiStage: currentStage,
+    nextStage,
+    sessionsCompleted: lobbyData.sessionsCompleted || 0,
+    bonsaiStages: BONSAI_STAGES,
+
+    // Timer
+    timerSeconds,
+    isRunning,
+    timerMode,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    skipToBreak,
+    skipToWork,
+    WORK_DURATION,
+    BREAK_DURATION,
+
+    // Presence
+    presence,
+    setCurrentTask,
+
+    loading,
+  };
+}
+
+// ==========================================
+// Hook: Study Tasks
+// ==========================================
+export function useStudyTasks() {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, STUDY_TASKS_COL), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const addTask = async (taskData) => {
+    await addDoc(collection(db, STUDY_TASKS_COL), {
+      ...taskData,
+      createdAt: serverTimestamp(),
+    });
+  };
+
+  const updateTask = async (id, data) => {
+    await updateDoc(doc(db, STUDY_TASKS_COL, id), data);
+  };
+
+  const deleteTask = async (id) => {
+    await deleteDoc(doc(db, STUDY_TASKS_COL, id));
+  };
+
+  return { tasks, addTask, updateTask, deleteTask, loading };
+}
+
+export { BONSAI_STAGES, getBonsaiStage, getNextStage };

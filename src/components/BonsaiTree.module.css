@@ -1,0 +1,341 @@
+/* ===================================
+   BonsaiTree.module.css
+   CSS-art bonsai with stages
+   =================================== */
+
+.bonsaiContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.bonsai {
+  position: relative;
+  width: 180px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* === POT === */
+.pot {
+  position: relative;
+  z-index: 3;
+}
+
+.potTop {
+  width: 90px;
+  height: 10px;
+  background: linear-gradient(135deg, #8B5E3C, #A0704A);
+  border-radius: 3px 3px 0 0;
+  margin: 0 auto;
+}
+
+.potBody {
+  width: 78px;
+  height: 35px;
+  background: linear-gradient(180deg, #A0704A, #6D3E1F);
+  border-radius: 0 0 8px 8px;
+  margin: 0 auto;
+}
+
+.soil {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 74px;
+  height: 10px;
+  background: #3E2723;
+  border-radius: 50%;
+}
+
+/* === TRUNK === */
+.trunk {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  background: linear-gradient(180deg, #5D4037, #795548);
+  border-radius: 4px 4px 0 0;
+  z-index: 2;
+  transition: height 0.6s ease;
+}
+
+.sprout .trunk { height: 35px; width: 6px; }
+.bush .trunk { height: 55px; width: 10px; }
+.tree .trunk { height: 75px; width: 12px; }
+.blossom .trunk { height: 75px; width: 12px; }
+.legendary .trunk { height: 80px; width: 14px; background: linear-gradient(180deg, #8D6E63, #A1887F); }
+
+/* === BRANCHES === */
+.branch {
+  position: absolute;
+  background: #5D4037;
+  border-radius: 3px;
+  z-index: 1;
+}
+
+.branchLeft {
+  width: 30px;
+  height: 6px;
+  top: 30%;
+  left: -28px;
+  transform: rotate(-25deg);
+}
+
+.branchRight {
+  width: 35px;
+  height: 6px;
+  top: 25%;
+  right: -32px;
+  transform: rotate(20deg);
+}
+
+.branchLeftHigh {
+  width: 22px;
+  height: 5px;
+  top: 10%;
+  left: -18px;
+  transform: rotate(-35deg);
+}
+
+.branchRightHigh {
+  width: 25px;
+  height: 5px;
+  top: 5%;
+  right: -22px;
+  transform: rotate(30deg);
+}
+
+/* === SEED === */
+.seedling {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.seedDot {
+  width: 12px;
+  height: 14px;
+  background: #4CAF50;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: seedBounce 2s ease-in-out infinite;
+}
+
+@keyframes seedBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* === SPROUT LEAVES === */
+.sproutLeaves {
+  position: absolute;
+  bottom: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.leaf {
+  position: absolute;
+  width: 18px;
+  height: 10px;
+  background: #66BB6A;
+  border-radius: 50% 0 50% 0;
+  animation: leafSway 3s ease-in-out infinite;
+}
+
+.leaf1 { top: -8px; left: -12px; transform: rotate(-30deg); }
+.leaf2 { top: -14px; left: -3px; transform: rotate(10deg); }
+.leaf3 { top: -6px; left: 5px; transform: rotate(40deg); animation-delay: 0.5s; }
+
+@keyframes leafSway {
+  0%, 100% { transform: rotate(var(--base-rotation, 0deg)); }
+  50% { transform: rotate(calc(var(--base-rotation, 0deg) + 5deg)); }
+}
+
+/* === BUSH CROWN === */
+.bushCrown {
+  position: absolute;
+  bottom: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.crownCircle {
+  border-radius: 50%;
+  transition: all 0.6s ease;
+}
+
+.bushCrown .crownCircle {
+  width: 60px;
+  height: 50px;
+  background: radial-gradient(circle at 40% 40%, #81C784, #388E3C);
+  animation: crownSway 4s ease-in-out infinite;
+}
+
+@keyframes crownSway {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(1deg) scale(1.01); }
+  75% { transform: rotate(-1deg) scale(0.99); }
+}
+
+/* === TREE CROWN === */
+.treeCrown,
+.blossomCrown,
+.legendaryCrown {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.crownMain {
+  width: 70px;
+  height: 55px;
+  background: radial-gradient(circle at 40% 40%, #81C784, #2E7D32);
+  animation: crownSway 4s ease-in-out infinite;
+}
+
+.crownLeft {
+  position: absolute;
+  width: 45px;
+  height: 40px;
+  background: radial-gradient(circle at 40% 40%, #A5D6A7, #43A047);
+  top: 10px;
+  left: -30px;
+  animation: crownSway 3.5s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.crownRight {
+  position: absolute;
+  width: 50px;
+  height: 42px;
+  background: radial-gradient(circle at 40% 40%, #A5D6A7, #43A047);
+  top: 5px;
+  right: -35px;
+  animation: crownSway 3.8s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+/* === BLOSSOM (PINK) === */
+.pink {
+  background: radial-gradient(circle at 40% 40%, #F8BBD0, #E91E63) !important;
+}
+
+.pink.crownLeft {
+  background: radial-gradient(circle at 40% 40%, #FCE4EC, #F06292) !important;
+}
+
+.pink.crownRight {
+  background: radial-gradient(circle at 40% 40%, #FCE4EC, #EC407A) !important;
+}
+
+/* Falling petals */
+.petals {
+  position: absolute;
+  top: 0;
+  left: -20px;
+  width: 120px;
+  height: 120px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.petal {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  background: #F8BBD0;
+  border-radius: 50% 0 50% 0;
+  opacity: 0.8;
+  animation: petalFall linear infinite;
+}
+
+@keyframes petalFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+  100% { transform: translateY(140px) rotate(360deg); opacity: 0; }
+}
+
+/* === LEGENDARY (GOLDEN) === */
+.golden {
+  background: radial-gradient(circle at 40% 40%, #FFE082, #FF8F00) !important;
+  box-shadow: 0 0 20px rgba(255, 183, 0, 0.4);
+}
+
+.golden.crownLeft {
+  background: radial-gradient(circle at 40% 40%, #FFF8E1, #FFC107) !important;
+}
+
+.golden.crownRight {
+  background: radial-gradient(circle at 40% 40%, #FFF8E1, #FFB300) !important;
+}
+
+.sparkles {
+  position: absolute;
+  top: -20px;
+  left: -30px;
+  width: 140px;
+  height: 100px;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #FFD54F;
+  border-radius: 50%;
+  animation: sparkleGlow 2s ease-in-out infinite;
+  box-shadow: 0 0 6px #FFD54F;
+}
+
+@keyframes sparkleGlow {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* === XP SECTION === */
+.xpSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 160px;
+}
+
+.xpBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.xpFill {
+  height: 100%;
+  background: linear-gradient(90deg, #66BB6A, #43A047);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.blossom ~ .xpSection .xpFill,
+.blossomCrown ~ .xpSection .xpFill {
+  background: linear-gradient(90deg, #F48FB1, #E91E63);
+}
+
+.xpLabel {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
