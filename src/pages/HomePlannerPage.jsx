@@ -43,6 +43,7 @@ export default function HomePlannerPage({ role }) {
   // Swipe State
   const [swipeCategory, setSwipeCategory] = useState(null);
   const [customSearch, setCustomSearch] = useState('');
+  const [globalSearch, setGlobalSearch] = useState('');
   const [cards, setCards] = useState([]);
   const [swipeLoading, setSwipeLoading] = useState(false);
   const [isPlanB, setIsPlanB] = useState(false);
@@ -334,30 +335,104 @@ export default function HomePlannerPage({ role }) {
         <div className={styles.statsCard}>
           <h3>Proiectul Nostru 🏠</h3>
           <p>Total idei salvate: {items.length}</p>
-          <p>Link-uri adăugate de voi: {items.filter(i => !i.unsplashId).length} 🔗</p>
+          <p>Idei/Link-uri adăugate de voi: {items.filter(i => !i.unsplashId).length} 🔗</p>
           <p>Super Matches: {getMatches().length} 🌟</p>
           <p style={{ fontSize: '0.85rem', marginTop: '10px', opacity: 0.9 }}>
             💰 Cost estimativ cumulat: ~{calculateTotal(items)} RON
           </p>
         </div>
 
-        <h3 className={styles.sectionTitle}>Camere</h3>
-        <div className={styles.roomsGrid}>
-          {ROOMS.map(room => {
-            const roomItems = getRoomItems(room.id);
-            const count = roomItems.length;
-            const roomTotal = calculateTotal(roomItems);
-            return (
-              <div key={room.id} className={styles.roomFolder} onClick={() => handleOpenRoom(room.id)}>
-                <div className={styles.folderIcon}>{room.icon}</div>
-                <div className={styles.folderName}>{room.label}</div>
-                <div className={styles.folderCount}>
-                  {count} idei {roomTotal > 0 && `| ~${roomTotal} lei`}
-                </div>
-              </div>
-            );
-          })}
+        <div className={styles.dashboardSearch}>
+          <div className={styles.searchBar}>
+            <span>🔍</span>
+            <input 
+              type="text" 
+              placeholder="Caută în ideile salvate (după titlu, tag sau link)..." 
+              value={globalSearch}
+              onChange={e => setGlobalSearch(e.target.value)}
+              className={styles.searchInput}
+            />
+            {globalSearch && (
+              <button className={styles.clearSearchBtn} onClick={() => setGlobalSearch('')}>✕</button>
+            )}
+          </div>
         </div>
+
+        {!globalSearch ? (
+          <>
+            <h3 className={styles.sectionTitle}>Camere</h3>
+            <div className={styles.roomsGrid}>
+              {ROOMS.map(room => {
+                const roomItems = getRoomItems(room.id);
+                const itemsAdded = roomItems.filter(i => !i.unsplashId);
+                const count = itemsAdded.length;
+                const roomTotal = calculateTotal(roomItems); // Keep calculation on all in case they ever get prices, though usually only links have them
+                return (
+                  <div key={room.id} className={styles.roomFolder} onClick={() => handleOpenRoom(room.id)}>
+                    <div className={styles.folderIcon}>{room.icon}</div>
+                    <div className={styles.folderName}>{room.label}</div>
+                    <div className={styles.folderCount}>
+                      {count} {count === 1 ? 'element' : 'elemente'} {roomTotal > 0 && `| ~${roomTotal} lei`}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className={styles.searchResults}>
+            <h3 className={styles.sectionTitle}>Rezultate Căutare</h3>
+            {(() => {
+              const query = globalSearch.toLowerCase();
+              const results = items.filter(i => 
+                (i.title && i.title.toLowerCase().includes(query)) ||
+                (i.tags && i.tags.some(t => t.toLowerCase().includes(query))) ||
+                (i.link && i.link.toLowerCase().includes(query))
+              );
+              
+              if (results.length === 0) {
+                return <div className={styles.emptyState}>Nu am găsit nicio idee pentru "{globalSearch}"</div>;
+              }
+
+              return (
+                <div className={styles.itemsGrid}>
+                  {results.map(item => {
+                    const hasMyLike = item.likes?.[role] === true;
+                    const hasMyDislike = item.likes?.[role] === false;
+                    const partnerRole = role === 'his' ? 'her' : 'his';
+                    const partnerLike = item.likes?.[partnerRole];
+                    const isMatch = hasMyLike && partnerLike === true;
+                    const roomLabel = ROOMS.find(r => r.id === item.room)?.label || item.room;
+
+                    return (
+                      <div key={item.id} className={`${styles.itemCard} ${isMatch ? styles.matchCard : ''}`} onClick={() => setSelectedItem(item)}>
+                        {isMatch && <div className={styles.matchBadge}>🌟 Match</div>}
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.title} className={styles.itemImg} />
+                        ) : (
+                          <div className={styles.itemNoImg}>
+                            {item.link ? '🔗 Link' : '🔗 Fără Poză'}
+                          </div>
+                        )}
+                        <div className={styles.itemInfo}>
+                          <p className={styles.itemTitle}>{item.title}</p>
+                          <span className={styles.searchRoomTag}>📂 {roomLabel}</span>
+                          <div className={styles.itemMeta}>
+                            <span className={styles.chatIcon}>💬 {item.comments?.length || 0}</span>
+                            <div className={styles.likesIndicators}>
+                              {hasMyLike && <span>✅</span>}
+                              {hasMyDislike && <span>❌</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
     );
   };

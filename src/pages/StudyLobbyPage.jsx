@@ -8,73 +8,65 @@ const MUSIC_THEMES = [
     id: 'lofi',
     label: 'Study Lo-Fi',
     icon: '🎧',
-    workQuery: 'lofi hip hop beats to study to mix',
-    breakQuery: 'chill lofi relax beats',
-    workPlaylistId: 'PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM',
-    breakPlaylistId: 'PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM',
+    workQuery: 'lofi hip hop study',
+    breakQuery: 'chill lofi relax',
+    streamUrl: 'https://0nlineradio.radioho.st/0r-lo-fi?ref=radio-browser',
   },
   {
     id: 'jazz',
     label: 'Slow Jazz',
     icon: '🎷',
-    workQuery: 'jazz cafe study music instrumental long',
-    breakQuery: 'smooth jazz relaxing coffee shop',
-    workPlaylistId: 'PLMIbmfP_9vb8BCxRoraJpoo4q1yMFg4CE',
-    breakPlaylistId: 'PLMIbmfP_9vb8BCxRoraJpoo4q1yMFg4CE',
+    workQuery: 'jazz cafe study',
+    breakQuery: 'smooth jazz relaxing',
+    streamUrl: 'https://icecast.walmradio.com:8443/jazz',
   },
   {
     id: 'starwars',
-    label: 'Star Wars Lo-Fi',
+    label: 'Epic Soundtracks',
     icon: '⚔️',
-    workQuery: 'star wars lofi hip hop mix study',
-    breakQuery: 'star wars ambient relaxing music',
-    workPlaylistId: 'PLvOlSehNtuHu1gJnyMBR1NiERgqGYKxgZ',
-    breakPlaylistId: 'PLvOlSehNtuHu1gJnyMBR1NiERgqGYKxgZ',
+    workQuery: 'epic cinematic music',
+    breakQuery: 'ambient epic music',
+    streamUrl: 'https://streaming.radio.co/s6c43c162f/listen', // Epic Cinematic Radio
   },
   {
     id: 'dark',
     label: 'Dark Aesthetic',
     icon: '🖤',
-    workQuery: 'dark academia study playlist classical piano',
-    breakQuery: 'dark ambient relaxing music reading',
-    workPlaylistId: 'PLYMEBbFSIGHTcsX-60wShIugVuqUxiPKH',
-    breakPlaylistId: 'PLYMEBbFSIGHTcsX-60wShIugVuqUxiPKH',
+    workQuery: 'dark ambient relaxing',
+    breakQuery: 'dark aesthetic relaxing',
+    streamUrl: 'https://air.radioart.online/fCello_for_sleep.mp3',
   },
   {
     id: 'classical',
     label: 'Classical Focus',
     icon: '🎻',
-    workQuery: 'classical music for studying and concentration 3 hours',
-    breakQuery: 'relaxing classical piano debussy chopin',
-    workPlaylistId: 'PLLHjKDt15hkhiG0k1sP6EFNu2JXKvVNP2',
-    breakPlaylistId: 'PLLHjKDt15hkhiG0k1sP6EFNu2JXKvVNP2',
+    workQuery: 'classical music study',
+    breakQuery: 'relaxing classical piano',
+    streamUrl: 'https://az1.mediacp.eu/listen/100greatestclassicalmusic/radio.mp3',
   },
   {
     id: 'rain',
     label: 'Rain & Nature',
     icon: '🌧️',
-    workQuery: 'rain sounds for studying 3 hours focus',
-    breakQuery: 'forest nature sounds birds relaxation',
-    workPlaylistId: 'PLQ_PIlf6OzqIFMdCAjBPToa-LGlTrJIZz',
-    breakPlaylistId: 'PLQ_PIlf6OzqIFMdCAjBPToa-LGlTrJIZz',
+    workQuery: 'rain sounds focus',
+    breakQuery: 'forest nature sounds',
+    streamUrl: 'https://streaming.radio.co/s5c5da686f/listen', // Nature Sounds
   },
   {
     id: 'anime',
     label: 'Anime Lo-Fi',
     icon: '🌸',
-    workQuery: 'studio ghibli lofi jazz hip hop relaxing mix',
-    breakQuery: 'ghibli relaxing piano music collection',
-    workPlaylistId: 'PLsVhf9rCIFOEFpKdZQWcQ_yKHjEmQaPc4',
-    breakPlaylistId: 'PLsVhf9rCIFOEFpKdZQWcQ_yKHjEmQaPc4',
+    workQuery: 'asian lofi piano',
+    breakQuery: 'relaxing anime piano',
+    streamUrl: 'https://listen.moe/stream', // Listen Moe
   },
   {
     id: 'coffee',
     label: 'Coffee Shop',
     icon: '☕',
-    workQuery: 'coffee shop ambience jazz music study 3 hours',
-    breakQuery: 'cozy cafe jazz relaxing music',
-    workPlaylistId: 'PL6NdkXsPL07KiewBDpJC1R5UBjidIFhCiJ',
-    breakPlaylistId: 'PL6NdkXsPL07KiewBDpJC1R5UBjidIFhCiJ',
+    workQuery: 'coffee shop jazz',
+    breakQuery: 'cozy cafe jazz',
+    streamUrl: 'https://0nlineradio.radioho.st/lounge-piano-jazz-bar?ref=radio-browser',
   },
 ];
 
@@ -97,6 +89,7 @@ export default function StudyLobbyPage({ role }) {
   const { tasks, addTask, updateTask, deleteTask, loading: tasksLoading } = useStudyTasks();
 
   const [selectedMusic, setSelectedMusic] = useState(MUSIC_THEMES[0]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -314,22 +307,30 @@ export default function StudyLobbyPage({ role }) {
               </div>
             )}
 
-            {/* YouTube Music */}
+            {/* Direct Web Stream Audio Player */}
             {isMusicPlaying && (
-              <div className={styles.youtubeEmbed}>
-                <iframe
-                  key={`${selectedMusic.id}-${timerMode}`}
-                  width="100%"
-                  height="300"
-                  src={`https://www.youtube.com/embed/videoseries?list=${
-                    timerMode === 'work' ? selectedMusic.workPlaylistId : selectedMusic.breakPlaylistId
-                  }&autoplay=1&loop=1`}
-                  title="Study Music"
-                  frameBorder="0"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  style={{ borderRadius: '12px' }}
-                ></iframe>
+              <div className={styles.customAudioPlayer}>
+                <div className={styles.vinylWrapper}>
+                  <div className={`${styles.vinyl} ${styles.spinning}`}>
+                    <span className={styles.vinylCenter}>{selectedMusic.icon}</span>
+                  </div>
+                </div>
+                <div className={styles.audioControls}>
+                  <div className={styles.nowPlayingInfo}>
+                    <strong>{selectedMusic.label}</strong>
+                    <span>Live Stream</span>
+                  </div>
+                  <audio
+                    key={selectedMusic.id} // Reload when theme changes
+                    src={selectedMusic.streamUrl}
+                    autoPlay
+                    controls
+                    controlsList="nodownload noplaybackrate"
+                    className={styles.nativeAudio}
+                  >
+                    Browserul nu suportă elementul audio.
+                  </audio>
+                </div>
               </div>
             )}
 
@@ -341,7 +342,7 @@ export default function StudyLobbyPage({ role }) {
                 window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
               }}
             >
-              ▶️ Deschide pe YouTube
+              ▶️ Caută pe YouTube
             </button>
           </div>
         </div>

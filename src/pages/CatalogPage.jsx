@@ -81,22 +81,37 @@ export default function CatalogPage({ role }) {
     closeDetails();
   };
 
-  const renderMediaCard = (media) => (
-    <div key={media.id} className={styles.mediaCard} onClick={() => openDetails(media)}>
-      <div className={styles.posterContainer}>
-        <img src={getImageUrl(media.poster_path)} alt={media.title || media.name} className={styles.poster} loading="lazy" />
-        <div className={styles.ratingBadge}>
-          ⭐ {media.vote_average?.toFixed(1)}
+  const renderMediaCard = (media) => {
+    const isLiked = likedIds.includes(media.id);
+    const isWatchlisted = watchlistMovies.some(m => m.id === media.id);
+
+    return (
+      <div key={media.id} className={styles.mediaCard} onClick={() => openDetails(media)}>
+        <div className={styles.posterContainer}>
+          <img src={getImageUrl(media.poster_path)} alt={media.title || media.name} className={styles.poster} loading="lazy" />
+          <div className={styles.ratingBadge}>
+            ⭐ {media.vote_average?.toFixed(1)}
+          </div>
+          {isLiked && (
+            <div className={`${styles.actionBadge} ${styles.likedBadge}`} title="Îți place">
+              ❤️
+            </div>
+          )}
+          {!isLiked && isWatchlisted && (
+            <div className={`${styles.actionBadge} ${styles.watchlistBadge}`} title="În Lista Ta">
+              ✅
+            </div>
+          )}
+        </div>
+        <div className={styles.cardInfo}>
+          <span className={styles.mediaTitle}>{media.title || media.name}</span>
+          <span className={styles.mediaYear}>
+            {(media.release_date || media.first_air_date || '').split('-')[0]}
+          </span>
         </div>
       </div>
-      <div className={styles.cardInfo}>
-        <span className={styles.mediaTitle}>{media.title || media.name}</span>
-        <span className={styles.mediaYear}>
-          {(media.release_date || media.first_air_date || '').split('-')[0]}
-        </span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const activeGenres = activeTab === 'movie' ? MOVIE_GENRES : TV_GENRES;
 
