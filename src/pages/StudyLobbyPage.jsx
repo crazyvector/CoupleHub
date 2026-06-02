@@ -8,57 +8,73 @@ const MUSIC_THEMES = [
     id: 'lofi',
     label: 'Study Lo-Fi',
     icon: '🎧',
-    workPlaylist: 'a5sdsbGKz8U', // Lofi Girl - lofi hip hop mix Part 1
-    breakPlaylist: 'lTRiuFIWV54', // Lofi Girl - 1am study session
+    workQuery: 'lofi hip hop beats to study to mix',
+    breakQuery: 'chill lofi relax beats',
+    workPlaylistId: 'PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM',
+    breakPlaylistId: 'PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM',
   },
   {
     id: 'jazz',
     label: 'Slow Jazz',
     icon: '🎷',
-    workPlaylist: 'neV3EPgvZ3g', // Relaxing Jazz Piano
-    breakPlaylist: 'MYPVQccHhAQ', // Jazz in Autumn Coffee Shop
+    workQuery: 'jazz cafe study music instrumental long',
+    breakQuery: 'smooth jazz relaxing coffee shop',
+    workPlaylistId: 'PLMIbmfP_9vb8BCxRoraJpoo4q1yMFg4CE',
+    breakPlaylistId: 'PLMIbmfP_9vb8BCxRoraJpoo4q1yMFg4CE',
   },
   {
     id: 'starwars',
     label: 'Star Wars Lo-Fi',
     icon: '⚔️',
-    workPlaylist: 'TLhMiNMcGJM', // Star Wars lofi beats
-    breakPlaylist: 'MFEG0GiScK8', // Star Wars ambient music
+    workQuery: 'star wars lofi hip hop mix study',
+    breakQuery: 'star wars ambient relaxing music',
+    workPlaylistId: 'PLvOlSehNtuHu1gJnyMBR1NiERgqGYKxgZ',
+    breakPlaylistId: 'PLvOlSehNtuHu1gJnyMBR1NiERgqGYKxgZ',
   },
   {
     id: 'dark',
     label: 'Dark Aesthetic',
     icon: '🖤',
-    workPlaylist: 'S_MOd40zlYU', // Dark Academia study playlist
-    breakPlaylist: 'qYnA9wWFHLI', // Dark ambient music
+    workQuery: 'dark academia study playlist classical piano',
+    breakQuery: 'dark ambient relaxing music reading',
+    workPlaylistId: 'PLYMEBbFSIGHTcsX-60wShIugVuqUxiPKH',
+    breakPlaylistId: 'PLYMEBbFSIGHTcsX-60wShIugVuqUxiPKH',
   },
   {
     id: 'classical',
     label: 'Classical Focus',
     icon: '🎻',
-    workPlaylist: 'mIYzp5rcTvU', // Classical Music for Studying
-    breakPlaylist: 'HSOtku1j600', // Debussy, Chopin, Liszt relaxing
+    workQuery: 'classical music for studying and concentration 3 hours',
+    breakQuery: 'relaxing classical piano debussy chopin',
+    workPlaylistId: 'PLLHjKDt15hkhiG0k1sP6EFNu2JXKvVNP2',
+    breakPlaylistId: 'PLLHjKDt15hkhiG0k1sP6EFNu2JXKvVNP2',
   },
   {
     id: 'rain',
     label: 'Rain & Nature',
     icon: '🌧️',
-    workPlaylist: 'q76bMs-NwRk', // Rain sounds for studying
-    breakPlaylist: 'jX6kn9_U8qk', // Forest sounds relaxation
+    workQuery: 'rain sounds for studying 3 hours focus',
+    breakQuery: 'forest nature sounds birds relaxation',
+    workPlaylistId: 'PLQ_PIlf6OzqIFMdCAjBPToa-LGlTrJIZz',
+    breakPlaylistId: 'PLQ_PIlf6OzqIFMdCAjBPToa-LGlTrJIZz',
   },
   {
     id: 'anime',
     label: 'Anime Lo-Fi',
     icon: '🌸',
-    workPlaylist: 'tqBbo9pQJdI', // Studio Ghibli jazz hiphop
-    breakPlaylist: '3jWRrafhO7M', // Ghibli relaxing piano
+    workQuery: 'studio ghibli lofi jazz hip hop relaxing mix',
+    breakQuery: 'ghibli relaxing piano music collection',
+    workPlaylistId: 'PLsVhf9rCIFOEFpKdZQWcQ_yKHjEmQaPc4',
+    breakPlaylistId: 'PLsVhf9rCIFOEFpKdZQWcQ_yKHjEmQaPc4',
   },
   {
     id: 'coffee',
     label: 'Coffee Shop',
     icon: '☕',
-    workPlaylist: 'h2zkV-l_TbY', // Coffee Shop Ambience
-    breakPlaylist: 'c0_ejQQcrwI', // Cafe jazz relax
+    workQuery: 'coffee shop ambience jazz music study 3 hours',
+    breakQuery: 'cozy cafe jazz relaxing music',
+    workPlaylistId: 'PL6NdkXsPL07KiewBDpJC1R5UBjidIFhCiJ',
+    breakPlaylistId: 'PL6NdkXsPL07KiewBDpJC1R5UBjidIFhCiJ',
   },
 ];
 
@@ -110,10 +126,10 @@ export default function StudyLobbyPage({ role }) {
   const totalDuration = timerMode === 'work' ? WORK_DURATION : BREAK_DURATION;
   const progress = ((totalDuration - timerSeconds) / totalDuration) * 100;
 
-  // Get current YouTube video ID based on mode
-  const currentVideoId = timerMode === 'work'
-    ? selectedMusic.workPlaylist
-    : selectedMusic.breakPlaylist;
+  // Get current YouTube search query based on mode
+  const currentQuery = timerMode === 'work'
+    ? selectedMusic.workQuery
+    : selectedMusic.breakQuery;
 
   // My tasks and partner tasks
   const myTasks = tasks.filter(t => t.owner === role);
@@ -298,22 +314,35 @@ export default function StudyLobbyPage({ role }) {
               </div>
             )}
 
-            {/* YouTube Embed */}
+            {/* YouTube Music */}
             {isMusicPlaying && (
               <div className={styles.youtubeEmbed}>
                 <iframe
                   key={`${selectedMusic.id}-${timerMode}`}
                   width="100%"
-                  height="60"
-                  src={`https://www.youtube.com/embed/${currentVideoId}?autoplay=1&loop=1&playlist=${currentVideoId}`}
+                  height="300"
+                  src={`https://www.youtube.com/embed/videoseries?list=${
+                    timerMode === 'work' ? selectedMusic.workPlaylistId : selectedMusic.breakPlaylistId
+                  }&autoplay=1&loop=1`}
                   title="Study Music"
                   frameBorder="0"
                   allow="autoplay; encrypted-media"
                   allowFullScreen
-                  style={{ borderRadius: '12px', opacity: 0.9 }}
+                  style={{ borderRadius: '12px' }}
                 ></iframe>
               </div>
             )}
+
+            {/* Fallback: open YouTube directly */}
+            <button
+              className={styles.openYoutubeBtn}
+              onClick={() => {
+                const q = timerMode === 'work' ? selectedMusic.workQuery : selectedMusic.breakQuery;
+                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
+              }}
+            >
+              ▶️ Deschide pe YouTube
+            </button>
           </div>
         </div>
       ) : (
