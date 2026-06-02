@@ -79,46 +79,48 @@ export default function LibraryPage({ role }) {
       {selectedMedia && (
         <div className={modalStyles.modalOverlay} onClick={closeDetails}>
           <div className={modalStyles.modalContent} onClick={e => e.stopPropagation()}>
-            <button className={modalStyles.closeBtn} onClick={closeDetails}>✕</button>
+            <button className={modalStyles.closeModalBtn} onClick={closeDetails}>✕</button>
             
-            <div className={modalStyles.modalHeader}>
-              <img 
-                src={getImageUrl(selectedMedia.poster_path, 'w500')} 
-                alt="poster" 
-                className={modalStyles.modalPoster} 
-              />
-              <div className={modalStyles.modalInfo}>
-                <h2 className={modalStyles.modalTitle}>{selectedMedia.title || selectedMedia.name}</h2>
-                {loadingDetails ? (
-                  <p>Se încarcă detaliile...</p>
-                ) : mediaDetails ? (
-                  <>
-                    <p className={modalStyles.modalMeta}>
-                      ⭐ {mediaDetails.vote_average?.toFixed(1)}/10 • {mediaDetails.release_date?.substring(0,4) || mediaDetails.first_air_date?.substring(0,4)}
-                    </p>
-                    <div className={modalStyles.modalGenres}>
-                      {mediaDetails.genres?.map(g => (
-                        <span key={g.id} className={modalStyles.genreTag}>{g.name}</span>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            </div>
+            <img 
+              src={getImageUrl(selectedMedia.backdrop_path || selectedMedia.poster_path, 'w780')} 
+              alt="Backdrop" 
+              className={modalStyles.backdrop} 
+            />
 
-            <div className={modalStyles.modalBody}>
+            <div className={modalStyles.modalDetails}>
+              <div className={modalStyles.modalHeader}>
+                <div style={{flex: 1}}>
+                  <h2 className={modalStyles.modalTitle}>{selectedMedia.title || selectedMedia.name}</h2>
+                  {loadingDetails ? (
+                    <p>Se încarcă detaliile...</p>
+                  ) : mediaDetails ? (
+                    <>
+                      <p className={modalStyles.modalMeta}>
+                        ⭐ {mediaDetails.vote_average?.toFixed(1)}/10 • {mediaDetails.release_date?.substring(0,4) || mediaDetails.first_air_date?.substring(0,4)}
+                      </p>
+                      <div className={modalStyles.modalGenres}>
+                        {mediaDetails.genres?.map(g => (
+                          <span key={g.id} className={modalStyles.genreTag}>{g.name}</span>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
               {mediaDetails && (
                 <>
                   <p className={modalStyles.overview}>{mediaDetails.overview}</p>
                   
                   {mediaDetails.credits?.cast?.length > 0 && (
-                    <div className={modalStyles.castSection}>
-                      <h3>Distribuție</h3>
+                    <div style={{marginTop: '20px'}}>
+                      <h3 style={{fontSize: '1rem', marginBottom: '10px', color: 'var(--text-primary)'}}>Distribuție</h3>
                       <div className={modalStyles.castList}>
                         {mediaDetails.credits.cast.slice(0, 10).map(actor => actor.profile_path && (
-                          <div key={actor.id} className={modalStyles.castMember}>
-                            <img src={getImageUrl(actor.profile_path, 'w200')} alt={actor.name} />
-                            <span>{actor.name}</span>
+                          <div key={actor.id} className={modalStyles.actorCard}>
+                            <img src={getImageUrl(actor.profile_path, 'w200')} alt={actor.name} className={modalStyles.actorImage} />
+                            <span className={modalStyles.actorName}>{actor.name}</span>
+                            <span className={modalStyles.actorCharacter}>{actor.character}</span>
                           </div>
                         ))}
                       </div>
@@ -126,16 +128,27 @@ export default function LibraryPage({ role }) {
                   )}
                 </>
               )}
-            </div>
 
-            <div className={modalStyles.modalActions}>
-              <button 
-                className={`${modalStyles.actionBtn} ${modalStyles.likeBtn}`} 
-                onClick={handleRemove}
-                style={{flex: 1, background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
-              >
-                ❌ Elimină din Listă
-              </button>
+              {mediaDetails?.videos?.results?.length > 0 && (
+                <button 
+                  className={modalStyles.trailerBtn} 
+                  onClick={() => {
+                    const trailer = mediaDetails.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || mediaDetails.videos.results[0];
+                    if(trailer) window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank');
+                  }}
+                >
+                  ▶️ Urmărește Trailer
+                </button>
+              )}
+
+              <div className={modalStyles.actionButtons}>
+                <button 
+                  className={modalStyles.dislikeBtn} 
+                  onClick={handleRemove}
+                >
+                  ❌ Elimină din Listă
+                </button>
+              </div>
             </div>
           </div>
         </div>

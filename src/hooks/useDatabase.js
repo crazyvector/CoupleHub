@@ -651,7 +651,10 @@ export function useUnreadMessagesCount(role) {
 // ============== MOVIES PREFERENCES & SEARCH ==============
 export const saveMoviePreference = async (role, movie, preference) => {
   try {
-    const prefRef = doc(db, 'movie_preferences', `${role}_${movie.id}`);
+    // Folosim un prefix diferit pentru watchlist vs like/dislike, 
+    // ca să nu se suprascrie una pe cealaltă!
+    const docPrefix = preference === 'watchlist' ? 'watchlist' : 'vote';
+    const prefRef = doc(db, 'movie_preferences', `${role}_${docPrefix}_${movie.id}`);
     await setDoc(prefRef, {
       role,
       movieId: movie.id,
@@ -666,10 +669,15 @@ export const saveMoviePreference = async (role, movie, preference) => {
   }
 };
 
-export const removeMoviePreference = async (role, movieId) => {
+export const removeMoviePreference = async (role, movieId, preferenceType = 'watchlist') => {
   try {
-    const prefRef = doc(db, 'movie_preferences', `${role}_${movieId}`);
-    await deleteDoc(prefRef);
+    const docPrefix = preferenceType === 'watchlist' ? 'watchlist' : 'vote';
+    const newFormatRef = doc(db, 'movie_preferences', `${role}_${docPrefix}_${movieId}`);
+    const oldFormatRef = doc(db, 'movie_preferences', `${role}_${movieId}`);
+    
+    // Ștergem ambele variante ca să prindem și datele vechi
+    await deleteDoc(newFormatRef);
+    await deleteDoc(oldFormatRef);
   } catch (error) {
     console.error("Error removing movie pref", error);
   }
@@ -702,20 +710,30 @@ export function useWatchlistMovies(role) {
 
 export function useMoviePreferences(role) {
   const [likedGenres, setLikedGenres] = useState([]);
+  const [likedIds, setLikedIds] = useState([]);
+  const [dislikedIds, setDislikedIds] = useState([]);
 
   useEffect(() => {
     if (!role) return;
     const q = query(
       collection(db, 'movie_preferences'),
-      where('role', '==', role),
-      where('preference', '==', 'like')
+      where('role', '==', role)
+      // scoatem where('preference', '==', 'like') pentru a aduce și dislikes
     );
     const unsub = onSnapshot(q, (snap) => {
       const allGenres = [];
+      const likes = [];
+      const dislikes = [];
+
       snap.forEach(d => {
         const data = d.data();
-        if (data.genres) {
-          data.genres.forEach(g => allGenres.push(g.id));
+        if (data.preference === 'like') {
+          likes.push(data.movieId);
+          if (data.genres) {
+            data.genres.forEach(g => allGenres.push(g.id));
+          }
+        } else if (data.preference === 'dislike') {
+          dislikes.push(data.movieId);
         }
       });
       // Calculate top 3 genres
@@ -725,11 +743,13 @@ export function useMoviePreferences(role) {
       }, {});
       const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
       setLikedGenres(sorted.slice(0, 3));
+      setLikedIds(likes);
+      setDislikedIds(dislikes);
     });
     return () => unsub();
   }, [role]);
 
-  return likedGenres;
+  return { likedGenres, likedIds, dislikedIds };
 }
 
 export function useMovieSearches(role) {
@@ -883,7 +903,7 @@ export function useAppVersion() {
   // Ruleaza apoi: npm run build && npx cap sync
   // Pune in google drive noul .apk
   // Pune versiunea curenta in system.app_version in firebase
-  const localVersion = "1.0.9";
+  const localVersion = "1.1.1";
 
   useEffect(() => {
     const dRef = doc(db, 'system', 'app_version');

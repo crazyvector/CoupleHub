@@ -438,7 +438,29 @@
 .actionButtons {
   display: flex;
   gap: 15px;
+  margin-top: 15px;
+}
+
+.trailerBtn {
+  width: 100%;
+  padding: 12px;
   margin-top: 25px;
+  border-radius: 15px;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.trailerBtn:active {
+  transform: scale(0.98);
+  background: var(--accent-light);
 }
 
 .likeBtn, .dislikeBtn {

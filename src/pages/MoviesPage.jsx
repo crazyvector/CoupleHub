@@ -13,7 +13,7 @@ export default function MoviesPage({ role }) {
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaDetails, setMediaDetails] = useState(null);
 
-  const likedGenres = useMoviePreferences(role);
+  const { likedGenres, likedIds, dislikedIds } = useMoviePreferences(role);
   const watchlistMovies = useWatchlistMovies(role);
   const { searches, addSearch, removeSearch } = useMovieSearches(role);
   
@@ -295,10 +295,24 @@ export default function MoviesPage({ role }) {
                 </>
               )}
 
+              {mediaDetails?.videos?.results?.length > 0 && (
+                <button 
+                  className={styles.trailerBtn} 
+                  onClick={() => {
+                    const trailer = mediaDetails.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || mediaDetails.videos.results[0];
+                    if(trailer) window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank');
+                  }}
+                >
+                  ▶️ Urmărește Trailer
+                </button>
+              )}
+
               <div className={styles.actionButtons}>
                 <button 
                   className={styles.dislikeBtn} 
                   onClick={handleDislike}
+                  disabled={dislikedIds.includes(selectedMedia.id)}
+                  style={dislikedIds.includes(selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                   title="Nu e pentru mine"
                 >
                   👎
@@ -306,17 +320,20 @@ export default function MoviesPage({ role }) {
                 <button 
                   className={styles.likeBtn} 
                   onClick={handleWatchlist}
-                  style={watchlistMovies.some(m => m.id === selectedMedia.id) ? {background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
-                  title={watchlistMovies.some(m => m.id === selectedMedia.id) ? 'Elimină din Listă' : 'Adaugă în Lista Mea'}
+                  disabled={watchlistMovies.some(m => m.id === selectedMedia.id)}
+                  style={watchlistMovies.some(m => m.id === selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
+                  title="Adaugă în Lista Mea"
                 >
-                  {watchlistMovies.some(m => m.id === selectedMedia.id) ? '❌ Din Listă' : '💾 Watchlist'}
+                  {watchlistMovies.some(m => m.id === selectedMedia.id) ? '✅ Salvat' : '❤️ Adaugă'}
                 </button>
                 <button 
                   className={styles.likeBtn} 
                   onClick={handleLike}
+                  disabled={likedIds.includes(selectedMedia.id)}
+                  style={likedIds.includes(selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
                   title="Îmi place"
                 >
-                  ❤️
+                  {likedIds.includes(selectedMedia.id) ? '✅ Ai dat Like' : '❤️ Îmi place'}
                 </button>
               </div>
             </div>

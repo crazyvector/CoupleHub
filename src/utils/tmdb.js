@@ -45,7 +45,11 @@ export const TV_GENRES = [
 
 const fetchTMDB = async (endpoint, params = {}) => {
   const url = new URL(`${BASE_URL}${endpoint}`);
-  url.searchParams.append('language', 'ro-RO'); // Vrem detalii în română acolo unde sunt disponibile
+  
+  // Vrem detalii în română acolo unde sunt disponibile, dar permitem override
+  if (!params.language) {
+    url.searchParams.append('language', 'ro-RO'); 
+  }
   
   Object.keys(params).forEach(key => {
     url.searchParams.append(key, params[key]);
@@ -98,7 +102,20 @@ export const discoverMedia = async (type = 'movie', genresString = '', page = 1,
 
 // Detalii specifice unui film/serial (inclusiv actori, trailere)
 export const getMediaDetails = async (type, id) => {
-  return await fetchTMDB(`/${type}/${id}`, { append_to_response: 'credits,videos,similar' });
+  const details = await fetchTMDB(`/${type}/${id}`, { 
+    append_to_response: 'credits,videos,similar',
+    include_video_language: 'en,ro,null'
+  });
+
+  // Dacă filmul nu are o descriere tradusă în română, aducem descrierea în engleză
+  if (details && !details.overview) {
+    const fallback = await fetchTMDB(`/${type}/${id}`, { language: 'en-US' });
+    if (fallback && fallback.overview) {
+      details.overview = fallback.overview;
+    }
+  }
+
+  return details;
 };
 
 // Pentru Couple Match: Găsește filme care se potrivesc cu 2 seturi de preferințe

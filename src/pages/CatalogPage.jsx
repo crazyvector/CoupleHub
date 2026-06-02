@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './MoviesPage.module.css'; // Refolosim fix aceleași stiluri
 import { discoverMedia, MOVIE_GENRES, TV_GENRES, getImageUrl, getMediaDetails } from '../utils/tmdb';
-import { saveMoviePreference, removeMoviePreference, useWatchlistMovies } from '../hooks/useDatabase';
+import { saveMoviePreference, removeMoviePreference, useWatchlistMovies, useMoviePreferences } from '../hooks/useDatabase';
 
 export default function CatalogPage({ role }) {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export default function CatalogPage({ role }) {
   const [mediaDetails, setMediaDetails] = useState(null);
 
   const watchlistMovies = useWatchlistMovies(role);
+  const { likedIds, dislikedIds } = useMoviePreferences(role);
 
   useEffect(() => {
     fetchCatalog(1);
@@ -196,16 +197,46 @@ export default function CatalogPage({ role }) {
 
               <p className={styles.overview}>{mediaDetails.overview || "Nicio descriere disponibilă în limba română."}</p>
 
+              {mediaDetails?.videos?.results?.length > 0 && (
+                <button 
+                  className={styles.trailerBtn} 
+                  onClick={() => {
+                    const trailer = mediaDetails.videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || mediaDetails.videos.results[0];
+                    if(trailer) window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank');
+                  }}
+                >
+                  ▶️ Urmărește Trailer
+                </button>
+              )}
+
               <div className={styles.actionButtons}>
-                <button className={styles.dislikeBtn} onClick={handleDislike} title="Nu e pentru mine">👎</button>
+                <button 
+                  className={styles.dislikeBtn} 
+                  onClick={handleDislike}
+                  disabled={dislikedIds.includes(selectedMedia.id)}
+                  style={dislikedIds.includes(selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                  title="Nu e pentru mine"
+                >
+                  👎
+                </button>
                 <button 
                   className={styles.likeBtn} 
                   onClick={handleWatchlist}
-                  style={watchlistMovies.some(m => m.id === selectedMedia.id) ? {background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
+                  disabled={watchlistMovies.some(m => m.id === selectedMedia.id)}
+                  style={watchlistMovies.some(m => m.id === selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
+                  title="Adaugă în Lista Mea"
                 >
-                  {watchlistMovies.some(m => m.id === selectedMedia.id) ? '❌ Din Listă' : '💾 Watchlist'}
+                  {watchlistMovies.some(m => m.id === selectedMedia.id) ? '✅ Salvat' : '❤️ Adaugă'}
                 </button>
-                <button className={styles.likeBtn} onClick={handleLike} title="Îmi place">❤️</button>
+                <button 
+                  className={styles.likeBtn} 
+                  onClick={handleLike}
+                  disabled={likedIds.includes(selectedMedia.id)}
+                  style={likedIds.includes(selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
+                  title="Îmi place"
+                >
+                  {likedIds.includes(selectedMedia.id) ? '✅ Ai dat Like' : '❤️ Îmi place'}
+                </button>
               </div>
             </div>
           </div>

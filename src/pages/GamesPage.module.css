@@ -1,6 +1,6 @@
 .page {
   min-height: 100dvh;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
   max-width: 480px;
   margin: 0 auto;
 }

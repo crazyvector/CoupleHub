@@ -7,6 +7,7 @@ const navItems = [
   { to: '/chat',     icon: '💬', label: 'Mesaje',   id: 'nav-chat' },
   { to: '/cupoane',  icon: '🎟️', label: 'Cupoane',  id: 'nav-coupons' },
   { to: '/movies',   icon: '🍿', label: 'Filme',    id: 'nav-movies' },
+  { to: '/home-planner', icon: '🏡', label: 'Cuib', id: 'nav-homeplanner' },
   { to: '/mood',     icon: '💭', label: 'Eu',       id: 'nav-mood' },
   { to: '/todo',     icon: '📝', label: 'To-Do',    id: 'nav-todo' },
   { to: '/memories', icon: '🗺️', label: 'Amintiri', id: 'nav-memories' },

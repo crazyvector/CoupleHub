@@ -1,5 +1,5 @@
 .page {
-  padding: calc(var(--space-8) + env(safe-area-inset-top, 20px)) var(--space-4) calc(80px + env(safe-area-inset-bottom, 20px));
+  padding: calc(var(--space-8) + env(safe-area-inset-top, 20px)) var(--space-4) calc(140px + env(safe-area-inset-bottom, 20px));
   min-height: 100vh;
   display: flex;
   flex-direction: column;

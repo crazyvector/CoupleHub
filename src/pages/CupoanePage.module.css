@@ -1,5 +1,5 @@
 .page {
-  padding: 0 20px calc(100px + env(safe-area-inset-bottom, 0px)) 20px;
+  padding: 0 20px calc(140px + env(safe-area-inset-bottom, 0px)) 20px;
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
