@@ -1,11 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup as LeafletPopup, useMap, useMapEvents } from 'react-leaflet';
 import { useMemories, useProfiles } from '../hooks/useDatabase';
 import { useMonetization } from '../hooks/useMonetization';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import L from 'leaflet';
 import styles from './MemoriesPage.module.css';
 import 'leaflet/dist/leaflet.css';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { ScrapbookExport } from '../components/ScrapbookExport';
 
 // ============================================================
 // Harta Leaflet - Configurare
@@ -345,7 +350,7 @@ export default function MemoriesPage({ role }) {
   const { profile: myProfile } = useProfiles(role);
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { isPro } = useMonetization();
 
   const myName = myProfile?.name || (role === 'her' ? 'Ana' : 'Andrei');
@@ -357,14 +362,185 @@ export default function MemoriesPage({ role }) {
   const [selectedMemory, setSelectedMemory] = useState(null);
   const [editingMemory, setEditingMemory] = useState(null); // New state for editing
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [renderScrapbook, setRenderScrapbook] = useState(false);
+  const [isMockExport, setIsMockExport] = useState(false);
+  const { getMapExportData, incrementMapExport } = useMonetization();
+
+  const getNextMonthName = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    return d.toLocaleString(lang === 'en' ? 'en-US' : 'ro-RO', { month: 'long' });
+  };
+
+  const checkMemoryLimit = () => {
+    if (isPro) return true;
+    
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const memoriesThisMonth = memories.filter(m => m.timestamp && m.timestamp.slice(0, 7) === currentMonth).length;
+    
+    if (memoriesThisMonth >= 10) {
+      const monthName = getNextMonthName();
+      const msgTemplate = t('memories.ideaLimitReached') || "Ai atins limita de 10 amintiri gratuite pe luna aceasta. Se va reseta pe 1 {month}. Treci la Premium pentru amintiri nelimitate!";
+      alert(msgTemplate.replace('{month}', monthName));
+      return false;
+    }
+    return true;
+  };
+
+  const handleExportPDF = async () => {
+    if (!isPro) {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const data = await getMapExportData();
+      if (data.month === currentMonth && data.count >= 1) {
+        alert(t('memories.exportLimitReached') || "Ai epuizat exportul gratuit! Vei primi un nou export gratuit luna viitoare. Treci la Premium pentru exporturi nelimitate!");
+        return;
+      }
+    }
+
+    setIsExporting(true);
+    setRenderScrapbook(true);
+
+    // Wait a brief moment to ensure React has fully mounted the ScrapbookExport component and its images are parsed
+    setTimeout(async () => {
+      try {
+        const element = document.getElementById('scrapbook-export-container');
+        if (!element) throw new Error("Nu s-a gasit elementul pentru export");
+
+        const canvas = await html2canvas(element, { 
+          useCORS: true, 
+          scale: 2, 
+          windowWidth: 800, 
+          logging: false 
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdfWidth = 210; // A4 width in mm
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+        if (Capacitor.isNativePlatform()) {
+          const pdfOutput = pdf.output('datauristring');
+          const base64Data = pdfOutput.split(',')[1];
+          const fileName = `CoupleHub_Memories_${Date.now()}.pdf`;
+          
+          try {
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: Directory.Documents
+            });
+            alert(`✅ Salvare reușită / Saved successfully!\n📂 Documente / Documents -> ${fileName}`);
+          } catch (e) {
+            console.error("Filesystem save error:", e);
+            alert('Eroare la salvare / Save error: ' + e.message);
+          }
+        } else {
+          pdf.save('CoupleHub_Memories.pdf');
+        }
+
+        if (!isPro) {
+          await incrementMapExport();
+          alert(t('memories.lastExport') || "Acesta a fost ultimul tău export gratuit!");
+        }
+      } catch (error) {
+        console.error("PDF generation failed", error);
+        alert(t('memories.pdfError') || "Eroare la generarea PDF-ului.");
+      } finally {
+        setIsExporting(false);
+        setRenderScrapbook(false);
+      }
+    }, 500); 
+  };
+
+  const mockMemoriesData = [
+    {
+      id: 'mock1',
+      title: t('memories.mock1Title'),
+      description: t('memories.mock1Desc'),
+      emoji: '🗼',
+      date: new Date().toISOString().split('T')[0],
+      imagePath: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=500&q=60',
+      coordinates: { lat: 48.8566, lng: 2.3522 }
+    },
+    {
+      id: 'mock2',
+      title: t('memories.mock2Title'),
+      description: t('memories.mock2Desc'),
+      emoji: '🌅',
+      date: new Date(Date.now() - 86400000 * 5).toISOString().split('T')[0],
+      imagePath: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=60',
+      coordinates: { lat: 44.1792, lng: 28.6499 }
+    },
+    {
+      id: 'mock3',
+      title: t('memories.mock3Title'),
+      description: t('memories.mock3Desc'),
+      emoji: '🍝',
+      date: new Date(Date.now() - 86400000 * 15).toISOString().split('T')[0],
+      imagePath: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=500&q=60'
+    }
+  ];
+
+  const handleMockExportPDF = () => {
+    setIsMockExport(true);
+    setIsExporting(true);
+    setRenderScrapbook(true);
+
+    setTimeout(async () => {
+      try {
+        const element = document.getElementById('scrapbook-export-container');
+        if (!element) throw new Error("Nu s-a gasit elementul pentru export");
+
+        const canvas = await html2canvas(element, { 
+          useCORS: true, 
+          scale: 2, 
+          windowWidth: 800, 
+          logging: false 
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdfWidth = 210; // A4 width in mm
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+        if (Capacitor.isNativePlatform()) {
+          const pdfOutput = pdf.output('datauristring');
+          const base64Data = pdfOutput.split(',')[1];
+          const fileName = `CoupleHub_Mock_Memories_${Date.now()}.pdf`;
+          
+          await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Documents
+          });
+          alert(`✅ Salvare reușită / Saved successfully!\n📂 Documente / Documents -> ${fileName}`);
+        } else {
+          pdf.save('CoupleHub_Mock_Memories.pdf');
+        }
+
+      } catch (error) {
+        console.error("PDF generation failed", error);
+        alert(t('memories.pdfError') || "Eroare la generarea PDF-ului.");
+      } finally {
+        setIsExporting(false);
+        setRenderScrapbook(false);
+        setIsMockExport(false);
+      }
+    }, 500);
+  };
+
   if (loading) return <div className={styles.page}>{t('memories.loadingMemories')}</div>;
 
   // Map click
   const handleMapClick = (coords) => {
-    if (!isPro && memories.length >= 10) {
-      alert("Ai atins limita de 10 amintiri gratuite! Treci la Premium pentru stocare nelimitată. Poți adăuga un cod promoțional în setările profilului.");
-      return;
-    }
+    if (!checkMemoryLimit()) return;
     setEditingMemory(null);
     setNewCoords(coords);
     setAddMode('memory');
@@ -418,7 +594,40 @@ export default function MemoriesPage({ role }) {
       <header className={styles.header}>
         <h1 className={styles.title}>{t('memories.ourMemories')}</h1>
         <p className={styles.subtitle}>{t('memories.specialPlaces')}</p>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <button 
+            className={`${styles.saveBtn} animate-pulse`} 
+            style={{ flex: 1, padding: '15px', fontSize: '1rem', background: 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-purple) 100%)', boxShadow: 'var(--shadow-md)', wordBreak: 'break-word', whiteSpace: 'normal' }}
+            onClick={handleExportPDF} 
+            disabled={isExporting}
+          >
+            {isExporting && !isMockExport ? t('memories.exportingPdf') : t('memories.exportScrapbookPdf')}
+          </button>
+          
+          <button 
+            className={styles.saveBtn} 
+            style={{ flex: 1, padding: '15px', fontSize: '1rem', background: 'var(--surface-color)', color: 'var(--text-color)', border: '2px solid var(--color-rose)', boxShadow: 'var(--shadow-md)', wordBreak: 'break-word', whiteSpace: 'normal' }}
+            onClick={handleMockExportPDF} 
+            disabled={isExporting}
+          >
+            {isExporting && isMockExport ? t('memories.mockExportingPdf') : t('memories.mockExportBtn')}
+          </button>
+        </div>
       </header>
+
+      {renderScrapbook && (
+        <ScrapbookExport 
+          id="scrapbook-export-container"
+          memories={isMockExport ? mockMemoriesData : memories} 
+          t={t}
+          coupleNames={{
+            myName,
+            partnerName,
+            hisName: role === 'his' ? myName : partnerName,
+            herName: role === 'her' ? myName : partnerName
+          }}
+        />
+      )}
 
       <div className={styles.tabContent}>
         {/* MAP SECTION */}
@@ -458,10 +667,7 @@ export default function MemoriesPage({ role }) {
             memories={memories} 
             onPhotoClick={setSelectedMemory} 
             onAddPhoto={() => { 
-              if (!isPro && memories.length >= 10) {
-                alert("Ai atins limita de 10 amintiri gratuite! Treci la Premium pentru stocare nelimitată.");
-                return;
-              }
+              if (!checkMemoryLimit()) return;
               setEditingMemory(null); 
               setAddMode('photo'); 
               setShowAddModal(true); 

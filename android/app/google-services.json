@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "61283267985",
+    "project_id": "couplehub-17d57",
+    "storage_bucket": "couplehub-17d57.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61283267985:android:a0d0998efe368315a95630",
+        "android_client_info": {
+          "package_name": "io.couplehub.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDS7DjsQs5H8PomMqI1Dg-iF8zbB7HNDHE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

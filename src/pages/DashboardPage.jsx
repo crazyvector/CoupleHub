@@ -63,7 +63,7 @@ function LiveTimer({ startDate }) {
   );
 }
 
-function SortableTile({ id, children }) {
+function SortableTile({ id, extraStyle, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -71,7 +71,8 @@ function SortableTile({ id, children }) {
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
     position: 'relative',
-    touchAction: 'pan-y'
+    touchAction: 'pan-y',
+    ...extraStyle
   };
 
   return (
@@ -416,8 +417,13 @@ export default function DashboardPage({ role }) {
                     return null;
                 }
 
+                let extraStyle = {};
+                if (['compliment', 'calendar', 'status', 'canvas', 'barista', 'scratch', 'buzzer'].includes(id)) {
+                  extraStyle = { gridColumn: '1 / -1' };
+                }
+
                 return (
-                  <SortableTile key={id} id={id}>
+                  <SortableTile key={id} id={id} extraStyle={extraStyle}>
                     {content}
                   </SortableTile>
                 );
