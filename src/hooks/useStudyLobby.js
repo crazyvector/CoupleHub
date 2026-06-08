@@ -17,9 +17,6 @@ import { db } from '../firebase';
 const STUDY_LOBBY_DOC = 'study_lobby';
 const STUDY_TASKS_COL = 'study_tasks';
 
-const WORK_DURATION = 50 * 60; // 50 minutes in seconds
-const BREAK_DURATION = 10 * 60; // 10 minutes in seconds
-
 const BONSAI_STAGES = [
   { id: 'seed',      label: 'Sămânță',           minXP: 0,    emoji: '🌱' },
   { id: 'sprout',    label: 'Vlăstar',            minXP: 51,   emoji: '🌿' },
@@ -55,13 +52,20 @@ export function useStudyLobby(role) {
   });
   const [loading, setLoading] = useState(true);
 
+  // Advanced Timer State
+  const [workDuration, setWorkDuration] = useState(25 * 60);
+  const [breakDuration, setBreakDuration] = useState(5 * 60);
+  const [totalCycles, setTotalCycles] = useState(4);
+  const [currentCycle, setCurrentCycle] = useState(1);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
+
   // Timer state (local per user, not synced)
-  const [timerSeconds, setTimerSeconds] = useState(WORK_DURATION);
+  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [timerMode, setTimerMode] = useState('work'); // 'work' or 'break'
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
-  const pausedSecondsRef = useRef(WORK_DURATION);
+  const pausedSecondsRef = useRef(25 * 60);
 
   // Presence
   const [presence, setPresence] = useState({ his: null, her: null });
@@ -134,7 +138,6 @@ export function useStudyLobby(role) {
         if (remaining <= 0) {
           clearInterval(timerRef.current);
           setTimerSeconds(0);
-          setIsRunning(false);
           handleTimerComplete();
         } else {
           setTimerSeconds(remaining);
@@ -165,37 +168,80 @@ export function useStudyLobby(role) {
         sessionsCompleted: (lobbyData.sessionsCompleted || 0) + 1,
       });
 
-      // Switch to break
-      setTimerMode('break');
-      setTimerSeconds(BREAK_DURATION);
+      // Check cycles
+      if (currentCycle >= totalCycles) {
+        setSessionCompleted(true);
+        setTimerMode('break');
+        setTimerSeconds(0);
+        setIsRunning(false);
+      } else {
+        setTimerMode('break');
+        setTimerSeconds(breakDuration);
+        setIsRunning(true);
+      }
     } else {
       // Break completed → back to work
-      setTimerMode('work');
-      setTimerSeconds(WORK_DURATION);
+      if (!sessionCompleted) {
+        setCurrentCycle(prev => prev + 1);
+        setTimerMode('work');
+        setTimerSeconds(workDuration);
+        setIsRunning(true);
+      }
     }
   };
 
   const startTimer = () => setIsRunning(true);
   const pauseTimer = () => setIsRunning(false);
+  
   const resetTimer = () => {
     setIsRunning(false);
     if (timerRef.current) clearInterval(timerRef.current);
     setTimerMode('work');
-    setTimerSeconds(WORK_DURATION);
+    setTimerSeconds(workDuration);
+    setCurrentCycle(1);
+    setSessionCompleted(false);
   };
 
   const skipToBreak = () => {
     setIsRunning(false);
     if (timerRef.current) clearInterval(timerRef.current);
-    setTimerMode('break');
-    setTimerSeconds(BREAK_DURATION);
+    if (currentCycle >= totalCycles) {
+      setSessionCompleted(true);
+      setTimerMode('break');
+      setTimerSeconds(0);
+    } else {
+      setTimerMode('break');
+      setTimerSeconds(breakDuration);
+    }
   };
 
   const skipToWork = () => {
     setIsRunning(false);
     if (timerRef.current) clearInterval(timerRef.current);
+    if (!sessionCompleted) {
+      setCurrentCycle(prev => prev + 1);
+    }
     setTimerMode('work');
-    setTimerSeconds(WORK_DURATION);
+    setTimerSeconds(workDuration);
+  };
+
+  const updateWorkDuration = (val) => {
+    setWorkDuration(val);
+    if (!isRunning && timerMode === 'work') setTimerSeconds(val);
+  };
+
+  const updateBreakDuration = (val) => {
+    setBreakDuration(val);
+    if (!isRunning && timerMode === 'break') setTimerSeconds(val);
+  };
+
+  const applyPreset = (work, brk) => {
+    setWorkDuration(work);
+    setBreakDuration(brk);
+    if (!isRunning) {
+      if (timerMode === 'work') setTimerSeconds(work);
+      else setTimerSeconds(brk);
+    }
   };
 
   // Update current task in presence
@@ -230,12 +276,17 @@ export function useStudyLobby(role) {
     resetTimer,
     skipToBreak,
     skipToWork,
-    WORK_DURATION,
-    BREAK_DURATION,
 
     // Presence
     presence,
     setCurrentTask,
+    
+    // Config
+    workDuration, setWorkDuration: updateWorkDuration,
+    breakDuration, setBreakDuration: updateBreakDuration,
+    totalCycles, setTotalCycles,
+    currentCycle, sessionCompleted,
+    applyPreset,
 
     loading,
   };

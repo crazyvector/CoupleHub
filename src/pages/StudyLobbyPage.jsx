@@ -10,7 +10,8 @@ const MUSIC_THEMES = [
     icon: '🎧',
     workQuery: 'lofi hip hop study',
     breakQuery: 'chill lofi relax',
-    streamUrl: 'https://0nlineradio.radioho.st/0r-lo-fi?ref=radio-browser',
+    workStreamUrl: 'https://0nlineradio.radioho.st/0r-lo-fi?ref=radio-browser',
+    breakStreamUrl: 'https://0nlineradio.radioho.st/lounge-nature-sounds',
   },
   {
     id: 'jazz',
@@ -18,7 +19,8 @@ const MUSIC_THEMES = [
     icon: '🎷',
     workQuery: 'jazz cafe study',
     breakQuery: 'smooth jazz relaxing',
-    streamUrl: 'https://icecast.walmradio.com:8443/jazz',
+    workStreamUrl: 'https://strm112.1.fm/ajazz_mobile_mp3',
+    breakStreamUrl: 'https://0nlineradio.radioho.st/lounge-piano-jazz-bar',
   },
   {
     id: 'starwars',
@@ -26,7 +28,8 @@ const MUSIC_THEMES = [
     icon: '⚔️',
     workQuery: 'epic cinematic music',
     breakQuery: 'ambient epic music',
-    streamUrl: 'https://streaming.radio.co/s6c43c162f/listen', // Epic Cinematic Radio
+    workStreamUrl: 'https://stream.epic-classical.com/classical-piano',
+    breakStreamUrl: 'https://azura.ebsmedia.ro/listen/movies/movies128.mp3',
   },
   {
     id: 'dark',
@@ -34,7 +37,8 @@ const MUSIC_THEMES = [
     icon: '🖤',
     workQuery: 'dark ambient relaxing',
     breakQuery: 'dark aesthetic relaxing',
-    streamUrl: 'https://air.radioart.online/fCello_for_sleep.mp3',
+    workStreamUrl: '/sounds/dark_academia.mp3', // Local loop downloaded specifically for this vibe
+    breakStreamUrl: 'https://radio.m00.su:8000/darkambient.mp3',
   },
   {
     id: 'classical',
@@ -42,7 +46,8 @@ const MUSIC_THEMES = [
     icon: '🎻',
     workQuery: 'classical music study',
     breakQuery: 'relaxing classical piano',
-    streamUrl: 'https://az1.mediacp.eu/listen/100greatestclassicalmusic/radio.mp3',
+    workStreamUrl: 'https://az1.mediacp.eu/listen/100greatestclassicalmusic/radio.mp3',
+    breakStreamUrl: 'https://air.radioart.online/fCello_for_sleep.mp3',
   },
   {
     id: 'rain',
@@ -50,7 +55,8 @@ const MUSIC_THEMES = [
     icon: '🌧️',
     workQuery: 'rain sounds focus',
     breakQuery: 'forest nature sounds',
-    streamUrl: 'https://streaming.radio.co/s5c5da686f/listen', // Nature Sounds
+    workStreamUrl: '/sounds/rain_loop.mp3',
+    breakStreamUrl: '/sounds/rain_loop.mp3',
   },
   {
     id: 'anime',
@@ -58,7 +64,8 @@ const MUSIC_THEMES = [
     icon: '🌸',
     workQuery: 'asian lofi piano',
     breakQuery: 'relaxing anime piano',
-    streamUrl: 'https://listen.moe/stream', // Listen Moe
+    workStreamUrl: 'https://listen.moe/stream',
+    breakStreamUrl: 'https://stream.zeno.fm/qpn8mkt8c4duv',
   },
   {
     id: 'coffee',
@@ -66,7 +73,8 @@ const MUSIC_THEMES = [
     icon: '☕',
     workQuery: 'coffee shop jazz',
     breakQuery: 'cozy cafe jazz',
-    streamUrl: 'https://0nlineradio.radioho.st/lounge-piano-jazz-bar?ref=radio-browser',
+    workStreamUrl: 'https://0nlineradio.radioho.st/lounge-piano-jazz-bar',
+    breakStreamUrl: 'https://strm112.1.fm/ajazz_mobile_mp3',
   },
 ];
 
@@ -81,21 +89,42 @@ export default function StudyLobbyPage({ role }) {
     bonsaiXP, bonsaiStage, nextStage, sessionsCompleted, bonsaiStages,
     timerSeconds, isRunning, timerMode,
     startTimer, pauseTimer, resetTimer, skipToBreak, skipToWork,
-    WORK_DURATION, BREAK_DURATION,
+    workDuration, setWorkDuration,
+    breakDuration, setBreakDuration,
+    totalCycles, setTotalCycles,
+    currentCycle, sessionCompleted,
     presence, setCurrentTask,
+    applyPreset,
     loading: lobbyLoading,
   } = useStudyLobby(role);
 
   const { tasks, addTask, updateTask, deleteTask, loading: tasksLoading } = useStudyTasks();
 
   const [selectedMusic, setSelectedMusic] = useState(MUSIC_THEMES[0]);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskSubject, setNewTaskSubject] = useState('');
   const [activeTab, setActiveTab] = useState('lobby'); // 'lobby' or 'tasks'
+  
+  // Audio refs for sound effects
+  const bellAudioRef = useRef(null);
+  const hurrayAudioRef = useRef(null);
+
+  // Play bell when timer starts, or switches modes
+  useEffect(() => {
+    if (isRunning && timerSeconds === (timerMode === 'work' ? workDuration : breakDuration)) {
+      if (bellAudioRef.current) bellAudioRef.current.play().catch(e => console.log('Audio blocked', e));
+    }
+  }, [isRunning, timerMode, timerSeconds, workDuration, breakDuration]);
+
+  // Play hurray when work completes (mode changes to break)
+  useEffect(() => {
+    if (timerMode === 'break' && timerSeconds === breakDuration && isRunning) {
+      if (hurrayAudioRef.current) hurrayAudioRef.current.play().catch(e => console.log('Audio blocked', e));
+    }
+  }, [timerMode, timerSeconds, breakDuration, isRunning]);
 
   const partnerRole = role === 'his' ? 'her' : 'his';
   const partnerName = role === 'his' ? 'Ana' : 'Andrei';
@@ -116,7 +145,7 @@ export default function StudyLobbyPage({ role }) {
   };
 
   // Timer progress
-  const totalDuration = timerMode === 'work' ? WORK_DURATION : BREAK_DURATION;
+  const totalDuration = timerMode === 'work' ? workDuration : breakDuration;
   const progress = ((totalDuration - timerSeconds) / totalDuration) * 100;
 
   // Get current YouTube search query based on mode
@@ -211,6 +240,10 @@ export default function StudyLobbyPage({ role }) {
         </button>
       </div>
 
+      {/* Audio Effects */}
+      <audio src="/sounds/bell.mp3" ref={bellAudioRef} preload="auto" />
+      <audio src="/sounds/hurray.mp3" ref={hurrayAudioRef} preload="auto" />
+
       {activeTab === 'lobby' ? (
         <div className={styles.lobbyContent}>
           {/* Bonsai Section */}
@@ -225,47 +258,118 @@ export default function StudyLobbyPage({ role }) {
             </div>
           </div>
 
-          {/* Timer Section */}
-          <div className={`${styles.timerSection} ${timerMode === 'break' ? styles.breakMode : ''}`}>
-            <div className={styles.timerModeLabel}>
-              {timerMode === 'work' ? '💻 Focus Time' : '☕ Pauză'}
-            </div>
-
-            {/* Circular progress */}
-            <div className={styles.timerCircle}>
-              <svg viewBox="0 0 120 120" className={styles.timerSvg}>
-                <circle cx="60" cy="60" r="54" className={styles.timerTrack} />
-                <circle
-                  cx="60" cy="60" r="54"
-                  className={styles.timerProgress}
-                  style={{
-                    strokeDasharray: `${2 * Math.PI * 54}`,
-                    strokeDashoffset: `${2 * Math.PI * 54 * (1 - progress / 100)}`,
-                  }}
-                />
-              </svg>
-              <div className={styles.timerText}>
-                <span className={styles.timerDigits}>{formatTime(timerSeconds)}</span>
-                <span className={styles.timerSubtext}>
-                  {timerMode === 'work' ? '50 min focus' : '10 min pauză'}
-                </span>
+          {/* Config Panel (only when stopped at the beginning of a cycle) */}
+          {!isRunning && !sessionCompleted && timerMode === 'work' && currentCycle === 1 && (
+            <div className={styles.timerConfigPanel}>
+              <h4>Setări Sesiune</h4>
+              <div className={styles.configPresets}>
+                <button 
+                  className={workDuration === 25*60 && breakDuration === 5*60 ? styles.presetActive : ''}
+                  onClick={() => applyPreset(25*60, 5*60)}
+                >
+                  25 / 5
+                </button>
+                <button 
+                  className={workDuration === 50*60 && breakDuration === 10*60 ? styles.presetActive : ''}
+                  onClick={() => applyPreset(50*60, 10*60)}
+                >
+                  50 / 10
+                </button>
+              </div>
+              <div className={styles.configCustom}>
+                <div className={styles.stepperGroup}>
+                  <label>Muncă (min)</label>
+                  <div className={styles.stepper}>
+                    <button onClick={() => setWorkDuration(Math.max(60, workDuration - 60))}>-</button>
+                    <span>{workDuration/60}</span>
+                    <button onClick={() => setWorkDuration(Math.min(120*60, workDuration + 60))}>+</button>
+                  </div>
+                </div>
+                <div className={styles.stepperGroup}>
+                  <label>Pauză (min)</label>
+                  <div className={styles.stepper}>
+                    <button onClick={() => setBreakDuration(Math.max(60, breakDuration - 60))}>-</button>
+                    <span>{breakDuration/60}</span>
+                    <button onClick={() => setBreakDuration(Math.min(60*60, breakDuration + 60))}>+</button>
+                  </div>
+                </div>
+                <div className={styles.stepperGroup}>
+                  <label>Cicluri</label>
+                  <div className={styles.stepper}>
+                    <button onClick={() => setTotalCycles(Math.max(1, totalCycles - 1))}>-</button>
+                    <span>{totalCycles}</span>
+                    <button onClick={() => setTotalCycles(Math.min(10, totalCycles + 1))}>+</button>
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Timer Controls */}
-            <div className={styles.timerControls}>
-              {!isRunning ? (
-                <button className={styles.playBtn} onClick={startTimer}>▶️</button>
-              ) : (
-                <button className={styles.pauseBtn} onClick={pauseTimer}>⏸️</button>
-              )}
-              <button className={styles.resetBtn} onClick={resetTimer}>⏹️</button>
-              {timerMode === 'work' ? (
-                <button className={styles.skipBtn} onClick={skipToBreak}>⏭️ Pauză</button>
-              ) : (
-                <button className={styles.skipBtn} onClick={skipToWork}>⏭️ Focus</button>
-              )}
-            </div>
+          {/* Timer Section */}
+          <div className={`${styles.timerSection} ${timerMode === 'break' ? styles.breakMode : ''}`}>
+            {sessionCompleted ? (
+              <div className={styles.sessionCompletePopup}>
+                <h2 className={styles.hurrayText}>🎉 Huraa!</h2>
+                <p>Ai terminat toate cele {totalCycles} cicluri de studiu!</p>
+                <button className={styles.resetBtn} onClick={resetTimer}>Începe o nouă sesiune</button>
+              </div>
+            ) : (
+              <>
+                <div className={styles.timerModeLabel}>
+                  {timerMode === 'work' ? '💻 Focus Time' : '☕ Pauză'}
+                  <span className={styles.cycleBadge}>Ciclul {currentCycle} din {totalCycles}</span>
+                </div>
+
+                {/* Circular progress */}
+                <div className={styles.timerCircle}>
+                  <svg viewBox="0 0 120 120" className={styles.timerSvg}>
+                    <circle cx="60" cy="60" r="54" className={styles.timerTrack} />
+                    <circle
+                      cx="60" cy="60" r="54"
+                      className={styles.timerProgress}
+                      style={{
+                        strokeDasharray: `${2 * Math.PI * 54}`,
+                        strokeDashoffset: `${2 * Math.PI * 54 * (1 - progress / 100)}`,
+                      }}
+                    />
+                  </svg>
+                  <div className={styles.timerText}>
+                    <span className={styles.timerDigits}>{formatTime(timerSeconds)}</span>
+                    <span className={styles.timerSubtext}>
+                      {timerMode === 'work' ? `${workDuration/60} min focus` : `${breakDuration/60} min pauză`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Timer Controls */}
+                <div className={styles.timerControls}>
+                  {!isRunning ? (
+                    <button className={styles.playBtn} onClick={() => {
+                      startTimer();
+                      setIsMusicPlaying(true);
+                    }}>
+                      ▶ Start
+                    </button>
+                  ) : (
+                    <button className={styles.pauseBtn} onClick={pauseTimer}>
+                      ⏸ Pauză
+                    </button>
+                  )}
+                  <button className={styles.resetBtn} onClick={resetTimer}>
+                    ↻ Reset
+                  </button>
+                  {timerMode === 'work' ? (
+                    <button className={styles.skipBtn} onClick={skipToBreak}>
+                      ⏭ Sari la Pauză
+                    </button>
+                  ) : (
+                    <button className={styles.skipBtn} onClick={skipToWork}>
+                      ⏭ Sari la Muncă
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Music Section */}
@@ -318,12 +422,13 @@ export default function StudyLobbyPage({ role }) {
                 <div className={styles.audioControls}>
                   <div className={styles.nowPlayingInfo}>
                     <strong>{selectedMusic.label}</strong>
-                    <span>Live Stream</span>
+                    <span>Radio / Audio Loop</span>
                   </div>
                   <audio
-                    key={selectedMusic.id} // Reload when theme changes
-                    src={selectedMusic.streamUrl}
+                    key={`${selectedMusic.id}-${timerMode}`} // Reload when theme or mode changes
+                    src={timerMode === 'work' ? selectedMusic.workStreamUrl : selectedMusic.breakStreamUrl}
                     autoPlay
+                    loop
                     controls
                     controlsList="nodownload noplaybackrate"
                     className={styles.nativeAudio}

@@ -674,7 +674,7 @@ export const removeMoviePreference = async (role, movieId, preferenceType = 'wat
     const docPrefix = preferenceType === 'watchlist' ? 'watchlist' : 'vote';
     const newFormatRef = doc(db, 'movie_preferences', `${role}_${docPrefix}_${movieId}`);
     const oldFormatRef = doc(db, 'movie_preferences', `${role}_${movieId}`);
-    
+
     // Ștergem ambele variante ca să prindem și datele vechi
     await deleteDoc(newFormatRef);
     await deleteDoc(oldFormatRef);
@@ -903,7 +903,7 @@ export function useAppVersion() {
   // Ruleaza apoi: npm run build && npx cap sync
   // Pune in google drive noul .apk
   // Pune versiunea curenta in system.app_version in firebase
-  const localVersion = "1.1.1";
+  const localVersion = "1.1.2";
 
   useEffect(() => {
     const dRef = doc(db, 'system', 'app_version');

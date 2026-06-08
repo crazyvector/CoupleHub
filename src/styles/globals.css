@@ -104,6 +104,7 @@
    TEMA PENTRU EL (Futuristica / Dark Mode)
    ----------------------------------------------------------- */
 .theme-his {
+  color-scheme: dark;
   /* Paleta futuristă */
   --color-rose: #00F3FF;
   --color-rose-dark: #00B8D9;
