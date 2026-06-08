@@ -4,6 +4,7 @@ import styles from './MoviesPage.module.css';
 import { searchMedia, getImageUrl, getMediaDetails, discoverMedia, MOVIE_GENRES, TV_GENRES } from '../utils/tmdb';
 import { saveMoviePreference, removeMoviePreference, useMoviePreferences, useMovieSearches, useWatchlistMovies } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useMonetization } from '../hooks/useMonetization';
 
 export default function MoviesPage({ role }) {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function MoviesPage({ role }) {
   const watchlistMovies = useWatchlistMovies(role);
   const { searches, addSearch, removeSearch } = useMovieSearches(role);
   const { t } = useLanguage();
+  const { isPro } = useMonetization();
   
   const [recommendedList, setRecommendedList] = useState([]);
   const [showSearchHistory, setShowSearchHistory] = useState(false);
@@ -168,19 +170,21 @@ export default function MoviesPage({ role }) {
       </div>
 
       {/* Affiliate Banner */}
-      <div className={styles.affiliateBanner} onClick={() => window.open('https://www.cinemacity.ro', '_blank')} style={{
-        background: 'linear-gradient(45deg, #FF6B6B, #FF8E53)',
-        borderRadius: '12px', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 4px 10px rgba(255, 107, 107, 0.3)'
-      }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.1rem' }}>🍿 {t('movies.affiliateTitle') || 'Vrei să ieșiți la un film?'}</h3>
-          <p style={{ margin: '5px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>{t('movies.affiliateDesc') || 'Rezervă bilete acum și bucurați-vă de o seară specială.'}</p>
+      {!isPro && (
+        <div className={styles.affiliateBanner} onClick={() => window.open('https://www.cinemacity.ro', '_blank')} style={{
+          background: 'linear-gradient(45deg, #FF6B6B, #FF8E53)',
+          borderRadius: '12px', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 4px 10px rgba(255, 107, 107, 0.3)'
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>🍿 {t('movies.affiliateTitle') || 'Vrei să ieșiți la un film?'}</h3>
+            <p style={{ margin: '5px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>{t('movies.affiliateDesc') || 'Rezervă bilete acum și bucurați-vă de o seară specială.'}</p>
+          </div>
+          <div style={{ background: 'white', color: '#FF6B6B', padding: '8px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+            {t('movies.affiliateBtn') || 'Cumpără Bilete'}
+          </div>
         </div>
-        <div style={{ background: 'white', color: '#FF6B6B', padding: '8px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-          {t('movies.affiliateBtn') || 'Cumpără Bilete'}
-        </div>
-      </div>
+      )}
 
       <div className={styles.searchContainer}>
         <div className={styles.searchBar}>

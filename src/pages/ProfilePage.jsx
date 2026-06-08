@@ -14,7 +14,7 @@ export default function ProfilePage({ role }) {
   const { logout, gender, userData, changeUserPassword } = useGlobalAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
   const { latestVersion, downloadUrl, localVersion } = useAppVersion();
-  const { isPro, offerings, purchasePackage } = useMonetization();
+  const { isPro, offerings, purchasePackage, redeemPromoCode, isLifetimePro } = useMonetization();
   const { t, setLang } = useLanguage();
   
   const [formData, setFormData] = useState({
@@ -27,6 +27,9 @@ export default function ProfilePage({ role }) {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  const [promoCode, setPromoCode] = useState('');
+  const [isRedeeming, setIsRedeeming] = useState(false);
   
   const [passwordData, setPasswordData] = useState({ oldPass: '', newPass: '', confirmPass: '' });
   const [isChangingPass, setIsChangingPass] = useState(false);
@@ -179,6 +182,16 @@ export default function ProfilePage({ role }) {
 
     setPasswordData({ oldPass: '', newPass: '', confirmPass: '' });
     setIsChangingPass(false);
+  };
+
+  const handleRedeemCode = async (e) => {
+    e.preventDefault();
+    if (!promoCode.trim()) return;
+    setIsRedeeming(true);
+    const res = await redeemPromoCode(promoCode.trim().toUpperCase());
+    alert(res.message);
+    if (res.success) setPromoCode('');
+    setIsRedeeming(false);
   };
 
   if (loading) {
@@ -404,6 +417,27 @@ export default function ProfilePage({ role }) {
               {!offerings && (
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('profile.loadingOffers')}</p>
               )}
+              
+              <div style={{ marginTop: '20px', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '15px' }}>
+                <p style={{ fontSize: '0.8rem', textAlign: 'center', marginBottom: '8px', color: 'var(--text-muted)' }}>Ai un cod promoțional?</p>
+                <form onSubmit={handleRedeemCode} style={{ display: 'flex', gap: '10px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Cod" 
+                    value={promoCode}
+                    onChange={e => setPromoCode(e.target.value)}
+                    className={styles.input}
+                    style={{ flex: 1, textTransform: 'uppercase', marginBottom: 0 }}
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={isRedeeming}
+                    style={{ background: 'var(--color-rose)', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', fontWeight: 'bold' }}
+                  >
+                    {isRedeeming ? '...' : 'Aplică'}
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>

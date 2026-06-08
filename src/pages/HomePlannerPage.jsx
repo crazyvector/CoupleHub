@@ -8,6 +8,7 @@ import { fetchInteriorIdeas } from '../utils/unsplash';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useNotifications } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useMonetization } from '../hooks/useMonetization';
 
 const getRooms = (t) => [
   { id: 'bucatarie', label: t('homePlanner.kitchen'), icon: '🍳' },
@@ -29,6 +30,7 @@ const MOCK_IDEAS = [
 export default function HomePlannerPage({ role }) {
   const { items, addItem, deleteItem, updateItem, setItemLike, addComment, loading } = useHomeItems();
   const { addNotification } = useNotifications(role);
+  const { isPro } = useMonetization();
   
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'swipe', 'matches'
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -182,6 +184,10 @@ export default function HomePlannerPage({ role }) {
     if (existingMatch) {
       await handleSetItemLike(existingMatch.id, role, true);
     } else {
+      if (!isPro && items.length >= 5) {
+        alert("Ai atins limita de 5 idei gratuite! Treci la Premium pentru stocare nelimitată.");
+        return;
+      }
       const roomAssigned = swipeCategory ? swipeCategory.roomId : 'living';
 
       await addItem({
@@ -347,18 +353,20 @@ export default function HomePlannerPage({ role }) {
         </div>
 
         {/* Affiliate Banner for Home Deco */}
-        <div style={{
-          background: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)',
-          borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 242, 254, 0.3)'
-        }} onClick={() => window.open('https://www.ikea.com/ro/ro/', '_blank')}>
-           <div>
-            <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Căutați mobilă nouă?'}</h3>
-            <p style={{ margin: '5px 0 0', fontSize: '0.8rem', opacity: 0.9 }}>{t('homePlanner.affiliateDesc') || 'Descoperiți ofertele IKEA pentru un cuib perfect.'}</p>
+        {!isPro && (
+          <div style={{
+            background: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)',
+            borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 242, 254, 0.3)'
+          }} onClick={() => window.open('https://www.ikea.com/ro/ro/', '_blank')}>
+             <div>
+              <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Căutați mobilă nouă?'}</h3>
+              <p style={{ margin: '5px 0 0', fontSize: '0.8rem', opacity: 0.9 }}>{t('homePlanner.affiliateDesc') || 'Descoperiți ofertele IKEA pentru un cuib perfect.'}</p>
+            </div>
+            <div style={{ background: 'white', color: '#00f2fe', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+              {t('homePlanner.affiliateBtn') || 'Vezi oferte'}
+            </div>
           </div>
-          <div style={{ background: 'white', color: '#00f2fe', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-            {t('homePlanner.affiliateBtn') || 'Vezi oferte'}
-          </div>
-        </div>
+        )}
 
         <div className={styles.dashboardSearch}>
           <div className={styles.searchBar}>
@@ -614,7 +622,13 @@ export default function HomePlannerPage({ role }) {
 
       {/* Floating Action Button (Doar pe Dashboard) */}
       {activeTab === 'dashboard' && (
-        <button className={styles.fab} onClick={() => setShowAddModal(true)}>
+        <button className={styles.fab} onClick={() => {
+          if (!isPro && items.length >= 5) {
+            alert("Ai atins limita de 5 idei gratuite! Treci la Premium pentru stocare nelimitată.");
+            return;
+          }
+          setShowAddModal(true);
+        }}>
           +
         </button>
       )}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup as LeafletPopup, useMap, useMapEvents } from 'react-leaflet';
 import { useMemories, useProfiles } from '../hooks/useDatabase';
+import { useMonetization } from '../hooks/useMonetization';
 import { useLanguage } from '../contexts/LanguageContext';
 import L from 'leaflet';
 import styles from './MemoriesPage.module.css';
@@ -345,6 +346,7 @@ export default function MemoriesPage({ role }) {
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
   const { t } = useLanguage();
+  const { isPro } = useMonetization();
 
   const myName = myProfile?.name || (role === 'her' ? 'Ana' : 'Andrei');
   const partnerName = targetProfile?.name || (targetRole === 'her' ? 'Ana' : 'Andrei');
@@ -359,6 +361,10 @@ export default function MemoriesPage({ role }) {
 
   // Map click
   const handleMapClick = (coords) => {
+    if (!isPro && memories.length >= 10) {
+      alert("Ai atins limita de 10 amintiri gratuite! Treci la Premium pentru stocare nelimitată. Poți adăuga un cod promoțional în setările profilului.");
+      return;
+    }
     setEditingMemory(null);
     setNewCoords(coords);
     setAddMode('memory');
@@ -451,7 +457,15 @@ export default function MemoriesPage({ role }) {
           <PhotoGallery 
             memories={memories} 
             onPhotoClick={setSelectedMemory} 
-            onAddPhoto={() => { setEditingMemory(null); setAddMode('photo'); setShowAddModal(true); }}
+            onAddPhoto={() => { 
+              if (!isPro && memories.length >= 10) {
+                alert("Ai atins limita de 10 amintiri gratuite! Treci la Premium pentru stocare nelimitată.");
+                return;
+              }
+              setEditingMemory(null); 
+              setAddMode('photo'); 
+              setShowAddModal(true); 
+            }}
             onDeletePhoto={handleDeleteMemory}
           />
         </div>

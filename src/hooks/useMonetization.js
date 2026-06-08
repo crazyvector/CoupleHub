@@ -3,23 +3,37 @@ import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admo
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { useGlobalAuth } from '../contexts/AuthContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export function useMonetization() {
   const { userData, coupleId } = useGlobalAuth();
-  const [isPro, setIsPro] = useState(false);
+  const [isRCPro, setIsRCPro] = useState(false);
+  const [isLifetimePro, setIsLifetimePro] = useState(false);
   const [offerings, setOfferings] = useState(null);
   const [isAdMobReady, setIsAdMobReady] = useState(false);
 
-  // Verifică statusul din Firebase (pentru redundanță)
+  // Verifică statusul Lifetime Promo Code din Firebase
+  useEffect(() => {
+    if (!coupleId) return;
+    const unsub = onSnapshot(doc(db, 'couples', coupleId, 'system', 'subscription'), (d) => {
+      if (d.exists() && d.data().isLifetimePro) {
+        setIsLifetimePro(true);
+      } else {
+        setIsLifetimePro(false);
+      }
+    });
+    return () => unsub();
+  }, [coupleId]);
+
+  // Verifică statusul din Firebase (pentru redundanță user)
   useEffect(() => {
     if (!userData?.uid) return;
     const fetchFirebaseProStatus = async () => {
       try {
         const d = await getDoc(doc(db, 'users', userData.uid));
         if (d.exists() && d.data().isPro) {
-          setIsPro(true);
+          setIsRCPro(true);
         }
       } catch (e) {
         console.error("Firebase Pro check error:", e);
@@ -41,17 +55,14 @@ export function useMonetization() {
           appUserID: userData.uid
         });
 
-        // Verifică statusul pro din RevenueCat
         const customerInfo = await Purchases.getCustomerInfo();
-        const proEntitlement = customerInfo.entitlements.active['pro']; // Trebuie să definești 'pro' în dashboard
+        const proEntitlement = customerInfo.entitlements.active['pro'];
         
         if (typeof proEntitlement !== "undefined") {
-          setIsPro(true);
-          // Sync to Firebase
+          setIsRCPro(true);
           await setDoc(doc(db, 'users', userData.uid), { isPro: true }, { merge: true });
         }
 
-        // Fetch offerings
         const offs = await Purchases.getOfferings();
         if (offs.current !== null) {
           setOfferings(offs.current);
@@ -71,8 +82,8 @@ export function useMonetization() {
       try {
         await AdMob.initialize({
           requestTrackingAuthorization: true,
-          testingDevices: ['2077ef9a63d2b398840261c8221a0c9b'], // Poți adăuga ID-uri de test aici
-          initializeForTesting: false, // Set to false in production
+          testingDevices: ['2077ef9a63d2b398840261c8221a0c9b'],
+          initializeForTesting: false,
         });
         setIsAdMobReady(true);
       } catch (e) {
@@ -86,7 +97,7 @@ export function useMonetization() {
     try {
       const { customerInfo } = await Purchases.purchasePackage({ aPackage: rcPackage });
       if (typeof customerInfo.entitlements.active['pro'] !== "undefined") {
-        setIsPro(true);
+        setIsRCPro(true);
         if (userData?.uid) {
           await setDoc(doc(db, 'users', userData.uid), { isPro: true }, { merge: true });
         }
@@ -101,16 +112,35 @@ export function useMonetization() {
     }
   };
 
+  const redeemPromoCode = async (code) => {
+    if (!coupleId) return { success: false, message: "Eroare: Nu ești într-un cuplu." };
+    if (code === 'ANDREIPRO1') {
+      try {
+        await setDoc(doc(db, 'couples', coupleId, 'system', 'subscription'), {
+          isLifetimePro: true,
+          redeemedAt: new Date().toISOString(),
+          codeUsed: code
+        }, { merge: true });
+        return { success: true, message: "Felicitări! Ai deblocat Premium Lifetime! 🎉" };
+      } catch (err) {
+        console.error("Eroare la activare promo code:", err);
+        return { success: false, message: "Eroare la conectarea cu baza de date." };
+      }
+    }
+    return { success: false, message: "Cod promoțional invalid sau expirat." };
+  };
+
+  const isPro = isRCPro || isLifetimePro;
+
   const showBanner = async () => {
     if (!isAdMobReady || isPro || !Capacitor.isNativePlatform()) return;
-    
     try {
       const options = {
         adId: 'ca-app-pub-8580245815605338/1561052736',
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.TOP_CENTER,
         margin: 0,
-        isTesting: false // Modifică în producție
+        isTesting: false
       };
       await AdMob.showBanner(options);
     } catch (e) {
@@ -134,5 +164,7 @@ export function useMonetization() {
     purchasePackage,
     showBanner,
     hideBanner,
+    redeemPromoCode,
+    isLifetimePro
   };
 }

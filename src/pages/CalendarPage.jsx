@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useEvents } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useMonetization } from '../hooks/useMonetization';
 import styles from './CalendarPage.module.css';
 
 // Helpers
@@ -16,6 +17,7 @@ function getFirstDayOfMonth(year, month) {
 export default function CalendarPage() {
   const { events, addEvent, deleteEvent, updateEvent, loading } = useEvents();
   const { t } = useLanguage();
+  const { isPro } = useMonetization();
   
   const monthNames = t('calendar.months') || [];
   const dayNames = t('calendar.days') || [];
@@ -219,7 +221,7 @@ export default function CalendarPage() {
             )}
 
             {/* Affiliate Banner for Gifts */}
-            {newEvent.id && newEvent.name?.toLowerCase().includes('aniversare') && (
+            {!isPro && newEvent.id && newEvent.name?.toLowerCase().includes('aniversare') && (
               <div style={{ background: '#f9f9f9', border: '1px dashed #FF6B6B', padding: '10px', borderRadius: '8px', marginBottom: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => window.open('https://www.emag.ro/cmp/cadouri-pentru-ea', '_blank')}>
                 <div style={{ fontSize: '2rem' }}>🎁</div>
                 <div>
