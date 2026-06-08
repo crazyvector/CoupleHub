@@ -239,3 +239,39 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+/* Swiper Styles */
+.swipeContainer {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  width: 100%;
+}
+.swipeContainer::-webkit-scrollbar {
+  display: none;
+}
+.swipeSlide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+.swipeDots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.swipeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+.swipeDotActive {
+  opacity: 1;
+  background: var(--color-rose-dark);
+}

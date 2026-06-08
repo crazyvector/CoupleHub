@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEvents, useProfiles, useSystemState, useNotifications } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -81,6 +81,44 @@ function SortableTile({ id, extraStyle, children }) {
         <div style={{ width: '40px', height: '5px', background: 'var(--text-muted)', opacity: 0.3, borderRadius: '5px' }} />
       </div>
       {children}
+    </div>
+  );
+}
+
+function SwipeableWidget({ children }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const containerRef = useRef(null);
+
+  const handleScroll = (e) => {
+    if (!containerRef.current) return;
+    const scrollLeft = e.target.scrollLeft;
+    const width = containerRef.current.offsetWidth;
+    const newIndex = Math.round(scrollLeft / width);
+    if (newIndex !== currentIndex) {
+      setCurrentIndex(newIndex);
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+      <div 
+        ref={containerRef}
+        className={styles.swipeContainer}
+        onScroll={handleScroll}
+      >
+        {React.Children.map(children, (child, idx) => (
+          <div key={idx} className={styles.swipeSlide}>
+            {child}
+          </div>
+        ))}
+      </div>
+      {React.Children.count(children) > 1 && (
+        <div className={styles.swipeDots}>
+          {React.Children.map(children, (_, idx) => (
+            <div className={`${styles.swipeDot} ${idx === currentIndex ? styles.swipeDotActive : ''}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -353,63 +391,63 @@ export default function DashboardPage({ role }) {
                     break;
                   case 'status':
                     content = (
-                      <div style={{ background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
-                        <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>{t('dashboard.ourState')}</h3>
-                        
-                        <div style={{ marginBottom: '20px' }}>
-                          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                            <span>{t('dashboard.yourStress')} {localStress}% 🤯</span>
-                          </label>
-                          <input 
-                            type="range" 
-                            min="0" max="100" 
-                            value={localStress} 
-                            onChange={(e) => setLocalStress(Number(e.target.value))}
-                            onMouseUp={() => updateProfile({ stressLevel: localStress })}
-                            onTouchEnd={() => updateProfile({ stressLevel: localStress })}
-                            style={{ width: '100%', accentColor: 'var(--color-purple)' }}
-                          />
-                        </div>
-
-                        <div style={{ marginBottom: '20px' }}>
-                          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                            <span>{t('dashboard.yourAnger')} {localAnger}% 😡</span>
-                          </label>
-                          <input 
-                            type="range" 
-                            min="0" max="100" 
-                            value={localAnger} 
-                            onChange={(e) => setLocalAnger(Number(e.target.value))}
-                            onMouseUp={() => updateProfile({ angerLevel: localAnger })}
-                            onTouchEnd={() => updateProfile({ angerLevel: localAnger })}
-                            style={{ width: '100%', accentColor: '#e74c3c' }}
-                          />
-                        </div>
-
-                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                            {targetProfile?.gender === 'F' ? t('dashboard.partnerStateLabel') : t('dashboard.partnerStateLabel')}, {partnerName}:
-                          </p>
-                          <div style={{ marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-                              <span>{t('dashboard.partnerStress')} 🤯</span>
-                              <span>{targetProfile?.stressLevel || 0}%</span>
+                      <div style={{ background: 'var(--bg-card)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
+                        <SwipeableWidget>
+                          <div style={{ padding: 'var(--space-4)' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                              {targetProfile?.gender === 'F' ? t('dashboard.partnerStateLabel') : t('dashboard.partnerStateLabel')}, {partnerName}:
+                            </p>
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                                <span>{t('dashboard.partnerStress')} 🤯</span>
+                                <span>{targetProfile?.stressLevel || 0}%</span>
+                              </div>
+                              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                                <div style={{ width: `${targetProfile?.stressLevel || 0}%`, background: 'var(--color-purple)', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                              </div>
                             </div>
-                            <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
-                              <div style={{ width: `${targetProfile?.stressLevel || 0}%`, background: 'var(--color-purple)', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                                <span>{t('dashboard.anger')} 😡</span>
+                                <span>{targetProfile?.angerLevel || 0}%</span>
+                              </div>
+                              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                                <div style={{ width: `${targetProfile?.angerLevel || 0}%`, background: '#e74c3c', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                              </div>
                             </div>
                           </div>
-                          
-                          <div style={{ marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-                              <span>{t('dashboard.anger')} 😡</span>
-                              <span>{targetProfile?.angerLevel || 0}%</span>
+                          <div style={{ padding: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>{t('dashboard.yourState') || 'Starea Ta'}</h3>
+                            <div style={{ marginBottom: '20px' }}>
+                              <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                <span>{t('dashboard.yourStress')} {localStress}% 🤯</span>
+                              </label>
+                              <input 
+                                type="range" 
+                                min="0" max="100" 
+                                value={localStress} 
+                                onChange={(e) => setLocalStress(Number(e.target.value))}
+                                onMouseUp={() => updateProfile({ stressLevel: localStress })}
+                                onTouchEnd={() => updateProfile({ stressLevel: localStress })}
+                                style={{ width: '100%', accentColor: 'var(--color-purple)' }}
+                              />
                             </div>
-                            <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
-                              <div style={{ width: `${targetProfile?.angerLevel || 0}%`, background: '#e74c3c', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                            <div style={{ marginBottom: '10px' }}>
+                              <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                <span>{t('dashboard.yourAnger')} {localAnger}% 😡</span>
+                              </label>
+                              <input 
+                                type="range" 
+                                min="0" max="100" 
+                                value={localAnger} 
+                                onChange={(e) => setLocalAnger(Number(e.target.value))}
+                                onMouseUp={() => updateProfile({ angerLevel: localAnger })}
+                                onTouchEnd={() => updateProfile({ angerLevel: localAnger })}
+                                style={{ width: '100%', accentColor: '#e74c3c' }}
+                              />
                             </div>
                           </div>
-                        </div>
+                        </SwipeableWidget>
                       </div>
                     );
                     break;
