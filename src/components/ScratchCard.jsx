@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSystemState, useDailyQuote } from '../hooks/useDatabase';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from '../pages/MemoriesPage.module.css';
 
 export default function ScratchCard() {
   const { role } = useAuth();
+  const { t, lang } = useLanguage();
   const { systemState, setScratchRevealed } = useSystemState();
-  const { quote, loading } = useDailyQuote();
+  const { quote, loading } = useDailyQuote(lang);
   
   const canvasRef = useRef(null);
   const isDrawingRef = useRef(false);
@@ -15,7 +17,7 @@ export default function ScratchCard() {
   const animFrameRef = useRef(null);
 
   const customCard = systemState.scratchCards?.customCard;
-  const dailyMessage = customCard ? customCard.message : (quote || "Se încarcă surpriza...");
+  const dailyMessage = customCard ? customCard.message : (quote || t('dashboard.scratchLoading'));
   const dailyEmoji = customCard ? customCard.emoji : "💌";
 
   useEffect(() => {
@@ -47,8 +49,8 @@ export default function ScratchCard() {
     ctx.font = `bold ${Math.floor(W / 12)}px Nunito, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Răzuiește aici! 💕', W / 2, H / 2 - 10);
-  }, [isRevealed]);
+    ctx.fillText(t('dashboard.scratchHere'), W / 2, H / 2 - 10);
+  }, [isRevealed, t]);
 
   const scratch = useCallback((e) => {
     if (!isDrawingRef.current || isRevealed) return;
@@ -88,8 +90,8 @@ export default function ScratchCard() {
       <div className={styles.scratchHeader}>
         <span className={styles.scratchIcon}>🎴</span>
         <div>
-          <h3 className={styles.scratchTitle}>Surpriza Zilei</h3>
-          <p className={styles.scratchSubtitle}>Un nou loz în fiecare zi!</p>
+          <h3 className={styles.scratchTitle}>{t('dashboard.scratchTitle')}</h3>
+          <p className={styles.scratchSubtitle}>{t('dashboard.scratchSubtitle')}</p>
         </div>
       </div>
 
@@ -118,7 +120,7 @@ export default function ScratchCard() {
 
       {isRevealed && (
         <div className={styles.scratchRevealed}>
-          <p className={styles.scratchRevealedMsg}>Revino mâine pentru un nou loz!</p>
+          <p className={styles.scratchRevealedMsg}>{t('dashboard.scratchComeBack')}</p>
         </div>
       )}
     </div>

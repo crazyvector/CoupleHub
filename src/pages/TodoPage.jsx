@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTodos } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './TodoPage.module.css';
-
-const PREDEFINED_CATEGORIES = ['General', 'Casă 🏠', 'Muncă 💼', 'Cumpărături 🛒', 'Sănătate 💊', 'Iubire ❤️'];
 
 export default function TodoPage({ role }) {
   const { todos, addTodo, updateTodo, toggleTodoStatus, deleteTodo, loading } = useTodos(role);
+  const { t } = useLanguage();
+  
+  const PREDEFINED_CATEGORIES = [
+    t('todo.categories.general'), 
+    t('todo.categories.home'), 
+    t('todo.categories.work'), 
+    t('todo.categories.shopping'), 
+    t('todo.categories.health'), 
+    t('todo.categories.love')
+  ];
+
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'completed'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState('importance'); // 'importance', 'deadline', 'dateAdded', 'name', 'category'
@@ -16,7 +26,7 @@ export default function TodoPage({ role }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [importance, setImportance] = useState('medium'); // 'high', 'medium', 'low'
-  const [category, setCategory] = useState('General');
+  const [category, setCategory] = useState(PREDEFINED_CATEGORIES[0]);
   const [customCategory, setCustomCategory] = useState('');
   const [deadline, setDeadline] = useState('');
   const [image, setImage] = useState('');
@@ -60,7 +70,7 @@ export default function TodoPage({ role }) {
       setImage(base64Url);
     } catch (err) {
       console.error(err);
-      alert('Eroare la încărcarea imaginii.');
+      alert(t('todo.errorImage'));
     }
     setIsUploading(false);
   };
@@ -70,7 +80,7 @@ export default function TodoPage({ role }) {
     setTitle('');
     setDescription('');
     setImportance('medium');
-    setCategory('General');
+    setCategory(PREDEFINED_CATEGORIES[0]);
     setCustomCategory('');
     setDeadline('');
     setImage('');
@@ -84,7 +94,7 @@ export default function TodoPage({ role }) {
     setImportance(todo.importance || 'medium');
     
     // Check if category is predefined
-    const cat = todo.category || 'General';
+    const cat = todo.category || PREDEFINED_CATEGORIES[0];
     if (PREDEFINED_CATEGORIES.includes(cat)) {
       setCategory(cat);
       setCustomCategory('');
@@ -102,7 +112,7 @@ export default function TodoPage({ role }) {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const finalCategory = category === 'Altele' ? (customCategory.trim() || 'General') : category;
+    const finalCategory = category === 'Altele' ? (customCategory.trim() || PREDEFINED_CATEGORIES[0]) : category;
 
     const data = {
       title: title.trim(),
@@ -158,8 +168,8 @@ export default function TodoPage({ role }) {
     }
     
     if (sortBy === 'category') {
-      const catA = a.category || 'General';
-      const catB = b.category || 'General';
+      const catA = a.category || PREDEFINED_CATEGORIES[0];
+      const catB = b.category || PREDEFINED_CATEGORIES[0];
       if (catA !== catB) return catA.localeCompare(catB);
       return importanceOrder[b.importance] - importanceOrder[a.importance];
     }
@@ -173,20 +183,20 @@ export default function TodoPage({ role }) {
     const now = new Date();
     const diff = d - now;
     
-    if (diff < 0) return { text: 'Expirat ⚠️', isSafe: false };
-    if (diff < 24 * 60 * 60 * 1000) return { text: 'Azi 🚨', isSafe: false };
-    return { text: d.toLocaleDateString('ro-RO'), isSafe: true };
+    if (diff < 0) return { text: t('todo.expired'), isSafe: false };
+    if (diff < 24 * 60 * 60 * 1000) return { text: t('todo.today'), isSafe: false };
+    return { text: d.toLocaleDateString(), isSafe: true };
   };
 
   if (loading) {
-    return <div className={styles.page}><p>Încărcare...</p></div>;
+    return <div className={styles.page}><p>{t('todo.loading')}</p></div>;
   }
 
   return (
     <div className={`${styles.page} animate-fade-in`}>
       <header className={styles.header}>
-        <h1 className={styles.title}>📝 To-Do List</h1>
-        <p className={styles.subtitle}>Task-urile tale personale</p>
+        <h1 className={styles.title}>{t('todo.title')}</h1>
+        <p className={styles.subtitle}>{t('todo.subtitle')}</p>
       </header>
 
       <div className={styles.tabs}>
@@ -194,13 +204,13 @@ export default function TodoPage({ role }) {
           className={`${styles.tab} ${activeTab === 'active' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('active')}
         >
-          Active ({activeTodos.length})
+          {t('todo.tabActive')} ({activeTodos.length})
         </button>
         <button 
           className={`${styles.tab} ${activeTab === 'completed' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('completed')}
         >
-          Istoric ({completedTodos.length})
+          {t('todo.tabCompleted')} ({completedTodos.length})
         </button>
       </div>
       
@@ -210,22 +220,22 @@ export default function TodoPage({ role }) {
           value={sortBy} 
           onChange={(e) => setSortBy(e.target.value)}
         >
-          <option value="importance">🔥 Sortare: Importanță</option>
-          <option value="deadline">⏰ Sortare: Deadline</option>
-          <option value="category">📂 Sortare: Categorie</option>
-          <option value="dateAdded">📅 Sortare: Dată Adăugare</option>
-          <option value="name">🔤 Sortare: Nume</option>
+          <option value="importance">{t('todo.sortImportance')}</option>
+          <option value="deadline">{t('todo.sortDeadline')}</option>
+          <option value="category">{t('todo.sortCategory')}</option>
+          <option value="dateAdded">{t('todo.sortDateAdded')}</option>
+          <option value="name">{t('todo.sortName')}</option>
         </select>
       </div>
 
       <button className={styles.addButton} onClick={openAddModal}>
-        ➕ Adaugă un task nou
+        {t('todo.addBtn')}
       </button>
 
       <div className={styles.list}>
         {displayedTodos.length === 0 ? (
           <div className={styles.emptyState}>
-            {activeTab === 'active' ? 'Nu ai niciun task activ. Yay! 🎉' : 'Nu ai niciun task finalizat încă.'}
+            {activeTab === 'active' ? t('todo.emptyActive') : t('todo.emptyCompleted')}
           </div>
         ) : (
           displayedTodos.map(todo => {
@@ -266,11 +276,11 @@ export default function TodoPage({ role }) {
                   {todo.image && <img src={todo.image} alt="Task" className={styles.taskImage} />}
                   
                   <div className={styles.taskMeta}>
-                    <span>Importanță: {todo.importance === 'high' ? '🔥 Mare' : todo.importance === 'medium' ? '⭐ Medie' : '🧊 Mică'}</span>
+                    <span>{t('todo.importance')} {todo.importance === 'high' ? t('todo.impHighEmoji') : todo.importance === 'medium' ? t('todo.impMediumEmoji') : t('todo.impLowEmoji')}</span>
                     <button 
                       className={styles.deleteBtn} 
                       onClick={(e) => { e.stopPropagation(); deleteTodo(todo.id); }}
-                      aria-label="Șterge"
+                      aria-label={t('todo.deleteBtn')}
                     >
                       🗑️
                     </button>
@@ -286,32 +296,32 @@ export default function TodoPage({ role }) {
         <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
           <div className={`${styles.modalContent} animate-scale-in`} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2>{editingId ? 'Editează Task' : 'Task Nou'}</h2>
+              <h2>{editingId ? t('todo.editTask') : t('todo.newTask')}</h2>
               <button className={styles.closeBtn} onClick={() => setIsModalOpen(false)}>✕</button>
             </div>
 
             <form onSubmit={handleSave}>
               <div className={styles.formField}>
-                <label>Titlu *</label>
+                <label>{t('todo.titleLabel')}</label>
                 <input 
                   type="text" 
                   value={title} 
                   onChange={e => setTitle(e.target.value)} 
                   className={styles.input} 
-                  placeholder="Ex: Cumpără flori" 
+                  placeholder={t('todo.titlePlaceholder')} 
                   required 
                 />
               </div>
 
               <div className={styles.formField}>
-                <label>Grupă / Categorie</label>
+                <label>{t('todo.categoryLabel')}</label>
                 <select 
                   value={category} 
                   onChange={(e) => setCategory(e.target.value)}
                   className={styles.input}
                 >
                   {PREDEFINED_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  <option value="Altele">Altă categorie...</option>
+                  <option value="Altele">{t('todo.otherCategory')}</option>
                 </select>
                 {category === 'Altele' && (
                   <input 
@@ -319,7 +329,7 @@ export default function TodoPage({ role }) {
                     value={customCategory} 
                     onChange={e => setCustomCategory(e.target.value)} 
                     className={styles.input} 
-                    placeholder="Nume categorie nouă..." 
+                    placeholder={t('todo.newCategoryPlaceholder')} 
                     style={{ marginTop: '10px' }}
                     required 
                   />
@@ -327,7 +337,7 @@ export default function TodoPage({ role }) {
               </div>
 
               <div className={styles.formField}>
-                <label>Termen limită (Deadline)</label>
+                <label>{t('todo.deadlineLabel')}</label>
                 <input 
                   type="datetime-local" 
                   value={deadline} 
@@ -337,29 +347,29 @@ export default function TodoPage({ role }) {
               </div>
 
               <div className={styles.formField}>
-                <label>Detalii (opțional)</label>
+                <label>{t('todo.detailsLabel')}</label>
                 <textarea 
                   value={description} 
                   onChange={e => setDescription(e.target.value)} 
                   className={styles.textarea} 
-                  placeholder="Detalii adiționale..." 
+                  placeholder={t('todo.detailsPlaceholder')} 
                 />
               </div>
 
               <div className={styles.formField}>
-                <label>Importanță</label>
+                <label>{t('todo.importanceLabel')}</label>
                 <div className={styles.priorityGroup}>
-                  <button type="button" className={styles.priorityBtn} data-active={importance === 'low'} onClick={() => setImportance('low')}>Mică</button>
-                  <button type="button" className={styles.priorityBtn} data-active={importance === 'medium'} onClick={() => setImportance('medium')}>Medie</button>
-                  <button type="button" className={styles.priorityBtn} data-active={importance === 'high'} onClick={() => setImportance('high')}>Mare</button>
+                  <button type="button" className={styles.priorityBtn} data-active={importance === 'low'} onClick={() => setImportance('low')}>{t('todo.impLow')}</button>
+                  <button type="button" className={styles.priorityBtn} data-active={importance === 'medium'} onClick={() => setImportance('medium')}>{t('todo.impMedium')}</button>
+                  <button type="button" className={styles.priorityBtn} data-active={importance === 'high'} onClick={() => setImportance('high')}>{t('todo.impHigh')}</button>
                 </div>
               </div>
 
               <div className={styles.formField}>
-                <label>Adaugă o imagine (opțional)</label>
+                <label>{t('todo.imageLabel')}</label>
                 <div className={styles.imageUpload}>
                   {isUploading ? (
-                    <p>Se încarcă...</p>
+                    <p>{t('todo.uploading')}</p>
                   ) : image ? (
                     <>
                       <img src={image} alt="Preview" className={styles.previewImage} />
@@ -367,20 +377,20 @@ export default function TodoPage({ role }) {
                     </>
                   ) : (
                     <>
-                      <p>📷 Apasă pentru a încărca o poză</p>
+                      <p>{t('todo.clickUpload')}</p>
                       <input type="file" accept="image/*" onChange={handleFileChange} className={styles.fileInput} />
                     </>
                   )}
                 </div>
                 {image && !isUploading && (
                   <button type="button" onClick={() => setImage('')} style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', marginTop: '5px' }}>
-                    Șterge imaginea
+                    {t('todo.deleteImage')}
                   </button>
                 )}
               </div>
 
               <button type="submit" className={styles.saveBtn}>
-                {editingId ? 'Salvează modificările' : 'Creează task'}
+                {editingId ? t('todo.saveChanges') : t('todo.createTask')}
               </button>
             </form>
           </div>

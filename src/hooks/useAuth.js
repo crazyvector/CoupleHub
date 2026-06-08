@@ -1,160 +1,267 @@
 import { useState, useEffect } from 'react';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword as updateFirebasePassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { app } from '../firebase';
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { db, app } from '../firebase';
 
-// Obținem instanța auth
 const auth = getAuth(app);
 
-const SESSION_PASS_KEY = 'coupleHub_sp';
-
 export function useAuth() {
-  const [role, setRole] = useState(null); // null | 'her' | 'his' | 'admin'
+  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAuthenticated = role === 'her' || role === 'his';
-  const isAdmin = role === 'admin';
-  const isHer = role === 'her';
-  const isHis = role === 'his';
-
-  // Ascultăm schimbările de stare a sesiunii (Login / Logout din Firebase)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Obținem rolul din Firestore bazat pe UID
-        try {
-          const roleDoc = await getDoc(doc(db, 'userRoles', user.uid));
-          if (roleDoc.exists()) {
-            setRole(roleDoc.data().role);
-          } else {
-            // Fallback în cazul în care documentul a fost șters
-            if (user.email === 'anadicu2004@gmail.com' || user.email === 'ana@couple.hub') setRole('her');
-            else if (user.email === 'deiu.cristescu@gmail.com' || user.email === 'andrei@couple.hub') setRole('his');
-            else if (user.email === 'admin@couple.hub') setRole('admin');
-            else setRole(null);
-          }
-        } catch (err) {
-          console.error("Eroare la obținerea rolului:", err);
-          setRole(null);
-        }
-      } else {
-        setRole(null);
-        sessionStorage.removeItem(SESSION_PASS_KEY);
+    let unSubDoc = null;
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (unSubDoc) {
+        unSubDoc();
+        unSubDoc = null;
       }
-      setIsLoading(false);
+
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        
+        unSubDoc = onSnapshot(doc(db, 'users', firebaseUser.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData(docSnap.data());
+          } else {
+            setUserData({ status: 'new' });
+          }
+          setIsLoading(false);
+        }, (error) => {
+          console.error("onSnapshot Error:", error);
+          setIsLoading(false);
+        });
+      } else {
+        setUser(null);
+        setUserData(null);
+        setIsLoading(false); // No more anonymous sign in
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unSubDoc) unSubDoc();
+      unsubscribe();
+    };
   }, []);
 
-  const login = async (password, selectedRole) => {
+  const loginWithEmail = async (email, password) => {
     try {
-      let emailToUse = '';
-      if (selectedRole === 'her') emailToUse = 'anadicu2004@gmail.com';
-      else if (selectedRole === 'his') emailToUse = 'deiu.cristescu@gmail.com';
-      else if (selectedRole === 'admin') emailToUse = 'admin@couple.hub';
-      else return false;
-
-      let userCredential;
-      try {
-        userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
-      } catch (err) {
-        // Dacă nu există contul pentru aceste email-uri, îl creăm automat.
-        // Asta face tranziția ușoară. Dacă a greșit parola la un cont existent, createUser va da eroare 'email-already-in-use' și o prindem.
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-          try {
-            userCredential = await createUserWithEmailAndPassword(auth, emailToUse, password);
-            await setDoc(doc(db, 'userRoles', userCredential.user.uid), { role: selectedRole });
-          } catch (createErr) {
-            if (createErr.code === 'auth/email-already-in-use') {
-              return false; // Parolă greșită pentru contul deja existent
-            }
-            throw createErr;
-          }
-        } else {
-          return false;
-        }
-      }
-      
-      // Salvăm parola temporar pentru decriptarea jurnalului
-      sessionStorage.setItem(SESSION_PASS_KEY, btoa(password));
-      
-      // Rolul va fi setat automat de onAuthStateChanged, dar pentru a returna instant răspunsul la UI:
-      const roleDoc = await getDoc(doc(db, 'userRoles', userCredential.user.uid));
-      let fetchedRole = selectedRole; // default
-      if (roleDoc.exists()) {
-        fetchedRole = roleDoc.data().role;
-      }
-      return fetchedRole;
+      await signInWithEmailAndPassword(auth, email, password);
+      return { success: true };
     } catch (err) {
-      console.error("Eroare la logare:", err);
-      return false; 
+      return { success: false, error: err.message };
+    }
+  };
+
+  const registerWithEmail = async (email, password, name, gender) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = userCredential.user;
+      
+      let pairKey = Math.random().toString(36).substring(2, 12).toUpperCase();
+      while (pairKey.length < 10) {
+        pairKey += Math.random().toString(36).substring(2, 3).toUpperCase();
+      }
+      
+      await setDoc(doc(db, 'users', newUser.uid), {
+        name,
+        gender,
+        pairKey,
+        coupleId: null,
+        role: 'his', // Standard initial
+        status: 'waiting',
+        createdAt: Date.now()
+      });
+      
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const resetPasswordEmail = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const changeUserPassword = async (oldPassword, newPassword) => {
+    if (!auth.currentUser) return { success: false, error: 'Not logged in' };
+    try {
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, oldPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updatePassword(auth.currentUser, newPassword);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Funcție păstrată pt backward compatibility (poate fi ignorată la conturi noi)
+  const createProfile = async (name, gender = 'F') => {
+    if (!user) return false;
+    const pairKey = Math.random().toString(36).substring(2, 12).toUpperCase();
+    
+    await setDoc(doc(db, 'users', user.uid), {
+      name,
+      gender,
+      pairKey,
+      coupleId: null,
+      role: 'his', // Pentru compatibilitate cu baza de date veche
+      status: 'waiting',
+      createdAt: Date.now()
+    });
+    return pairKey;
+  };
+
+  // Pasul 2: Conectarea la un partener
+  const linkPartner = async (rawPartnerKey, myName, myGender = 'M') => {
+    if (!user) return { success: false, error: 'Neautentificat' };
+    
+    const partnerKey = rawPartnerKey.trim().toUpperCase();
+
+    try {
+      // SECRET KEYS FOR MIGRATION (Andrei & Ana)
+      if (partnerKey === 'A9K3B7X2P5' || partnerKey === 'F4M8R1W6Y9') {
+        const assignedRole = partnerKey === 'F4M8R1W6Y9' ? 'her' : 'his';
+        const hardcodedGender = partnerKey === 'F4M8R1W6Y9' ? 'F' : 'M';
+        await setDoc(doc(db, 'users', user.uid), {
+          name: myName,
+          gender: hardcodedGender,
+          pairKey: 'MIGRATED',
+          coupleId: 'default_couple_hub',
+          role: assignedRole,
+          status: 'paired',
+          isPro: true, // Acorda PRO gratuit
+          createdAt: Date.now()
+        }, { merge: true });
+        
+        // Asigurăm că profilul din couples are și el genul și isPro (dacă vrem să-l folosim acolo)
+        await setDoc(doc(db, 'couples', 'default_couple_hub', 'profiles', assignedRole), {
+          name: myName,
+          gender: hardcodedGender,
+        }, { merge: true });
+        
+        return { success: true };
+      }
+
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('pairKey', '==', partnerKey));
+      const snap = await getDocs(q);
+      
+      if (snap.empty) {
+        return { success: false, error: 'Cheia nu a fost găsită.' };
+      }
+      
+      const partnerDoc = snap.docs[0];
+      const partnerData = partnerDoc.data();
+      
+      // Dacă partenerul are deja un cuplu (Rejoin/Reconnect)
+      if (partnerData.coupleId) {
+        const existingCoupleId = partnerData.coupleId;
+        const myRole = partnerData.role === 'his' ? 'her' : 'his';
+        
+        // Salvăm datele noastre fără să rescriem pairKey
+        await setDoc(doc(db, 'users', user.uid), {
+          name: myName,
+          gender: myGender,
+          coupleId: existingCoupleId,
+          role: myRole,
+          status: 'paired',
+          createdAt: Date.now()
+        }, { merge: true });
+        
+        // Asigurăm că profilul nostru există în colecția couples
+        await setDoc(doc(db, 'couples', existingCoupleId, 'profiles', myRole), {
+          name: myName,
+          gender: myGender,
+        }, { merge: true });
+        
+        return { success: true };
+      }
+      
+      const newCoupleId = partnerDoc.id + '_' + user.uid;
+      
+      // Salvăm datele noastre (caz nou) - fără să rescriem pairKey
+      await setDoc(doc(db, 'users', user.uid), {
+        name: myName,
+        gender: myGender,
+        coupleId: newCoupleId,
+        role: 'her', // Partenerul secundar
+        status: 'paired',
+        createdAt: Date.now()
+      }, { merge: true });
+      
+      // Actualizăm partenerul
+      await updateDoc(doc(db, 'users', partnerDoc.id), {
+        coupleId: newCoupleId,
+        status: 'paired'
+      });
+      
+      // Cream profilele initiale in colectia couples
+      await setDoc(doc(db, 'couples', newCoupleId, 'profiles', 'her'), {
+        name: myName,
+        gender: myGender,
+        isConfigured: false
+      });
+      
+      await setDoc(doc(db, 'couples', newCoupleId, 'profiles', 'his'), {
+        name: partnerData.name,
+        gender: partnerData.gender || 'F', // Fallback in caz ca partenerul nu avea setat
+        isConfigured: false
+      });
+      
+      return { success: true };
+    } catch(err) {
+       console.error(err);
+       return { success: false, error: 'Eroare la conectare' };
     }
   };
 
   const logout = async () => {
-    try {
-      await signOut(auth);
-      sessionStorage.removeItem(SESSION_PASS_KEY);
-      setRole(null);
-    } catch (err) {
-      console.error("Eroare la delogare:", err);
-    }
+    await signOut(auth);
   };
 
-  const getDiaryPassphrase = () => {
-    if (role !== 'her' && role !== 'his') return null;
-    try {
-      const encoded = sessionStorage.getItem(SESSION_PASS_KEY);
-      return encoded ? atob(encoded) : null;
-    } catch {
-      return null;
-    }
-  };
-
-  const updatePassword = async (newPassword) => {
-    if (!auth.currentUser) return false;
-    try {
-      await updateFirebasePassword(auth.currentUser, newPassword);
-      // Păstrăm sincronizat sessionStorage
-      if (role === 'her' || role === 'his') {
-        sessionStorage.setItem(SESSION_PASS_KEY, btoa(newPassword));
-      }
-      return true;
-    } catch (e) {
-      console.error("Eroare la schimbarea parolei:", e);
-      // Notă: Dacă utilizatorul este logat de mult timp, Firebase poate returna 'auth/requires-recent-login'
-      return false;
-    }
-  };
-
-  const resetPassword = async (selectedRole) => {
-    let emailToUse = '';
-    if (selectedRole === 'her') emailToUse = 'anadicu2004@gmail.com';
-    else if (selectedRole === 'his') emailToUse = 'deiu.cristescu@gmail.com';
-    else return false;
-
-    try {
-      await sendPasswordResetEmail(auth, emailToUse);
-      return true;
-    } catch (err) {
-      console.error("Eroare la resetarea parolei:", err);
-      return false;
-    }
+  const resetProfile = async () => {
+    if (!user) return;
+    await setDoc(doc(db, 'users', user.uid), { status: 'new' });
   };
 
   return {
-    isAuthenticated,
-    isAdmin,
-    isHer,
-    isHis,
+    user,
+    userData,
+    coupleId: userData?.coupleId || null,
+    isAuthenticated: userData?.status === 'paired',
+    role: userData?.role || null, // 'his' sau 'her' pt UI vechi
+    gender: userData?.gender || 'F', // Default la F pt fallback
     isLoading,
-    login,
+    loginWithEmail,
+    registerWithEmail,
+    resetPasswordEmail,
+    changeUserPassword,
+    createProfile,
+    linkPartner,
     logout,
-    updatePassword,
-    resetPassword,
-    role,
-    getDiaryPassphrase
+    resetProfile,
+    // Compatibilitate pt restul app-ului
+    isHer: userData?.role === 'her',
+    isHis: userData?.role === 'his',
+    isAdmin: false,
+    getDiaryPassphrase: () => null // Depășit, nu mai avem nevoie momentan de parolă pt jurnal
   };
 }

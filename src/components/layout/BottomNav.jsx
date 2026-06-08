@@ -2,29 +2,32 @@ import { useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import styles from './BottomNav.module.css';
 
-const navItems = [
-  { to: '/',         icon: '🏠', label: 'Acasă',    id: 'nav-home' },
-  { to: '/study',    icon: '📚', label: 'Studiu',   id: 'nav-study' },
-  { to: '/chat',     icon: '💬', label: 'Mesaje',   id: 'nav-chat' },
-  { to: '/cupoane',  icon: '🎟️', label: 'Cupoane',  id: 'nav-coupons' },
-  { to: '/movies',   icon: '🍿', label: 'Filme',    id: 'nav-movies' },
-  { to: '/home-planner', icon: '🏡', label: 'Cuib', id: 'nav-homeplanner' },
-  { to: '/mood',     icon: '💭', label: 'Eu',       id: 'nav-mood' },
-  { to: '/todo',     icon: '📝', label: 'To-Do',    id: 'nav-todo' },
-  { to: '/memories', icon: '🗺️', label: 'Amintiri', id: 'nav-memories' },
-  { to: '/games',    icon: '💡', label: 'Idei',     id: 'nav-games' },
-  { to: '/truth-dare', icon: '🎭', label: 'T or D', id: 'nav-truthdare' },
-  { to: '/profile',  icon: '⚙️', label: 'Profil',   id: 'nav-profile' },
-];
-
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useUnreadMessagesCount } from '../../hooks/useDatabase';
 
 export default function BottomNav({ role }) {
   const location = useLocation();
   const navRef = useRef(null);
+  const { t } = useLanguage();
   
   // Dacă role nu e trimis, get unread va da return 0 in principiu
   const unreadCount = useUnreadMessagesCount(role || 'his');
+
+  const navItems = [
+    { to: '/',         icon: '🏠', label: t('nav.home'),        id: 'nav-home' },
+    { to: '/study',    icon: '📚', label: t('nav.study'),       id: 'nav-study' },
+    { to: '/calendar', icon: '📅', label: t('nav.calendar'),    id: 'nav-calendar' },
+    { to: '/chat',     icon: '💬', label: t('nav.chat'),        id: 'nav-chat' },
+    { to: '/cupoane',  icon: '🎟️', label: t('nav.coupons'),     id: 'nav-coupons' },
+    { to: '/movies',   icon: '🍿', label: t('nav.movies'),      id: 'nav-movies' },
+    { to: '/home-planner', icon: '🏡', label: t('nav.homeplanner'), id: 'nav-homeplanner' },
+    { to: '/mood',     icon: '💭', label: t('nav.eu'),          id: 'nav-mood' },
+    { to: '/todo',     icon: '📝', label: t('nav.todo'),        id: 'nav-todo' },
+    { to: '/memories', icon: '🗺️', label: t('nav.memories'),    id: 'nav-memories' },
+    { to: '/games',    icon: '💡', label: t('nav.games'),       id: 'nav-games' },
+    { to: '/truth-dare', icon: '🎭', label: t('nav.truthdare'), id: 'nav-truthdare' },
+    { to: '/profile',  icon: '⚙️', label: t('nav.profile'),     id: 'nav-profile' },
+  ];
 
   useEffect(() => {
     if (!navRef.current) return;

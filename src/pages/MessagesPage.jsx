@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChat, useProfiles } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './MessagesPage.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 import { stickerPacks } from '../utils/stickers';
@@ -13,6 +14,7 @@ const DEFAULT_AVATAR_HER = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&
 export default function MessagesPage({ role }) {
   const navigate = useNavigate();
   const { messages, partnerTyping, sendMessage, sendSticker, setTyping, markAsRead, setReaction, loading } = useChat(role);
+  const { t } = useLanguage();
   
   const partnerRole = role === 'his' ? 'her' : 'his';
   const { profile: myProfile } = useProfiles(role);
@@ -87,12 +89,12 @@ export default function MessagesPage({ role }) {
     setSelectedMessageId(null);
   };
 
-  const partnerName = role === 'his' ? 'Ana' : 'Andrei';
+  const partnerName = partnerProfile?.name || (role === 'his' ? 'Ana' : 'Andrei');
 
   if (loading) {
     return (
       <div className={styles.page} style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <p>Încărcare mesaje...</p>
+        <p>{t('messages.loading')}</p>
       </div>
     );
   }
@@ -105,7 +107,7 @@ export default function MessagesPage({ role }) {
   return (
     <div className={`${styles.page} animate-fade-in`}>
       <header className={styles.header}>
-        <button onClick={() => navigate(-1)} style={{background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', flexShrink: 0, padding: 0}} aria-label="Înapoi">
+        <button onClick={() => navigate(-1)} style={{background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', flexShrink: 0, padding: 0}} aria-label={t('messages.back')}>
           ←
         </button>
         <h1 className={styles.title} onClick={() => setShowPartnerProfile(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -122,9 +124,9 @@ export default function MessagesPage({ role }) {
         {messages.map((msg) => {
           const isMine = msg.sender === role;
           const showSeen = isMine && msg.id === lastMyMessageId && msg.read;
-          let seenText = 'Văzut';
+          let seenText = t('messages.seen');
           if (showSeen && msg.readAt) {
-            seenText = `Văzut la ${new Date(msg.readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            seenText = `${t('messages.seenAt')}${new Date(msg.readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
           }
 
           const msgAvatarUrl = isMine 
@@ -186,7 +188,7 @@ export default function MessagesPage({ role }) {
                 <div className={styles.dot}></div>
               </div>
             </div>
-            <p className={styles.typingText} style={{ marginLeft: '30px' }}>{partnerName} scrie...</p>
+            <p className={styles.typingText} style={{ marginLeft: '30px' }}>{partnerName} {t('messages.typing')}</p>
           </div>
         )}
 
@@ -233,7 +235,7 @@ export default function MessagesPage({ role }) {
           
           <TextareaAutosize
           className={styles.textInput}
-          placeholder="Scrie un mesaj..."
+          placeholder={t('messages.writeMessagePlaceholder')}
           value={text}
           onChange={handleTextChange}
           maxRows={4}
@@ -292,13 +294,13 @@ export default function MessagesPage({ role }) {
             <div className={styles.modalDetails}>
               {partnerProfile?.age && (
                 <div className={styles.modalDetailRow}>
-                  <span>🎂 Zi de naștere:</span>
-                  <strong>{new Date(partnerProfile.age).toLocaleDateString('ro-RO')}</strong>
+                  <span>{t('messages.birthday')}</span>
+                  <strong>{new Date(partnerProfile.age).toLocaleDateString()}</strong>
                 </div>
               )}
               {partnerProfile?.favoriteColor && (
                 <div className={styles.modalDetailRow}>
-                  <span>🎨 Culoare preferată:</span>
+                  <span>{t('messages.favColor')}</span>
                   <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: partnerProfile.favoriteColor, border: '1px solid #ccc' }} />
                 </div>
               )}
@@ -311,7 +313,7 @@ export default function MessagesPage({ role }) {
             )}
 
             <button className={styles.backFromModalBtn} onClick={() => setShowPartnerProfile(false)}>
-              Înapoi la chat
+              {t('messages.backToChat')}
             </button>
           </div>
         </div>

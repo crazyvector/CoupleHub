@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup as LeafletPopup, useMap, useMapEvents } from 'react-leaflet';
 import { useMemories, useProfiles } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import L from 'leaflet';
 import styles from './MemoriesPage.module.css';
 import 'leaflet/dist/leaflet.css';
@@ -93,6 +94,7 @@ function MemoryMap({ memories, onPinClick, onMapClick }) {
 // ============================================================
 function MemoryPopup({ memory, onClose, onAddReaction, onDeleteMemory, onEditMemory, role, myName, partnerName }) {
   const [newReaction, setNewReaction] = useState('');
+  const { t } = useLanguage();
   useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = ''; }; }, []);
 
   const handleReaction = () => {
@@ -109,7 +111,7 @@ function MemoryPopup({ memory, onClose, onAddReaction, onDeleteMemory, onEditMem
           <button className={styles.popupClose} onClick={onClose} style={{ position: 'relative', top: 0, right: 0 }}>✕</button>
           <div>
             <button onClick={() => onEditMemory && onEditMemory(memory)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', padding: '10px' }}>✏️</button>
-            <button onClick={() => onDeleteMemory(memory.id)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#ff4d4d', padding: '10px' }}>🗑️</button>
+            <button onClick={() => onDeleteMemory(memory)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#ff4d4d', padding: '10px' }}>🗑️</button>
           </div>
         </div>
         <div className={`${styles.popupEmoji} animate-bounce-in`}>{memory.emoji}</div>
@@ -128,12 +130,12 @@ function MemoryPopup({ memory, onClose, onAddReaction, onDeleteMemory, onEditMem
 
         {memory.coordinates && memory.coordinates.length === 2 && (
           <a className={styles.popupMapLink} href={`https://www.google.com/maps/search/?api=1&query=${memory.coordinates[0]},${memory.coordinates[1]}`} target="_blank" rel="noreferrer">
-            🗺️ Deschide în Google Maps
+            {t('memories.openMap')}
           </a>
         )}
 
         <div className={styles.reactionsSection}>
-          <h4>Comentarii & Reacții 💕</h4>
+          <h4>{t('memories.commentsReactions')}</h4>
           <div className={styles.reactionsList}>
             {(memory.reactions || []).map((r, i) => (
               <div key={i} className={styles.reactionItem} style={{ marginBottom: '8px', background: 'rgba(255,181,200,0.1)', padding: '8px', borderRadius: '8px' }}>
@@ -147,10 +149,10 @@ function MemoryPopup({ memory, onClose, onAddReaction, onDeleteMemory, onEditMem
               type="text" 
               value={newReaction} 
               onChange={e => setNewReaction(e.target.value)} 
-              placeholder="Adaugă o reacție..." 
+              placeholder={t('memories.addReactionPlaceholder')} 
               className={styles.reactionInput}
             />
-            <button onClick={handleReaction} className={styles.reactionBtn}>Trimite</button>
+            <button onClick={handleReaction} className={styles.reactionBtn}>{t('memories.send')}</button>
           </div>
         </div>
       </div>
@@ -161,7 +163,8 @@ function MemoryPopup({ memory, onClose, onAddReaction, onDeleteMemory, onEditMem
 // ============================================================
 // Formular adăugare Amintire / Poză (cu Geocoding by City)
 // ============================================================
-function AddMemoryForm({ onSave, onCancel, initialCoords, mode = 'memory', initialData = null }) {
+function AddMemoryForm({ onSave, onCancel, onUploadFile, initialCoords, mode = 'memory', initialData = null }) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({ 
     title: initialData?.title || '', 
     description: initialData?.description || '', 
@@ -220,37 +223,40 @@ function AddMemoryForm({ onSave, onCancel, initialCoords, mode = 'memory', initi
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (mode === 'photo' && !file && !initialData?.imagePath) {
-      alert("Te rog adaugă o poză!");
+      alert(t('memories.pleaseAddPhoto'));
       return;
     }
     setIsSaving(true);
 
     let coords = initialCoords || initialData?.coordinates;
 
-    // A memory MUST have coords from the map pin (unless it already had them)
     if (mode === 'memory' && !coords) {
-      alert("Te rog dă click pe hartă pentru a alege locația!");
+      alert(t('memories.pleaseClickMap'));
       setIsSaving(false);
       return;
     }
 
     let imagePath = initialData?.imagePath || null;
+    let imageSize = initialData?.imageSize || 0;
     if (file) {
       try {
-        imagePath = await resizeImage(file, 800, 0.6);
+        const base64Url = await resizeImage(file, 600, 0.5); // smaller for firestore
+        imagePath = base64Url;
+        imageSize = Math.round(base64Url.length * 0.75); // approx size in bytes
       } catch (err) {
-        alert("Eroare la procesarea imaginii!");
+        alert(t('memories.errorImage'));
         setIsSaving(false);
         return;
       }
     }
 
     await onSave({ 
-      title: formData.title || (mode === 'photo' ? 'Poză nouă' : ''), 
+      title: formData.title || (mode === 'photo' ? t('memories.newPhoto') : ''), 
       description: formData.description || '', 
       date: formData.date || new Date().toISOString().split('T')[0], 
       emoji: formData.emoji || '📍',
       imagePath, 
+      imageSize,
       coordinates: coords || null
     });
     setIsSaving(false);
@@ -259,30 +265,30 @@ function AddMemoryForm({ onSave, onCancel, initialCoords, mode = 'memory', initi
   return (
     <div className={styles.popupOverlay} style={{ zIndex: 9999 }}>
       <form className={`${styles.popup} animate-scale-in`} onSubmit={handleSubmit} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-        <h3>{initialData ? 'Editează Amintirea ✏️' : (mode === 'photo' ? 'Adaugă Poză în Galerie 📸' : 'Adaugă Amintire Nouă ✨')}</h3>
+        <h3>{initialData ? t('memories.editMemory') : (mode === 'photo' ? t('memories.addPhotoGallery') : t('memories.addMemoryNew'))}</h3>
         
-        {initialCoords && mode === 'memory' && <p style={{ fontSize: '0.8rem', color: '#666' }}>📍 Locație selectată pe hartă</p>}
-        {initialData && mode === 'memory' && !initialCoords && <p style={{ fontSize: '0.8rem', color: '#666' }}>📍 Locație existentă păstrată</p>}
+        {initialCoords && mode === 'memory' && <p style={{ fontSize: '0.8rem', color: '#666' }}>{t('memories.locSelected')}</p>}
+        {initialData && mode === 'memory' && !initialCoords && <p style={{ fontSize: '0.8rem', color: '#666' }}>{t('memories.locKept')}</p>}
         
         {mode === 'memory' && (
           <>
-            <input required type="text" placeholder="Titlu (ex: Prima Vacanță)" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className={styles.input} />
+            <input required type="text" placeholder={t('memories.titlePlaceholder')} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className={styles.input} />
             <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className={styles.input} />
-            <textarea required placeholder="Descriere..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className={styles.textarea} />
-            <input required type="text" placeholder="Emoji (ex: 🏖️)" value={formData.emoji} onChange={e => setFormData({...formData, emoji: e.target.value})} className={styles.input} />
+            <textarea required placeholder={t('memories.descPlaceholder')} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className={styles.textarea} />
+            <input required type="text" placeholder={t('memories.emojiPlaceholder')} value={formData.emoji} onChange={e => setFormData({...formData, emoji: e.target.value})} className={styles.input} />
           </>
         )}
 
         <label className={styles.uploadLabel}>
-          {file ? 'Schimbă Poza selectată' : (initialData?.imagePath ? 'Înlocuiește poza curentă (Opțional)' : 'Selectează o Poză (Obligatoriu la Galerie)')}
+          {file ? t('memories.changeSelectedPhoto') : (initialData?.imagePath ? t('memories.replaceCurrentPhoto') : t('memories.selectPhoto'))}
           <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])} className={styles.uploadInput} />
         </label>
         {file && <span className={styles.fileName}>{file.name}</span>}
         
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px', width: '100%' }}>
-          <button type="button" onClick={onCancel} className={styles.cancelBtn} style={{ flex: 1, padding: '10px', background: '#eee', border: 'none', borderRadius: '8px' }}>Anulează</button>
+          <button type="button" onClick={onCancel} className={styles.cancelBtn} style={{ flex: 1, padding: '10px', background: '#eee', border: 'none', borderRadius: '8px' }}>{t('memories.cancel')}</button>
           <button type="submit" disabled={isSaving || (mode === 'photo' && !file && !initialData?.imagePath)} className={styles.saveBtn} style={{ flex: 1, padding: '10px', background: 'var(--color-rose)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
-            {isSaving ? 'Se salvează...' : (initialData ? 'Salvează' : 'Adaugă')}
+            {isSaving ? t('memories.saving') : (initialData ? t('memories.save') : t('memories.add'))}
           </button>
         </div>
       </form>
@@ -294,19 +300,20 @@ function AddMemoryForm({ onSave, onCancel, initialCoords, mode = 'memory', initi
 // Galerie Foto (Grid)
 // ============================================================
 function PhotoGallery({ memories, onPhotoClick, onAddPhoto, onDeletePhoto }) {
-  const photos = memories.filter(m => m.imagePath && m.title === 'Poză nouă'); // SAU simplu doar cu poze care n-au coordonate
+  const { t } = useLanguage();
+  const photos = memories.filter(m => m.imagePath && m.title === (t('memories.newPhoto') || 'Poză nouă')); // SAU simplu doar cu poze care n-au coordonate
 
   return (
     <div style={{ paddingBottom: '20px', marginTop: '30px' }}>
-      <h2 style={{fontSize: '1.2rem', marginBottom: '10px'}}>Galerie Foto 📸</h2>
+      <h2 style={{fontSize: '1.2rem', marginBottom: '10px'}}>{t('memories.photoGallery')}</h2>
       <button className={styles.addBtn} onClick={onAddPhoto} style={{ marginBottom: '15px' }}>
-        + Adaugă doar o Poză
+        {t('memories.addOnlyPhoto')}
       </button>
       
       {photos.length === 0 ? (
         <div className={styles.emptyState}>
           <span style={{ fontSize: '3rem' }}>📸</span>
-          <p>Nu aveți poze adăugate încă.</p>
+          <p>{t('memories.noPhotosYet')}</p>
         </div>
       ) : (
         <div className={styles.photoGrid}>
@@ -317,7 +324,7 @@ function PhotoGallery({ memories, onPhotoClick, onAddPhoto, onDeletePhoto }) {
                 <span className={styles.photoOverlayTitle}>{m.title}</span>
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginTop: '4px' }}>
                   <div className={styles.photoOverlayReactions}>💬 {(m.reactions || []).length}</div>
-                  <button onClick={(e) => { e.stopPropagation(); onDeletePhoto(m.id); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#ff4d4d' }}>🗑️</button>
+                  <button onClick={(e) => { e.stopPropagation(); onDeletePhoto(m); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#ff4d4d' }}>🗑️</button>
                 </div>
               </div>
             </div>
@@ -332,10 +339,12 @@ function PhotoGallery({ memories, onPhotoClick, onAddPhoto, onDeletePhoto }) {
 // MemoriesPage — pagina principală
 // ============================================================
 export default function MemoriesPage({ role }) {
+  const [activeTab, setActiveTab] = useState('map');
   const { memories, addMemory, updateMemory, addReaction, deleteMemory, loading } = useMemories();
   const { profile: myProfile } = useProfiles(role);
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
+  const { t } = useLanguage();
 
   const myName = myProfile?.name || (role === 'her' ? 'Ana' : 'Andrei');
   const partnerName = targetProfile?.name || (targetRole === 'her' ? 'Ana' : 'Andrei');
@@ -346,7 +355,7 @@ export default function MemoriesPage({ role }) {
   const [selectedMemory, setSelectedMemory] = useState(null);
   const [editingMemory, setEditingMemory] = useState(null); // New state for editing
 
-  if (loading) return <div className={styles.page}>Încărcare amintiri...</div>;
+  if (loading) return <div className={styles.page}>{t('memories.loadingMemories')}</div>;
 
   // Map click
   const handleMapClick = (coords) => {
@@ -367,9 +376,9 @@ export default function MemoriesPage({ role }) {
     setNewCoords(null);
   };
 
-  const handleDeleteMemory = async (id) => {
-    if (window.confirm("Sigur vrei să ștergi această amintire/poză?")) {
-      await deleteMemory(id);
+  const handleDeleteMemory = async (memory) => {
+    if (window.confirm(t('memories.confirmDelete'))) {
+      await deleteMemory(memory.id);
       setSelectedMemory(null);
     }
   };
@@ -383,7 +392,7 @@ export default function MemoriesPage({ role }) {
           memory={selectedMemory} 
           onClose={() => setSelectedMemory(null)} 
           onAddReaction={addReaction} 
-          onDeleteMemory={(id) => { handleDeleteMemory(id); setSelectedMemory(null); }} 
+          onDeleteMemory={(memory) => { handleDeleteMemory(memory); setSelectedMemory(null); }} 
           onEditMemory={(memory) => { setEditingMemory(memory); setSelectedMemory(null); setShowAddModal(true); }}
           role={role}
           myName={myName}
@@ -391,7 +400,7 @@ export default function MemoriesPage({ role }) {
         />
       )}
       {showAddModal && (
-        <AddMemoryForm 
+          <AddMemoryForm 
           onSave={handleSaveMemory} 
           onCancel={() => { setShowAddModal(false); setNewCoords(null); setEditingMemory(null); }} 
           initialCoords={newCoords} 
@@ -401,8 +410,8 @@ export default function MemoriesPage({ role }) {
       )}
 
       <header className={styles.header}>
-        <h1 className={styles.title}>Amintirile Noastre 💕</h1>
-        <p className={styles.subtitle}>Locurile și momentele speciale</p>
+        <h1 className={styles.title}>{t('memories.ourMemories')}</h1>
+        <p className={styles.subtitle}>{t('memories.specialPlaces')}</p>
       </header>
 
       <div className={styles.tabContent}>
@@ -410,13 +419,13 @@ export default function MemoriesPage({ role }) {
         <div className="animate-fade-in" style={{marginBottom: '20px'}}>
           <MemoryMap memories={memoriesWithCoords} onPinClick={setSelectedMemory} onMapClick={handleMapClick} />
           <p className={styles.mapHint} style={{ textAlign: 'center', fontSize: '0.85rem', color: '#666', marginTop: '10px' }}>
-            💡 Apasă oriunde pe hartă pentru a adăuga o amintire nouă!
+            {t('memories.mapHint')}
           </p>
         </div>
         
         {/* MEMORIES LIST SECTION */}
         <div className={`${styles.listContainer} animate-fade-in`}>
-          <h2 style={{fontSize: '1.2rem', marginBottom: '10px'}}>Locații Salvate 📍</h2>
+          <h2 style={{fontSize: '1.2rem', marginBottom: '10px'}}>{t('memories.savedLocations')}</h2>
           {memoriesWithCoords.map((m, idx) => {
             const colors = ['#FFB5C8', '#C8B6FF', '#FFCBA4', '#B5EAD7', '#B5D8EB'];
             const color = colors[idx % colors.length];
@@ -429,12 +438,12 @@ export default function MemoriesPage({ role }) {
                   <span className={styles.memoryCardDate}>{m.date}</span>
                   <h3 className={styles.memoryCardTitle}>{m.title}</h3>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); handleDeleteMemory(m.id); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#ff4d4d', marginRight: '10px' }}>🗑️</button>
+                <button onClick={(e) => { e.stopPropagation(); handleDeleteMemory(m); }} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#ff4d4d', marginRight: '10px' }}>🗑️</button>
                 <div className={styles.memoryCardArrow} style={{ color }}>›</div>
               </button>
             );
           })}
-          {memoriesWithCoords.length === 0 && <p className={styles.emptyState}>Nu există amintiri pe hartă încă.</p>}
+          {memoriesWithCoords.length === 0 && <p className={styles.emptyState}>{t('memories.noMemoriesOnMap')}</p>}
         </div>
 
         {/* GALLERY SECTION */}

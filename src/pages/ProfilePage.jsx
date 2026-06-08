@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 
-import { useAuth } from '../hooks/useAuth';
+import { useGlobalAuth } from '../contexts/AuthContext';
 import { useProfiles, useAppVersion } from '../hooks/useDatabase';
+import { useMonetization } from '../hooks/useMonetization';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './ProfilePage.module.css';
 
+import { encryptText, decryptText } from '../hooks/useCrypto';
+import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
+
 export default function ProfilePage({ role }) {
-  const { logout, updatePassword } = useAuth();
+  const { logout, gender, userData, changeUserPassword } = useGlobalAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
   const { latestVersion, downloadUrl, localVersion } = useAppVersion();
-  
-  const [passwordData, setPasswordData] = useState({ newPass: '', confirmPass: '' });
-  const [isChangingPass, setIsChangingPass] = useState(false);
+  const { isPro, offerings, purchasePackage } = useMonetization();
+  const { t, setLang } = useLanguage();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +27,9 @@ export default function ProfilePage({ role }) {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  const [passwordData, setPasswordData] = useState({ oldPass: '', newPass: '', confirmPass: '' });
+  const [isChangingPass, setIsChangingPass] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -30,7 +38,9 @@ export default function ProfilePage({ role }) {
         nickname: profile.nickname || '',
         age: profile.age || '',
         favoriteColor: profile.favoriteColor || '#ffb5c8',
-        bio: profile.bio || ''
+        bio: profile.bio || '',
+        anniversaryDate: profile.anniversaryDate || '',
+        language: profile.language || 'ro'
       });
       setAvatarUrl(profile.avatarUrl || null);
     }
@@ -39,6 +49,10 @@ export default function ProfilePage({ role }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'language') {
+      setLang(value);
+      updateProfile({ language: value });
+    }
   };
 
   const resizeImage = (file, maxWidth = 800, quality = 0.7) => {
@@ -79,13 +93,14 @@ export default function ProfilePage({ role }) {
 
     setIsUploading(true);
     try {
-      const base64Url = await resizeImage(file, 800, 0.6); // Compress to 800px width, 60% quality
+      const base64Url = await resizeImage(file, 400, 0.6); // Compress aggressively for Firestore
+      
       setAvatarUrl(base64Url);
       await updateProfile({ avatarUrl: base64Url });
-      alert("Imaginea a fost salvată cu succes! 💕");
+      alert("Imaginea a fost salvată cu succes direct în baza de date! 💕");
     } catch (error) {
       console.error("Eroare la upload:", error);
-      alert("A apărut o eroare la încărcarea imaginii. Posibil fișierul este prea mare sau corupt.");
+      alert("A apărut o eroare la salvarea imaginii.");
     }
     setIsUploading(false);
   };
@@ -100,22 +115,69 @@ export default function ProfilePage({ role }) {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (passwordData.newPass !== passwordData.confirmPass) {
-      alert("Parolele nu coincid!");
+    if (!passwordData.oldPass) {
+      alert("Introdu parola curentă!");
       return;
     }
-    if (passwordData.newPass.length < 4) {
-      alert("Parola trebuie să aibă minim 4 caractere.");
+    if (passwordData.newPass !== passwordData.confirmPass) {
+      alert("Parolele noi nu coincid!");
+      return;
+    }
+    if (passwordData.newPass.length < 6) {
+      alert("Noua parolă trebuie să aibă minim 6 caractere.");
       return;
     }
     setIsChangingPass(true);
-    const success = await updatePassword(passwordData.newPass);
-    if (success) {
-      alert("Parolă schimbată cu succes! Te rugăm să folosești noua parolă data viitoare.");
-      setPasswordData({ newPass: '', confirmPass: '' });
-    } else {
-      alert("Eroare la schimbarea parolei.");
+    
+    // 1. Schimbăm parola in Firebase Auth (verifică și parola veche)
+    const res = await changeUserPassword(passwordData.oldPass, passwordData.newPass);
+    if (!res.success) {
+      alert("Eroare la schimbarea parolei. Verifică parola veche și încearcă din nou.\n" + res.error);
+      setIsChangingPass(false);
+      return;
     }
+
+    // 2. Re-criptăm Jurnalul (dacă există intrări)
+    try {
+      if (userData?.coupleId) {
+        const colName = role ? `diary_${role}` : 'diary_unknown';
+        const diaryRef = collection(db, 'couples', userData.coupleId, colName);
+        const snapshot = await getDocs(diaryRef);
+        
+        let reEncryptionErrors = 0;
+        const updates = [];
+
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          if (data.encrypted) {
+            const decryptedContent = await decryptText(data.encrypted, passwordData.oldPass);
+            if (decryptedContent === null) {
+              reEncryptionErrors++;
+              continue; // Skip this entry, wrong password or corrupted
+            }
+            // Encrypt with new password
+            const newEncrypted = await encryptText(decryptedContent, passwordData.newPass);
+            updates.push(updateDoc(docSnap.ref, { encrypted: newEncrypted }));
+          }
+        }
+
+        // Run all updates
+        await Promise.all(updates);
+
+        if (reEncryptionErrors > 0) {
+          alert(`Parola a fost schimbată, dar ${reEncryptionErrors} intrări din jurnal nu au putut fi decriptate cu parola veche (posibil corupte sau adăugate cu altă parolă). Ele nu au fost modificate.`);
+        } else {
+          alert("Parola a fost schimbată și jurnalul a fost re-criptat cu succes! 💕");
+        }
+      } else {
+        alert("Parola a fost schimbată cu succes!");
+      }
+    } catch (err) {
+      console.error("Eroare la re-criptarea jurnalului:", err);
+      alert("Parola a fost schimbată, dar a apărut o eroare la actualizarea jurnalului.");
+    }
+
+    setPasswordData({ oldPass: '', newPass: '', confirmPass: '' });
     setIsChangingPass(false);
   };
 
@@ -139,12 +201,12 @@ export default function ProfilePage({ role }) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Profilul Tău</h1>
-        <p className={styles.subtitle}>Personalizează-ți colțul tău din aplicație</p>
+        <h1 className={styles.title}>{t('profile.title')}</h1>
+        <p className={styles.subtitle}>{t('profile.subtitle')}</p>
         <div style={{ marginTop: '10px', background: '#eee', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
           <div style={{ width: `${completion}%`, background: 'var(--color-rose-dark)', height: '100%', transition: 'width 0.3s' }} />
         </div>
-        <p style={{ fontSize: '0.8rem', textAlign: 'center', marginTop: '5px' }}>{completion}% completat</p>
+        <p style={{ fontSize: '0.8rem', textAlign: 'center', marginTop: '5px' }}>{completion}% {t('profile.completed')}</p>
       </header>
 
       <div className={`${styles.card} animate-scale-in`}>
@@ -155,13 +217,13 @@ export default function ProfilePage({ role }) {
             ) : avatarUrl ? (
               <img src={avatarUrl} alt="Avatar" className={styles.avatarImg} />
             ) : (
-              <span className={styles.avatarPlaceholder}>{role === 'her' ? '👩' : '👨'}</span>
+              <span className={styles.avatarPlaceholder}>{gender === 'F' ? '👩' : '👨'}</span>
             )}
           </div>
-          {isUploading && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Se încarcă (poate dura puțin)...</p>}
+          {isUploading && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('profile.uploadingAvatar')}</p>}
           
           <label className={styles.uploadLabel}>
-            📷 Schimbă poza
+            {t('profile.changeAvatar')}
             <input 
               type="file" 
               accept="image/*" 
@@ -174,7 +236,7 @@ export default function ProfilePage({ role }) {
 
         <form className={styles.form} onSubmit={handleSave}>
           <div className={styles.field}>
-            <label htmlFor="name">Nume real</label>
+            <label htmlFor="name">{t('profile.realName')}</label>
             <input 
               type="text" 
               id="name" 
@@ -186,7 +248,7 @@ export default function ProfilePage({ role }) {
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="nickname">Alint (cum vrei să te strig?)</label>
+            <label htmlFor="nickname">{t('profile.nickname')}</label>
             <input 
               type="text" 
               id="nickname" 
@@ -198,7 +260,7 @@ export default function ProfilePage({ role }) {
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="age">Data nașterii</label>
+            <label htmlFor="age">{t('profile.birthdate')}</label>
             <input 
               type="date" 
               id="age" 
@@ -210,7 +272,7 @@ export default function ProfilePage({ role }) {
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="favoriteColor">Culoarea preferată</label>
+            <label htmlFor="favoriteColor">{t('profile.color')}</label>
             <input 
               type="color" 
               id="favoriteColor" 
@@ -223,70 +285,159 @@ export default function ProfilePage({ role }) {
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="bio">Bio / Un gând drăguț</label>
+            <label htmlFor="anniversaryDate">{t('profile.anniversaryLabel')}</label>
+            <input 
+              type="date" 
+              id="anniversaryDate" 
+              name="anniversaryDate" 
+              value={formData.anniversaryDate} 
+              onChange={handleInputChange} 
+              className={styles.input} 
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="language">{t('profile.lang')}</label>
+            <select
+              id="language"
+              name="language"
+              value={formData.language}
+              onChange={handleInputChange}
+              className={styles.input}
+            >
+              <option value="ro">{t('profile.roLang')}</option>
+              <option value="en">{t('profile.enLang')}</option>
+            </select>
+          </div>
+
+
+
+          <div className={styles.field}>
+            <label htmlFor="bio">{t('profile.bioLabel')}</label>
             <textarea 
               id="bio" 
               name="bio" 
               value={formData.bio} 
               onChange={handleInputChange} 
               className={styles.textarea} 
-              placeholder="Ceva drăguț despre tine..." 
+              placeholder={t('profile.bioPlaceholder')} 
             />
           </div>
 
           <button type="submit" className={styles.saveBtn} disabled={isSaving}>
-            {isSaving ? <span className={styles.loadingSpinner} /> : 'Salvează Modificările 💕'}
+            {isSaving ? <span className={styles.loadingSpinner} /> : `${t('profile.save')} 💕`}
           </button>
         </form>
       </div>
 
       <div className={`${styles.card} animate-scale-in`} style={{ marginTop: '20px' }}>
-        <h3>Schimbă Parola 🔐</h3>
-        <form className={styles.form} onSubmit={handleChangePassword}>
-          <div className={styles.field}>
-            <label>Parolă nouă</label>
-            <input 
-              type="password" 
-              value={passwordData.newPass}
-              onChange={e => setPasswordData({...passwordData, newPass: e.target.value})}
-              className={styles.input}
-              placeholder="Noua parolă"
-            />
+        <h3>{t('profile.yourAccount')}</h3>
+        
+        {userData?.pairKey && (
+          <div style={{ background: 'var(--surface-color)', padding: '15px', borderRadius: '12px', border: '1px dashed var(--color-rose)', textAlign: 'center', marginBottom: '15px' }}>
+            <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('onboarding.yourKey')}</p>
+            <h2 style={{ margin: 0, letterSpacing: '4px', color: 'var(--color-rose)' }}>{userData.pairKey}</h2>
           </div>
-          <div className={styles.field}>
-            <label>Confirmă parolă nouă</label>
-            <input 
-              type="password" 
-              value={passwordData.confirmPass}
-              onChange={e => setPasswordData({...passwordData, confirmPass: e.target.value})}
-              className={styles.input}
-              placeholder="Repetă noua parolă"
-            />
-          </div>
-          <button type="submit" className={styles.saveBtn} disabled={isChangingPass}>
-            {isChangingPass ? <span className={styles.loadingSpinner} /> : 'Schimbă Parola'}
+        )}
+
+        <form onSubmit={handleChangePassword} style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,181,200,0.1)', borderRadius: '12px' }}>
+          <h4 style={{ margin: '0 0 15px 0', color: 'var(--color-rose-dark)' }}>{t('profile.changePass')}</h4>
+          <input
+            type="password"
+            placeholder={t('profile.currentPass')}
+            value={passwordData.oldPass}
+            onChange={(e) => setPasswordData({...passwordData, oldPass: e.target.value})}
+            className={styles.input}
+            style={{ marginBottom: '10px' }}
+            required
+          />
+          <input
+            type="password"
+            placeholder={t('profile.newPassRules')}
+            value={passwordData.newPass}
+            onChange={(e) => setPasswordData({...passwordData, newPass: e.target.value})}
+            className={styles.input}
+            style={{ marginBottom: '10px' }}
+            required
+          />
+          <input
+            type="password"
+            placeholder={t('profile.confirmPass')}
+            value={passwordData.confirmPass}
+            onChange={(e) => setPasswordData({...passwordData, confirmPass: e.target.value})}
+            className={styles.input}
+            style={{ marginBottom: '15px' }}
+            required
+          />
+          <button type="submit" disabled={isChangingPass} className={styles.saveBtn} style={{ background: 'var(--color-rose-dark)' }}>
+            {isChangingPass ? <span className={styles.loadingSpinner} /> : t('profile.saveNewPass')}
           </button>
         </form>
+
+        <div className={styles.proSectionContainer}>
+          {isPro ? (
+            <div style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)', padding: '15px', borderRadius: '12px', color: 'white', textAlign: 'center' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '1.2rem' }}>{t('profile.proTitle')}</h4>
+              <p style={{ margin: 0, fontSize: '0.9rem' }}>{t('profile.proDesc')}</p>
+            </div>
+          ) : (
+            <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '2px solid #FFD700', boxShadow: '0 4px 15px rgba(255, 215, 0, 0.2)' }}>
+              <h3 style={{ margin: '0 0 10px 0', color: '#B8860B', fontSize: '1.2rem', textAlign: 'center' }}>✨ Remove Ads & Go Pro ✨</h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '15px', textAlign: 'center' }}>
+                {t('profile.proUpgradeDesc')}
+              </p>
+              
+              {offerings?.availablePackages?.map((pkg) => (
+                <button 
+                  key={pkg.identifier}
+                  onClick={async () => {
+                    const success = await purchasePackage(pkg);
+                    if (success) alert(t('profile.proThankYou'));
+                  }}
+                  className={styles.saveBtn} 
+                  style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)', marginBottom: '10px', fontWeight: 'bold' }}
+                >
+                  {t('profile.buyPkg')} {pkg.product.title} - {pkg.product.priceString}
+                </button>
+              ))}
+              
+              {!offerings && (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('profile.loadingOffers')}</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.logoutSection}>
-        <button className={styles.logoutBtn} onClick={logout}>
-          Deconectare
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px', textAlign: 'center', padding: '0 20px' }}>
+          {t('profile.logoutDesc')}
+        </p>
+        <button 
+          className={styles.logoutBtn} 
+          onClick={() => {
+            if(window.confirm(t('profile.logoutConfirm'))) {
+              logout();
+            }
+          }}
+          style={{ background: '#e74c3c', color: 'white', fontWeight: 'bold' }}
+        >
+          {t('profile.logoutBtn')}
         </button>
       </div>
 
       {/* Version Checker */}
       <div style={{ textAlign: 'center', marginTop: '20px', paddingBottom: '30px', color: 'var(--text-muted)' }}>
-        <p style={{ fontSize: '0.8rem', margin: 0 }}>Versiunea aplicației: <strong>{localVersion}</strong></p>
+        <p style={{ fontSize: '0.8rem', margin: 0 }}>{t('profile.appVersion')}: <strong>{localVersion}</strong></p>
         
         {latestVersion && latestVersion !== localVersion && (
           <div style={{ marginTop: '15px', background: '#FFF0F5', padding: '15px', borderRadius: '12px', border: '1px solid #FFB5C8' }}>
             <p style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.9rem', margin: '0 0 10px 0' }}>
-              ⚠️ Este disponibilă o versiune nouă ({latestVersion})!
+              ⚠️ {t('profile.newVersionAvailable')} ({latestVersion})!
             </p>
             {downloadUrl && (
               <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', padding: '10px 20px', background: 'var(--color-rose-dark)', color: 'white', borderRadius: '20px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                Descarcă Update-ul
+                {t('profile.downloadUpdate')}
               </a>
             )}
           </div>

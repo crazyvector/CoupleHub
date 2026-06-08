@@ -2,9 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNotifications, useProfiles } from '../hooks/useDatabase';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './NotificationCenter.module.css';
 
 function SwipeableNotification({ n, role, onRead, onDelete, senderName }) {
+  const { t, lang } = useLanguage();
   const [translateX, setTranslateX] = useState(0);
   const startX = useRef(null);
   const isDragging = useRef(false);
@@ -12,9 +14,10 @@ function SwipeableNotification({ n, role, onRead, onDelete, senderName }) {
   const isUnread = n.sender !== role && !(n.readBy || []).includes(role);
   const dateObj = new Date(n.timestamp);
   const isToday = dateObj.toDateString() === new Date().toDateString();
+  const localeStr = lang === 'en' ? 'en-US' : 'ro-RO';
   const timeStr = isToday 
-    ? dateObj.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
-    : dateObj.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+    ? dateObj.toLocaleTimeString(localeStr, { hour: '2-digit', minute: '2-digit' })
+    : dateObj.toLocaleDateString(localeStr, { day: 'numeric', month: 'short' });
 
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -55,7 +58,7 @@ function SwipeableNotification({ n, role, onRead, onDelete, senderName }) {
     >
       <h4 className={styles.itemTitle}>{n.title}</h4>
       <p className={styles.itemBody}>{n.body}</p>
-      <span className={styles.itemTime}>{timeStr} • {n.sender === role ? 'De la tine' : `De la ${senderName}`}</span>
+      <span className={styles.itemTime}>{timeStr} • {n.sender === role ? t('notifications.fromYou') : t('notifications.fromPartner').replace('{name}', senderName)}</span>
     </li>
   );
 }
@@ -63,6 +66,7 @@ function SwipeableNotification({ n, role, onRead, onDelete, senderName }) {
 export default function NotificationCenter() {
   const { role } = useAuth();
   const { notifications, markAsRead, deleteNotification } = useNotifications(role);
+  const { t } = useLanguage();
   
   const { profile: myProfile } = useProfiles(role);
   const targetRole = role === 'her' ? 'his' : 'her';
@@ -113,7 +117,7 @@ export default function NotificationCenter() {
       <button 
         className={styles.bellButton} 
         onClick={handleToggle}
-        aria-label="Notificări"
+        aria-label={t('notifications.centerTitle')}
       >
         🔔
         {unreadCount > 0 && (
@@ -126,10 +130,10 @@ export default function NotificationCenter() {
       {isOpen && (
         <div className={`${styles.dropdown} animate-fade-in-up`}>
           <div className={styles.header}>
-            <h3>Notificări</h3>
+            <h3>{t('notifications.centerTitle')}</h3>
           </div>
           {notifications.length === 0 ? (
-            <div className={styles.empty}>Nu ai nicio notificare.</div>
+            <div className={styles.empty}>{t('notifications.empty')}</div>
           ) : (
             <ul className={styles.list}>
               {notifications.map((n) => {

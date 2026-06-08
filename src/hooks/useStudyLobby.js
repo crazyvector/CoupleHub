@@ -13,17 +13,21 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { updateWidgets } from '../utils/widgetUpdater';
+import { useGlobalAuth } from '../contexts/AuthContext';
 
-const STUDY_LOBBY_DOC = 'study_lobby';
+const STUDY_LOBBY_COL = 'study_lobby';
 const STUDY_TASKS_COL = 'study_tasks';
 
 const BONSAI_STAGES = [
-  { id: 'seed',      label: 'Sămânță',           minXP: 0,    emoji: '🌱' },
-  { id: 'sprout',    label: 'Vlăstar',            minXP: 51,   emoji: '🌿' },
-  { id: 'bush',      label: 'Arbust',             minXP: 201,  emoji: '🪴' },
-  { id: 'tree',      label: 'Copac',              minXP: 501,  emoji: '🌲' },
-  { id: 'blossom',   label: 'Bonsai Înflorit',    minXP: 1001, emoji: '🌸' },
-  { id: 'legendary', label: 'Bonsai Legendar',    minXP: 2001, emoji: '✨' },
+  { id: 'seed',      label: 'studyLobby.stageSeed',           minXP: 0,    emoji: '🌱' },
+  { id: 'sprout',    label: 'studyLobby.stageSprout',         minXP: 51,   emoji: '🌿' },
+  { id: 'bush',      label: 'studyLobby.stageBush',           minXP: 201,  emoji: '🪴' },
+  { id: 'tree',      label: 'studyLobby.stageTree',           minXP: 501,  emoji: '🌲' },
+  { id: 'blossom',   label: 'studyLobby.stageBlossom',        minXP: 1001, emoji: '🌸' },
+  { id: 'legendary', label: 'studyLobby.stageLegendary',      minXP: 2001, emoji: '✨' }
 ];
 
 function getBonsaiStage(xp) {
@@ -45,6 +49,9 @@ function getNextStage(xp) {
 // Hook: Study Lobby (Bonsai + Timer + Presence)
 // ==========================================
 export function useStudyLobby(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+
   const [lobbyData, setLobbyData] = useState({
     bonsaiXP: 0,
     bonsaiStage: 'seed',
@@ -72,7 +79,8 @@ export function useStudyLobby(role) {
 
   // Listen to lobby document
   useEffect(() => {
-    const docRef = doc(db, STUDY_LOBBY_DOC, 'shared');
+    if (!coupleId) return;
+    const docRef = doc(db, 'couples', coupleId, STUDY_LOBBY_COL, 'shared');
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
         setLobbyData(snapshot.data());
@@ -87,11 +95,12 @@ export function useStudyLobby(role) {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [coupleId]);
 
   // Listen to presence
   useEffect(() => {
-    const presRef = doc(db, STUDY_LOBBY_DOC, 'presence');
+    if (!coupleId) return;
+    const presRef = doc(db, 'couples', coupleId, STUDY_LOBBY_COL, 'presence');
     const unsubscribe = onSnapshot(presRef, (snapshot) => {
       if (snapshot.exists()) {
         setPresence(snapshot.data());
@@ -150,13 +159,32 @@ export function useStudyLobby(role) {
     };
   }, [isRunning, timerMode]);
 
+  // Sync state for Native Widgets
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const widgetState = {
+        isRunning,
+        timerMode,
+        remainingSeconds: timerSeconds,
+        targetEndTime: isRunning ? Date.now() + timerSeconds * 1000 : null,
+        currentCycle,
+        totalCycles
+      };
+      Preferences.set({ key: 'widget_pomodoro', value: JSON.stringify(widgetState) })
+        .then(updateWidgets)
+        .catch(console.error);
+    }
+  }, [isRunning, timerMode, currentCycle, totalCycles, sessionCompleted]);
+
   const handleTimerComplete = async () => {
     if (timerMode === 'work') {
       // Work session completed → add XP
       const partnerRole = role === 'his' ? 'her' : 'his';
       const partnerOnline = presence[partnerRole]?.online &&
         (Date.now() - (presence[partnerRole]?.lastSeen || 0)) < 60000;
-      const xpGain = partnerOnline ? 15 : 10;
+      
+      const minutesStudied = Math.round(workDuration / 60);
+      const xpGain = Math.round(minutesStudied * (partnerOnline ? 1.5 : 1));
 
       const lobbyRef = doc(db, STUDY_LOBBY_DOC, 'shared');
       const newXP = (lobbyData.bonsaiXP || 0) + xpGain;
@@ -246,7 +274,8 @@ export function useStudyLobby(role) {
 
   // Update current task in presence
   const setCurrentTask = async (taskTitle) => {
-    const presRef = doc(db, STUDY_LOBBY_DOC, 'presence');
+    if (!coupleId) return;
+    const presRef = doc(db, 'couples', coupleId, STUDY_LOBBY_COL, 'presence');
     await setDoc(presRef, {
       [role]: {
         online: true,
@@ -296,31 +325,38 @@ export function useStudyLobby(role) {
 // Hook: Study Tasks
 // ==========================================
 export function useStudyTasks() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, STUDY_TASKS_COL), orderBy('createdAt', 'desc'));
+    if (!coupleId) return;
+    const q = query(collection(db, 'couples', coupleId, STUDY_TASKS_COL), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [coupleId]);
 
   const addTask = async (taskData) => {
-    await addDoc(collection(db, STUDY_TASKS_COL), {
+    if (!coupleId) return;
+    await addDoc(collection(db, 'couples', coupleId, STUDY_TASKS_COL), {
       ...taskData,
       createdAt: serverTimestamp(),
     });
   };
 
   const updateTask = async (id, data) => {
-    await updateDoc(doc(db, STUDY_TASKS_COL, id), data);
+    if (!coupleId) return;
+    await updateDoc(doc(db, 'couples', coupleId, STUDY_TASKS_COL, id), data);
   };
 
   const deleteTask = async (id) => {
-    await deleteDoc(doc(db, STUDY_TASKS_COL, id));
+    if (!coupleId) return;
+    await deleteDoc(doc(db, 'couples', coupleId, STUDY_TASKS_COL, id));
   };
 
   return { tasks, addTask, updateTask, deleteTask, loading };

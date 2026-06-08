@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useCustomCoupons, useNotifications, useProfiles } from '../hooks/useDatabase';
 import styles from './CupoanePage.module.css';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // ============================================================
 // Confetti Burst component (canvas-based)
@@ -85,6 +86,7 @@ function ConfettiBurst({ active, originX, originY }) {
 // ============================================================
 function RedeemModal({ coupon, onConfirm, onCancel, isLoading }) {
   const [note, setNote] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -95,7 +97,7 @@ function RedeemModal({ coupon, onConfirm, onCancel, isLoading }) {
     <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Confirmare răscumpărare cupon">
       <div className={`${styles.modal} animate-scale-in`}>
         <div className={styles.modalEmoji}>{coupon.emoji}</div>
-        <h3 className={styles.modalTitle}>Folosești cuponul?</h3>
+        <h3 className={styles.modalTitle}>{t('coupons.useCoupon')}</h3>
         <div className={styles.modalCouponPreview} style={{ '--coupon-color': coupon.color }}>
           <strong>{coupon.title}</strong>
           <p>{coupon.description}</p>
@@ -103,13 +105,13 @@ function RedeemModal({ coupon, onConfirm, onCancel, isLoading }) {
 
         <div className={styles.modalNoteWrapper}>
           <label className={styles.noteLabel} htmlFor="coupon-note">
-            Adaugă o notă (opțional):
+            {t('coupons.addNote')}
           </label>
           <input
             id="coupon-note"
             className={styles.noteInput}
             type="text"
-            placeholder="ex: azi seară, la 20:00..."
+            placeholder={t('coupons.notePlaceholder')}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             maxLength={80}
@@ -122,14 +124,14 @@ function RedeemModal({ coupon, onConfirm, onCancel, isLoading }) {
             onClick={onCancel}
             disabled={isLoading}
           >
-            Mai târziu
+            {t('coupons.later')}
           </button>
           <button
             className={`${styles.modalBtn} ${styles.modalBtnConfirm}`}
             onClick={() => onConfirm(note)}
             disabled={isLoading}
           >
-            {isLoading ? <span className={styles.loadingSpinner} /> : '✅ Folosesc!'}
+            {isLoading ? <span className={styles.loadingSpinner} /> : t('coupons.useIt')}
           </button>
         </div>
       </div>
@@ -145,6 +147,7 @@ function CreateCouponModal({ onConfirm, onCancel, isLoading, authorRole }) {
   const [description, setDescription] = useState('');
   const [emoji, setEmoji] = useState('🎟️');
   const [color, setColor] = useState('#FFB5C8');
+  const { t } = useLanguage();
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -159,23 +162,23 @@ function CreateCouponModal({ onConfirm, onCancel, isLoading, authorRole }) {
   return (
     <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Creează un cupon">
       <div className={`${styles.modal} animate-scale-in`} style={{ padding: '20px' }}>
-        <h3 className={styles.modalTitle}>✨ Creează un Cupon</h3>
+        <h3 className={styles.modalTitle}>{t('coupons.createCoupon')}</h3>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '15px' }}>
-          Acest cupon va putea fi folosit de {authorRole === 'her' ? 'Andrei' : 'Ana'}.
+          {t('coupons.canBeUsedBy')}{authorRole === 'her' ? 'Andrei' : 'Ana'}.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left' }}>
           <input
             className={styles.noteInput}
             type="text"
-            placeholder="Titlu (ex: Mic dejun la pat)"
+            placeholder={t('coupons.titlePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={40}
           />
           <textarea
             className={styles.noteInput}
-            placeholder="Descriere detaliată..."
+            placeholder={t('coupons.descPlaceholder')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={100}
@@ -185,7 +188,7 @@ function CreateCouponModal({ onConfirm, onCancel, isLoading, authorRole }) {
             <input
               className={styles.noteInput}
               type="text"
-              placeholder="Emoji (ex: 🥞)"
+              placeholder={t('coupons.emojiPlaceholder')}
               value={emoji}
               onChange={(e) => setEmoji(e.target.value)}
               style={{ width: '80px', textAlign: 'center' }}
@@ -205,14 +208,14 @@ function CreateCouponModal({ onConfirm, onCancel, isLoading, authorRole }) {
             onClick={onCancel}
             disabled={isLoading}
           >
-            Renunță
+            {t('coupons.cancel')}
           </button>
           <button
             className={`${styles.modalBtn} ${styles.modalBtnConfirm}`}
             onClick={handleSubmit}
             disabled={isLoading || !title.trim() || !description.trim()}
           >
-            {isLoading ? <span className={styles.loadingSpinner} /> : 'Salvează'}
+            {isLoading ? <span className={styles.loadingSpinner} /> : t('coupons.save')}
           </button>
         </div>
       </div>
@@ -225,6 +228,7 @@ function CreateCouponModal({ onConfirm, onCancel, isLoading, authorRole }) {
 // ============================================================
 function SuggestionModal({ onConfirm, onCancel, isLoading }) {
   const [suggestion, setSuggestion] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -235,9 +239,9 @@ function SuggestionModal({ onConfirm, onCancel, isLoading }) {
     <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Sugerează un cupon">
       <div className={`${styles.modal} animate-scale-in`}>
         <div className={styles.modalEmoji}>💡</div>
-        <h3 className={styles.modalTitle}>Sugerează un Cupon</h3>
+        <h3 className={styles.modalTitle}>{t('coupons.suggestCoupon')}</h3>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '15px' }}>
-          Ce cupon ai vrea să primești în viitor? Scrie ideea ta mai jos.
+          {t('coupons.whatCouponWant')}
         </p>
 
         <div className={styles.modalNoteWrapper}>
@@ -245,7 +249,7 @@ function SuggestionModal({ onConfirm, onCancel, isLoading }) {
             id="coupon-suggestion"
             className={styles.noteInput}
             type="text"
-            placeholder="ex: Mic dejun la pat..."
+            placeholder={t('coupons.suggestPlaceholder')}
             value={suggestion}
             onChange={(e) => setSuggestion(e.target.value)}
             maxLength={100}
@@ -259,14 +263,14 @@ function SuggestionModal({ onConfirm, onCancel, isLoading }) {
             onClick={onCancel}
             disabled={isLoading}
           >
-            Renunță
+            {t('coupons.cancel')}
           </button>
           <button
             className={`${styles.modalBtn} ${styles.modalBtnConfirm}`}
             onClick={() => onConfirm(suggestion)}
             disabled={isLoading || !suggestion.trim()}
           >
-            {isLoading ? <span className={styles.loadingSpinner} /> : 'Trimite Sugestia'}
+            {isLoading ? <span className={styles.loadingSpinner} /> : t('coupons.sendSuggestion')}
           </button>
         </div>
       </div>
@@ -278,6 +282,7 @@ function SuggestionModal({ onConfirm, onCancel, isLoading }) {
 // Card Cupon individual
 // ============================================================
 function CouponCard({ coupon, isUsed, usedAt, onRedeem, canRedeem, onDelete }) {
+  const { t } = useLanguage();
   const usedDate = usedAt
     ? new Date(usedAt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
@@ -323,7 +328,7 @@ function CouponCard({ coupon, isUsed, usedAt, onRedeem, canRedeem, onDelete }) {
               filter: isUsed ? 'none' : 'brightness(0.7)',
             }}
           >
-            {isUsed ? '✓ Folosit' : '✨ Disponibil'}
+            {isUsed ? t('coupons.usedStatus') : t('coupons.availableStatus')}
           </span>
         </div>
         <h3 className={`${styles.couponTitle} ${isUsed ? styles.couponTitleUsed : ''}`}>
@@ -334,12 +339,12 @@ function CouponCard({ coupon, isUsed, usedAt, onRedeem, canRedeem, onDelete }) {
         </p>
         {isUsed && usedDate && (
           <p className={styles.couponUsedDate}>
-            🗓️ Folosit pe {usedDate}
+            {t('coupons.usedOn')}{usedDate}
           </p>
         )}
         {!isUsed && canRedeem && (
           <div className={styles.couponTap}>
-            Atinge pentru a folosi →
+            {t('coupons.tapToUse')}
           </div>
         )}
       </div>
@@ -357,6 +362,7 @@ export default function CupoanePage() {
   const { coupons, addCoupon, useCoupon, deleteCoupon, loading } = useCustomCoupons();
   const { addNotification } = useNotifications();
   const { profile } = useProfiles(role);
+  const { t } = useLanguage();
   
   const [activeTab, setActiveTab] = useState('received'); // 'received' sau 'created'
   const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -381,11 +387,11 @@ export default function CupoanePage() {
     try {
       const myName = profile?.name || (role === 'her' ? 'Ana' : 'Andrei');
       const targetRoleForNotif = selectedCoupon.author;
-      const msg = `${myName} a folosit cuponul "${selectedCoupon.title}"!` + (note ? `\n📝 Notă: "${note}"` : '');
+      const msg = `${myName}${t('coupons.usedCouponText')}"${selectedCoupon.title}"!` + (note ? `\n${t('coupons.noteLabel')}"${note}"` : '');
       
       if (targetRoleForNotif) {
         // addNotification(title, body, sender, customTargetRole)
-        await addNotification('Cupon Folosit 🎟️', msg, role, targetRoleForNotif);
+        await addNotification(t('coupons.couponUsedTitle'), msg, role, targetRoleForNotif);
       }
       
       await useCoupon(selectedCoupon.id, note);
@@ -395,10 +401,10 @@ export default function CupoanePage() {
       setConfetti({ active: true, x: cx, y: cy });
       setTimeout(() => setConfetti({ active: false, x: 0, y: 0 }), 3000);
 
-      showToast(`Cupon „${selectedCoupon.title}" folosit! 🎉 Partenerul a primit notificarea.`);
+      showToast(`${t('coupons.couponPrefix')}${selectedCoupon.title}${t('coupons.usedSuccess')}`);
     } catch (e) {
       console.error(e);
-      showToast('Eroare la folosirea cuponului', 'error');
+      showToast(t('coupons.useError'), 'error');
     }
 
     setIsRedeeming(false);
@@ -413,11 +419,11 @@ export default function CupoanePage() {
         author: role,
         target: role === 'her' ? 'his' : 'her'
       });
-      showToast('Cupon creat cu succes!');
+      showToast(t('coupons.createSuccess'));
       setIsCreating(false);
     } catch (e) {
       console.error(e);
-      showToast('Eroare la crearea cuponului', 'error');
+      showToast(t('coupons.createError'), 'error');
     }
     setIsRedeeming(false);
   };
@@ -431,17 +437,39 @@ export default function CupoanePage() {
       const targetRole = role === 'her' ? 'his' : 'her';
       const msg = `"${suggestionText.trim()}"`;
       
-      await addNotification('Sugestie Cupon Nou 💡', `Auzi, ${myName} și-ar dori un cupon pentru: ${msg}`, targetRole);
-      await addNotification('Sugestie Cupon Nou 💡', `${myName} a propus un cupon: ${msg}`, role, 'admin');
+      await addNotification(t('coupons.newSuggestionTitle'), `${t('coupons.hey')}${myName}${t('coupons.wouldLikeCouponFor')}${msg}`, targetRole);
+      await addNotification(t('coupons.newSuggestionTitle'), `${myName}${t('coupons.proposedCoupon')}${msg}`, role, 'admin');
       
-      showToast('Sugestia ta a fost trimisă cu succes! 🎉');
+      showToast(t('coupons.suggestSuccess'));
     } catch (e) {
       console.error(e);
-      showToast('Eroare la trimiterea sugestiei', 'error');
+      showToast(t('coupons.suggestError'), 'error');
     }
 
     setIsRedeeming(false);
     setIsSuggesting(false);
+  };
+
+  const handleLoadDefaults = async () => {
+    setIsRedeeming(true);
+    const defaults = [
+      { title: t('coupons.defaultMassage'), description: t('coupons.defaultMassageDesc'), emoji: '💆‍♀️', color: '#B5EAD7' },
+      { title: t('coupons.defaultMovie'), description: t('coupons.defaultMovieDesc'), emoji: '🍿', color: '#FFCBA4' },
+      { title: t('coupons.defaultOuting'), description: t('coupons.defaultOutingDesc'), emoji: '🍽️', color: '#FFB5C8' },
+      { title: t('coupons.defaultFood'), description: t('coupons.defaultFoodDesc'), emoji: '🍔', color: '#FFD7BA' },
+      { title: t('coupons.defaultCuddle'), description: t('coupons.defaultCuddleDesc'), emoji: '🫂', color: '#C8B6FF' },
+      { title: t('coupons.defaultChore'), description: t('coupons.defaultChoreDesc'), emoji: '🧹', color: '#B5D8EB' },
+    ];
+    try {
+      for (const c of defaults) {
+        await addCoupon({ ...c, author: role, target: role === 'her' ? 'his' : 'her' });
+      }
+      showToast(t('coupons.addDefaultsSuccess'));
+    } catch (e) {
+      console.error(e);
+      showToast(t('coupons.addDefaultsError'), 'error');
+    }
+    setIsRedeeming(false);
   };
 
   if (loading) {
@@ -492,8 +520,8 @@ export default function CupoanePage() {
 
       <header className={styles.header}>
         <div className={styles.headerText}>
-          <h1 className={styles.title}>Răsfăț & Cupoane 🎟️</h1>
-          <p className={styles.subtitle}>Cadourile voastre de dragoste</p>
+          <h1 className={styles.title}>{t('coupons.pageTitle')}</h1>
+          <p className={styles.subtitle}>{t('coupons.pageSubtitle')}</p>
         </div>
         <div className={styles.statsRow}>
           <button 
@@ -502,14 +530,14 @@ export default function CupoanePage() {
             aria-label="Sugerează un cupon"
             style={{ flex: 1 }}
           >
-            <span className={styles.suggestionBtnIcon}>💡</span> Sugerează
+            <span className={styles.suggestionBtnIcon}>💡</span> {t('coupons.suggestBtn')}
           </button>
           <button 
             className={styles.suggestionBtn} 
             onClick={() => setIsCreating(true)}
             style={{ flex: 1, background: 'var(--color-rose-dark)', color: 'white' }}
           >
-            <span className={styles.suggestionBtnIcon}>✨</span> Creează
+            <span className={styles.suggestionBtnIcon}>✨</span> {t('coupons.createBtn')}
           </button>
         </div>
       </header>
@@ -526,7 +554,7 @@ export default function CupoanePage() {
             boxShadow: activeTab === 'received' ? 'var(--shadow-md)' : 'none'
           }}
         >
-          🎁 Primite ({receivedCoupons.filter(c => !c.isUsed).length})
+          {t('coupons.received')} ({receivedCoupons.filter(c => !c.isUsed).length})
         </button>
         <button
           onClick={() => setActiveTab('created')}
@@ -538,15 +566,28 @@ export default function CupoanePage() {
             boxShadow: activeTab === 'created' ? 'var(--shadow-md)' : 'none'
           }}
         >
-          ✍️ Create ({createdCoupons.length})
+          {t('coupons.created')} ({createdCoupons.length})
         </button>
       </div>
 
       <section className={styles.couponsList}>
         {currentList.length === 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-            {activeTab === 'received' ? 'Nu ai primit niciun cupon încă. Sugerează unul!' : 'Nu ai creat niciun cupon. Oferă un cadou partenerului!'}
-          </p>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+            <p style={{ marginBottom: '15px' }}>
+              {activeTab === 'received' 
+                ? t('coupons.noReceived') 
+                : t('coupons.noCreated')}
+            </p>
+            {activeTab === 'created' && (
+              <button 
+                onClick={handleLoadDefaults}
+                disabled={isRedeeming}
+                style={{ padding: '10px 20px', background: 'var(--color-rose-dark)', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}
+              >
+                {isRedeeming ? t('coupons.adding') : t('coupons.loadDefaults')}
+              </button>
+            )}
+          </div>
         )}
         
         {currentList.map((coupon, idx) => (

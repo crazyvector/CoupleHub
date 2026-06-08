@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './StudyLobbyPage.module.css';
 import { useStudyLobby, useStudyTasks } from '../hooks/useStudyLobby';
 import BonsaiTree from '../components/BonsaiTree';
-
+import InfoModal from '../components/InfoModal';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useProfiles } from '../hooks/useDatabase';
 const MUSIC_THEMES = [
   {
     id: 'lofi',
@@ -78,10 +80,10 @@ const MUSIC_THEMES = [
   },
 ];
 
-const TASK_STATUSES = [
-  { id: 'todo', label: 'De făcut', color: '#FFB74D' },
-  { id: 'inprogress', label: 'În lucru', color: '#42A5F5' },
-  { id: 'done', label: 'Gata ✓', color: '#66BB6A' },
+const getTaskStatuses = (t) => [
+  { id: 'todo', label: t('studyLobby.todo'), color: '#FFB74D' },
+  { id: 'inprogress', label: t('studyLobby.inProgress'), color: '#42A5F5' },
+  { id: 'done', label: t('studyLobby.done'), color: '#66BB6A' },
 ];
 
 export default function StudyLobbyPage({ role }) {
@@ -107,7 +109,9 @@ export default function StudyLobbyPage({ role }) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskSubject, setNewTaskSubject] = useState('');
   const [activeTab, setActiveTab] = useState('lobby'); // 'lobby' or 'tasks'
-  
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const { t } = useLanguage();
+  const TASK_STATUSES = getTaskStatuses(t);
   // Audio refs for sound effects
   const bellAudioRef = useRef(null);
   const hurrayAudioRef = useRef(null);
@@ -127,8 +131,11 @@ export default function StudyLobbyPage({ role }) {
   }, [timerMode, timerSeconds, breakDuration, isRunning]);
 
   const partnerRole = role === 'his' ? 'her' : 'his';
-  const partnerName = role === 'his' ? 'Ana' : 'Andrei';
-  const myName = role === 'his' ? 'Andrei' : 'Ana';
+  const { profile: myProfile } = useProfiles(role);
+  const { profile: partnerProfile } = useProfiles(partnerRole);
+  
+  const partnerName = partnerProfile?.name || (role === 'his' ? 'Ana' : 'Andrei');
+  const myName = myProfile?.name || (role === 'his' ? 'Andrei' : 'Ana');
 
   // Check partner online (within 60s)
   const partnerPresence = presence[partnerRole];
@@ -186,7 +193,7 @@ export default function StudyLobbyPage({ role }) {
   if (lobbyLoading) {
     return <div className={styles.loadingScreen}>
       <span className={styles.loadingEmoji}>📚</span>
-      <p>Se pregătește sala de studiu...</p>
+      <p>{t('studyLobby.preparingRoom')}</p>
     </div>;
   }
 
@@ -204,7 +211,7 @@ export default function StudyLobbyPage({ role }) {
 
       {/* Header */}
       <header className={styles.header}>
-        <h1 className={styles.title}>📚 Sala de Studiu</h1>
+        <h1 className={styles.title}>{t('studyLobby.studyRoom')}</h1>
         <div className={styles.presenceRow}>
           <div className={`${styles.presenceChip} ${styles.online}`}>
             <span className={styles.presenceDot}></span>
@@ -219,7 +226,7 @@ export default function StudyLobbyPage({ role }) {
             {partnerOnline && partnerPresence?.currentTask && (
               <span className={styles.taskTag}>📖 {partnerPresence.currentTask}</span>
             )}
-            {!partnerOnline && <span className={styles.offlineLabel}>offline</span>}
+            {!partnerOnline && <span className={styles.offlineLabel}>{t('studyLobby.offline')}</span>}
           </div>
         </div>
       </header>
@@ -230,13 +237,13 @@ export default function StudyLobbyPage({ role }) {
           className={`${styles.tab} ${activeTab === 'lobby' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('lobby')}
         >
-          🌳 Lobby
+          {t('studyLobby.lobby')}
         </button>
         <button
           className={`${styles.tab} ${activeTab === 'tasks' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('tasks')}
         >
-          📋 Task-uri
+          {t('studyLobby.tasksTab')}
         </button>
       </div>
 
@@ -248,20 +255,31 @@ export default function StudyLobbyPage({ role }) {
         <div className={styles.lobbyContent}>
           {/* Bonsai Section */}
           <div className={styles.bonsaiSection}>
-            <div className={styles.stageLabel}>
-              {bonsaiStage.emoji} {bonsaiStage.label}
+            <div className={styles.stageLabel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {bonsaiStage.emoji} {t(bonsaiStage.label)}
+              <button onClick={() => setShowInfoModal(true)} style={{ background: 'none', border: 'none', marginLeft: '8px', fontSize: '1.2rem', cursor: 'pointer' }} aria-label="Info Bonsai">ℹ️</button>
             </div>
             <BonsaiTree stage={bonsaiStage} xp={bonsaiXP} nextStage={nextStage} />
+
+            <InfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} title={t('studyLobby.bonsaiInfoTitle')}>
+              <p>{t('studyLobby.bonsaiInfo1')}</p>
+              <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
+                <li><b>+1 XP</b> {t('studyLobby.bonsaiInfo2a')} <b>{t('studyLobby.bonsaiInfo2b')}</b> {t('studyLobby.bonsaiInfo2c')}</li>
+                <li>{t('studyLobby.bonsaiInfo3a')} <b>{t('studyLobby.bonsaiInfo3b')}</b>{t('studyLobby.bonsaiInfo3c')}<b>{t('studyLobby.bonsaiInfo3d')}</b>{t('studyLobby.bonsaiInfo3e')}</li>
+                <li>{t('studyLobby.bonsaiInfo4')}</li>
+              </ul>
+              <p style={{ marginTop: '10px' }}><i>{t('studyLobby.bonsaiInfo5')}</i></p>
+            </InfoModal>
             <div className={styles.sessionsCount}>
-              🎯 {sessionsCompleted} sesiuni completate
-              {partnerOnline && <span className={styles.bonusTag}>+50% XP bonus co-study!</span>}
+              🎯 {sessionsCompleted} {t('studyLobby.sessionsCompletedText')}
+              {partnerOnline && <span className={styles.bonusTag}>{t('studyLobby.bonusCoStudy')}</span>}
             </div>
           </div>
 
           {/* Config Panel (only when stopped at the beginning of a cycle) */}
           {!isRunning && !sessionCompleted && timerMode === 'work' && currentCycle === 1 && (
             <div className={styles.timerConfigPanel}>
-              <h4>Setări Sesiune</h4>
+              <h4>{t('studyLobby.sessionSettings')}</h4>
               <div className={styles.configPresets}>
                 <button 
                   className={workDuration === 25*60 && breakDuration === 5*60 ? styles.presetActive : ''}
@@ -278,7 +296,7 @@ export default function StudyLobbyPage({ role }) {
               </div>
               <div className={styles.configCustom}>
                 <div className={styles.stepperGroup}>
-                  <label>Muncă (min)</label>
+                  <label>{t('studyLobby.workMin')}</label>
                   <div className={styles.stepper}>
                     <button onClick={() => setWorkDuration(Math.max(60, workDuration - 60))}>-</button>
                     <span>{workDuration/60}</span>
@@ -286,7 +304,7 @@ export default function StudyLobbyPage({ role }) {
                   </div>
                 </div>
                 <div className={styles.stepperGroup}>
-                  <label>Pauză (min)</label>
+                  <label>{t('studyLobby.breakMin')}</label>
                   <div className={styles.stepper}>
                     <button onClick={() => setBreakDuration(Math.max(60, breakDuration - 60))}>-</button>
                     <span>{breakDuration/60}</span>
@@ -294,7 +312,7 @@ export default function StudyLobbyPage({ role }) {
                   </div>
                 </div>
                 <div className={styles.stepperGroup}>
-                  <label>Cicluri</label>
+                  <label>{t('studyLobby.cycles')}</label>
                   <div className={styles.stepper}>
                     <button onClick={() => setTotalCycles(Math.max(1, totalCycles - 1))}>-</button>
                     <span>{totalCycles}</span>
@@ -309,15 +327,15 @@ export default function StudyLobbyPage({ role }) {
           <div className={`${styles.timerSection} ${timerMode === 'break' ? styles.breakMode : ''}`}>
             {sessionCompleted ? (
               <div className={styles.sessionCompletePopup}>
-                <h2 className={styles.hurrayText}>🎉 Huraa!</h2>
-                <p>Ai terminat toate cele {totalCycles} cicluri de studiu!</p>
-                <button className={styles.resetBtn} onClick={resetTimer}>Începe o nouă sesiune</button>
+                <h2 className={styles.hurrayText}>{t('studyLobby.hurray')}</h2>
+                <p>{t('studyLobby.finishedAllCycles1')}{totalCycles}{t('studyLobby.finishedAllCycles2')}</p>
+                <button className={styles.resetBtn} onClick={resetTimer}>{t('studyLobby.startNewSession')}</button>
               </div>
             ) : (
               <>
                 <div className={styles.timerModeLabel}>
-                  {timerMode === 'work' ? '💻 Focus Time' : '☕ Pauză'}
-                  <span className={styles.cycleBadge}>Ciclul {currentCycle} din {totalCycles}</span>
+                  {timerMode === 'work' ? t('studyLobby.focusTime') : t('studyLobby.breakTime')}
+                  <span className={styles.cycleBadge}>{t('studyLobby.cycle')} {currentCycle} {t('studyLobby.of')} {totalCycles}</span>
                 </div>
 
                 {/* Circular progress */}
@@ -336,7 +354,7 @@ export default function StudyLobbyPage({ role }) {
                   <div className={styles.timerText}>
                     <span className={styles.timerDigits}>{formatTime(timerSeconds)}</span>
                     <span className={styles.timerSubtext}>
-                      {timerMode === 'work' ? `${workDuration/60} min focus` : `${breakDuration/60} min pauză`}
+                      {timerMode === 'work' ? `${workDuration/60} ${t('studyLobby.minFocus')}` : `${breakDuration/60} ${t('studyLobby.minBreak')}`}
                     </span>
                   </div>
                 </div>
@@ -348,23 +366,23 @@ export default function StudyLobbyPage({ role }) {
                       startTimer();
                       setIsMusicPlaying(true);
                     }}>
-                      ▶ Start
+                      {t('studyLobby.start')}
                     </button>
                   ) : (
                     <button className={styles.pauseBtn} onClick={pauseTimer}>
-                      ⏸ Pauză
+                      {t('studyLobby.pause')}
                     </button>
                   )}
                   <button className={styles.resetBtn} onClick={resetTimer}>
-                    ↻ Reset
+                    {t('studyLobby.reset')}
                   </button>
                   {timerMode === 'work' ? (
                     <button className={styles.skipBtn} onClick={skipToBreak}>
-                      ⏭ Sari la Pauză
+                      {t('studyLobby.skipToBreak')}
                     </button>
                   ) : (
                     <button className={styles.skipBtn} onClick={skipToWork}>
-                      ⏭ Sari la Muncă
+                      {t('studyLobby.skipToWork')}
                     </button>
                   )}
                 </div>
@@ -375,12 +393,12 @@ export default function StudyLobbyPage({ role }) {
           {/* Music Section */}
           <div className={styles.musicSection}>
             <div className={styles.musicHeader}>
-              <h3 className={styles.musicTitle}>🎵 Muzică</h3>
+              <h3 className={styles.musicTitle}>{t('studyLobby.music')}</h3>
               <button
                 className={styles.musicToggle}
                 onClick={() => setIsMusicPlaying(!isMusicPlaying)}
               >
-                {isMusicPlaying ? '🔊 On' : '🔇 Off'}
+                {isMusicPlaying ? t('studyLobby.on') : t('studyLobby.off')}
               </button>
             </div>
 
@@ -390,7 +408,7 @@ export default function StudyLobbyPage({ role }) {
               onClick={() => setShowMusicPicker(!showMusicPicker)}
             >
               <span>{selectedMusic.icon} {selectedMusic.label}</span>
-              <span className={styles.changeLabel}>Schimbă ▾</span>
+              <span className={styles.changeLabel}>{t('studyLobby.change')}</span>
             </button>
 
             {showMusicPicker && (
@@ -422,7 +440,7 @@ export default function StudyLobbyPage({ role }) {
                 <div className={styles.audioControls}>
                   <div className={styles.nowPlayingInfo}>
                     <strong>{selectedMusic.label}</strong>
-                    <span>Radio / Audio Loop</span>
+                    <span>{t('studyLobby.radioLoop')}</span>
                   </div>
                   <audio
                     key={`${selectedMusic.id}-${timerMode}`} // Reload when theme or mode changes
@@ -433,7 +451,7 @@ export default function StudyLobbyPage({ role }) {
                     controlsList="nodownload noplaybackrate"
                     className={styles.nativeAudio}
                   >
-                    Browserul nu suportă elementul audio.
+                    {t('studyLobby.audioNotSupported')}
                   </audio>
                 </div>
               </div>
@@ -447,7 +465,7 @@ export default function StudyLobbyPage({ role }) {
                 window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
               }}
             >
-              ▶️ Caută pe YouTube
+              {t('studyLobby.searchYoutube')}
             </button>
           </div>
         </div>
@@ -457,7 +475,7 @@ export default function StudyLobbyPage({ role }) {
           {/* My Tasks */}
           <div className={styles.taskColumn}>
             <div className={styles.taskColumnHeader}>
-              <h3>{role === 'his' ? '🧔‍♂️' : '👩‍🦰'} Task-urile mele</h3>
+              <h3>{role === 'his' ? '🧔‍♂️' : '👩‍🦰'} {t('studyLobby.myTasks')}</h3>
               <button className={styles.addTaskBtn} onClick={() => setShowAddTask(!showAddTask)}>+</button>
             </div>
 
@@ -465,7 +483,7 @@ export default function StudyLobbyPage({ role }) {
               <div className={styles.addTaskForm}>
                 <input
                   type="text"
-                  placeholder="Ce ai de făcut?"
+                  placeholder={t('studyLobby.whatToDo')}
                   value={newTaskTitle}
                   onChange={e => setNewTaskTitle(e.target.value)}
                   onKeyPress={e => e.key === 'Enter' && handleAddTask()}
@@ -474,17 +492,17 @@ export default function StudyLobbyPage({ role }) {
                 />
                 <input
                   type="text"
-                  placeholder="Materie / Subiect (opțional)"
+                  placeholder={t('studyLobby.subjectOptional')}
                   value={newTaskSubject}
                   onChange={e => setNewTaskSubject(e.target.value)}
                   className={styles.taskInput}
                 />
-                <button className={styles.saveTaskBtn} onClick={handleAddTask}>Adaugă</button>
+                <button className={styles.saveTaskBtn} onClick={handleAddTask}>{t('studyLobby.addBtn')}</button>
               </div>
             )}
 
             {myTasks.length === 0 && !showAddTask && (
-              <p className={styles.emptyTasks}>Niciun task încă. Adaugă unul! 📝</p>
+              <p className={styles.emptyTasks}>{t('studyLobby.noTasksYet')}</p>
             )}
 
             {myTasks.map(task => (
@@ -498,7 +516,7 @@ export default function StudyLobbyPage({ role }) {
                     {TASK_STATUSES.find(s => s.id === task.status)?.label}
                   </button>
                   <button className={styles.deleteTaskBtn} onClick={() => {
-                    if (window.confirm('Ștergi acest task?')) deleteTask(task.id);
+                    if (window.confirm(t('studyLobby.deleteTaskPrompt'))) deleteTask(task.id);
                   }}>✕</button>
                 </div>
                 <p className={styles.taskTitle}>{task.title}</p>
@@ -514,7 +532,7 @@ export default function StudyLobbyPage({ role }) {
             </div>
 
             {partnerTasks.length === 0 && (
-              <p className={styles.emptyTasks}>{partnerName} nu are task-uri încă.</p>
+              <p className={styles.emptyTasks}>{partnerName} {t('studyLobby.partnerNoTasks')}</p>
             )}
 
             {partnerTasks.map(task => (

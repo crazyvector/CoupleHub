@@ -1,6 +1,10 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { App as CapacitorApp } from '@capacitor/app';
+import { useGlobalAuth } from './contexts/AuthContext.jsx';
+import { useLanguage } from './contexts/LanguageContext';
+import { useMonetization } from './hooks/useMonetization';
+import { useEvents, useTodos, useNotifications, useProfiles } from './hooks/useDatabase';
 import BottomNav from './components/layout/BottomNav';
 import NotificationCenter from './components/NotificationCenter';
 import LoginPage from './pages/LoginPage';
@@ -48,13 +52,13 @@ function PageLoader() {
 
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Badge } from '@capawesome/capacitor-badge';
-import { useEvents, useTodos, useNotifications } from './hooks/useDatabase';
 
 // Manager pentru notificări locale (Calendar + To-Do) și In-App (Clopoțel)
 function AppNotificationManager({ role }) {
   const { events } = useEvents();
   const { todos, updateTodo } = useTodos(role);
   const { addNotification } = useNotifications(role);
+  const { t, lang } = useLanguage();
 
   useEffect(() => {
     async function syncNotifications() {
@@ -89,8 +93,8 @@ function AppNotificationManager({ role }) {
 
             if (oneDayBefore > now) {
               notificationsToSchedule.push({
-                title: `🗓️ Mâine: ${event.name}`,
-                body: 'Nu uita de evenimentul de mâine!',
+                title: t('notifications.eventTomorrowTitle').replace('{title}', event.name),
+                body: t('notifications.eventTomorrowBody'),
                 id: eventIdNum + 1,
                 schedule: { at: oneDayBefore },
                 smallIcon: 'ic_stat_icon_config_sample',
@@ -99,8 +103,8 @@ function AppNotificationManager({ role }) {
 
             if (eventDate > now) {
               notificationsToSchedule.push({
-                title: `🗓️ Astăzi: ${event.name}`,
-                body: 'Azi e ziua cea mare!',
+                title: t('notifications.eventTodayTitle').replace('{title}', event.name),
+                body: t('notifications.eventTodayBody'),
                 id: eventIdNum + 2,
                 schedule: { at: eventDate },
                 smallIcon: 'ic_stat_icon_config_sample',
@@ -128,9 +132,10 @@ function AppNotificationManager({ role }) {
             // Dimineața în ziua deadline-ului (dacă deadline-ul e mai târziu de ora 09:00)
             const morningOf = new Date(dlDate.getFullYear(), dlDate.getMonth(), dlDate.getDate(), 9, 0, 0);
             if (morningOf > now && dlDate > morningOf) {
+              const timeString = dlDate.toLocaleTimeString(lang === 'en' ? 'en-US' : 'ro-RO', {hour: '2-digit', minute:'2-digit'});
               notificationsToSchedule.push({
-                title: `📅 Task pentru azi: ${todo.title}`,
-                body: `Ai termen limită astăzi la ora ${dlDate.toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}`,
+                title: t('notifications.taskTodayTitle').replace('{title}', todo.title),
+                body: t('notifications.taskTodayBody').replace('{time}', timeString),
                 id: todoIdNum + 1,
                 schedule: { at: morningOf },
                 smallIcon: 'ic_stat_icon_config_sample',
@@ -141,8 +146,8 @@ function AppNotificationManager({ role }) {
             const oneHourBefore = new Date(dlDate.getTime() - 60 * 60 * 1000);
             if (oneHourBefore > now) {
               notificationsToSchedule.push({
-                title: `⏳ Deadline în curând: ${todo.title}`,
-                body: 'A mai rămas o oră pentru a finaliza acest task!',
+                title: t('notifications.taskSoonTitle').replace('{title}', todo.title),
+                body: t('notifications.taskSoonBody'),
                 id: todoIdNum + 2,
                 schedule: { at: oneHourBefore },
                 smallIcon: 'ic_stat_icon_config_sample',
@@ -158,13 +163,22 @@ function AppNotificationManager({ role }) {
 
               // Notificare dimineața sau la deschiderea app dacă e ziua deadline-ului
               if (isToday && !todo.inAppNotifiedToday) {
-                await addNotification(`Task pentru azi: ${todo.title}`, `Ai termen limită la ${dlDate.toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}`, role, role);
+                const timeString = dlDate.toLocaleTimeString(lang === 'en' ? 'en-US' : 'ro-RO', {hour: '2-digit', minute:'2-digit'});
+                await addNotification(
+                  t('notifications.inAppTaskTodayTitle').replace('{title}', todo.title), 
+                  t('notifications.inAppTaskTodayBody').replace('{time}', timeString), 
+                  role, role
+                );
                 await updateTodo(todo.id, { inAppNotifiedToday: true });
               }
 
               // Notificare cu 1 oră înainte (dacă a intrat în app în acest interval)
               if (isWithinHour && !todo.inAppNotified1Hour) {
-                await addNotification(`Deadline în curând: ${todo.title}`, `A mai rămas mai puțin de o oră!`, role, role);
+                await addNotification(
+                  t('notifications.inAppTaskSoonTitle').replace('{title}', todo.title), 
+                  t('notifications.inAppTaskSoonBody'), 
+                  role, role
+                );
                 await updateTodo(todo.id, { inAppNotified1Hour: true });
               }
             }
@@ -179,7 +193,11 @@ function AppNotificationManager({ role }) {
       }
     }
 
-    syncNotifications();
+    const timerId = setTimeout(() => {
+      syncNotifications();
+    }, 1000);
+
+    return () => clearTimeout(timerId);
   }, [events, todos]);
 
   return null;
@@ -187,10 +205,11 @@ function AppNotificationManager({ role }) {
 
 function ChatNotificationManager({ role }) {
   const [lastMessageId, setLastMessageId] = useState(null);
+  const partnerRole = role === 'his' ? 'her' : 'his';
+  const { profile: partnerProfile } = useProfiles(partnerRole);
+  const { t } = useLanguage();
 
   useEffect(() => {
-    const partnerRole = role === 'his' ? 'her' : 'his';
-    
     const q = query(
       collection(db, 'messages'),
       where('sender', '==', partnerRole),
@@ -211,10 +230,10 @@ function ChatNotificationManager({ role }) {
           try {
             const perm = await LocalNotifications.requestPermissions();
             if (perm.display === 'granted') {
-              const partnerName = role === 'his' ? 'Ana' : 'Andrei';
+              const partnerName = partnerProfile?.name || (role === 'his' ? 'Ana' : 'Andrei');
               await LocalNotifications.schedule({
                 notifications: [{
-                  title: `💬 Mesaj nou de la ${partnerName}`,
+                  title: t('notifications.chatNewMessageTitle').replace('{name}', partnerName),
                   body: newMsg.text,
                   id: Math.floor(Math.random() * 100000),
                   schedule: { at: new Date(Date.now() + 1000) },
@@ -230,7 +249,7 @@ function ChatNotificationManager({ role }) {
     });
     
     return () => unsubscribe();
-  }, [role, lastMessageId]);
+  }, [role, lastMessageId, partnerRole, partnerProfile]);
 
   return null;
 }
@@ -241,6 +260,7 @@ function GlobalBadgeManager({ role }) {
   const [unreadNotif, setUnreadNotif] = useState(0);
 
   useEffect(() => {
+    if (!role || role === 'admin') return;
     const partnerRole = role === 'his' ? 'her' : 'his';
     
     // Listen to Unread Messages
@@ -291,16 +311,41 @@ function GlobalBadgeManager({ role }) {
   return null;
 }
 
-// Aplicația principală (autentificată ca 'her' sau 'his')
-function MainApp({ role, getDiaryPassphrase }) {
-  const passphrase = getDiaryPassphrase();
+function AppUrlListener() {
+  const navigate = useNavigate();
   useEffect(() => {
-    document.body.className = `theme-${role}`;
+    const listener = CapacitorApp.addListener('appUrlOpen', (event) => {
+      const slug = event.url.split('couplehub://app').pop();
+      if (slug) {
+        navigate(slug);
+      }
+    });
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [navigate]);
+  return null;
+}
+
+// Aplicația principală (autentificată ca 'her' sau 'his')
+function MainApp({ role, gender, getDiaryPassphrase }) {
+  const passphrase = getDiaryPassphrase();
+  const { showBanner, hideBanner } = useMonetization();
+
+  useEffect(() => {
+    document.body.className = `theme-${gender === 'F' ? 'her' : 'his'}`;
     return () => { document.body.className = ''; };
-  }, [role]);
+  }, [gender]);
+
+  // Afișează banner-ul reclamelor pentru userii non-Pro
+  useEffect(() => {
+    showBanner();
+    return () => hideBanner();
+  }, [showBanner, hideBanner]);
 
   return (
     <BrowserRouter>
+      <AppUrlListener />
       <GlobalBadgeManager role={role} />
       <div className="app-background" aria-hidden="true" />
       <NotificationCenter role={role} />
@@ -352,7 +397,8 @@ function AdminApp({ onLogout }) {
 
 // Root logic
 function AppContent() {
-  const { isAuthenticated, isAdmin, isLoading, login, logout, role, getDiaryPassphrase, resetPassword } = useAuth();
+  const authState = useGlobalAuth();
+  const { isAuthenticated, isAdmin, isLoading, role, gender, logout, getDiaryPassphrase } = authState;
 
   if (isLoading) return <PageLoader />;
 
@@ -363,13 +409,19 @@ function AppContent() {
 
   // Ea/El logat → Aplicația principală
   if (isAuthenticated) {
-    return <MainApp role={role} getDiaryPassphrase={getDiaryPassphrase} />;
+    return <MainApp role={role} gender={gender} getDiaryPassphrase={getDiaryPassphrase} />;
   }
 
   // Nelogat → Ecran de login
-  return <LoginPage onSuccess={login} onResetPassword={resetPassword} />;
+  return <LoginPage useAuthHook={useGlobalAuth} />;
 }
 
+import { LanguageProvider } from './contexts/LanguageContext.jsx';
+
 export default function App() {
-  return <AppContent />;
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
 }

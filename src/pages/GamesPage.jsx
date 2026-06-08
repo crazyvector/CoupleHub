@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useWheelItems } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './GamesPage.module.css';
 
 // ============================================================
 // Roata Norocului — Canvas-based
 // ============================================================
 
-const drawWheel = (canvas, rotation, items) => {
+const drawWheel = (canvas, rotation, items, t) => {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.width / dpr;
@@ -21,7 +22,7 @@ const drawWheel = (canvas, rotation, items) => {
     ctx.font = '20px Nunito';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ccc';
-    ctx.fillText('Nicio opțiune', cx, cy);
+    ctx.fillText(t('games.noOptions'), cx, cy);
     return;
   }
 
@@ -53,13 +54,19 @@ const drawWheel = (canvas, rotation, items) => {
     ctx.rotate(midAngle);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#3D2C2C';
-    const rawFontSize = Math.floor(R / (ITEM_COUNT * 0.8));
-    const fontSize = Math.max(12, Math.min(24, rawFontSize));
+    
+    let fontSize = Math.max(10, Math.min(22, Math.floor((R * 2 * Math.PI) / ITEM_COUNT) - 4));
     ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
-    ctx.shadowColor = 'rgba(255,255,255,0.5)';
-    ctx.shadowBlur = 3;
-    const maxWidth = R - 30; // Leave some padding
-    ctx.fillText(item.label, R - 12, 5, maxWidth);
+    let textWidth = ctx.measureText(item.label).width;
+    while (textWidth > R - 40 && fontSize > 8) {
+      fontSize -= 1;
+      ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
+      textWidth = ctx.measureText(item.label).width;
+    }
+
+    ctx.shadowColor = 'rgba(255,255,255,0.8)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(item.label, R - 15, fontSize / 3);
     ctx.restore();
   });
 
@@ -94,6 +101,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
+  const { t } = useLanguage();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState('');
@@ -112,8 +120,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
     canvas.style.height = `${SIZE}px`;
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    drawWheel(canvas, rotationRef.current, items);
-  }, [items, SIZE, dpr]);
+    drawWheel(canvas, rotationRef.current, items, t);
+  }, [items, SIZE, dpr, t]);
 
   const spin = useCallback(() => {
     if (isSpinning || !items || items.length === 0) return;
@@ -140,7 +148,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
       const easedProgress = easeOut(progress);
 
       rotationRef.current = startRotation + totalRotation * easedProgress;
-      drawWheel(canvasRef.current, rotationRef.current, items);
+      drawWheel(canvasRef.current, rotationRef.current, items, t);
 
       if (progress < 1) {
         animRef.current = requestAnimationFrame(animate);
@@ -183,7 +191,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
         <canvas
           ref={canvasRef}
           className={`${styles.wheelCanvas} ${isSpinning ? styles.wheelSpinning : ''}`}
-          aria-label="Roata norocului"
+          aria-label={t('games.wheelAriaLabel')}
         />
       </div>
 
@@ -193,12 +201,12 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
         className={`${styles.spinBtn} ${isSpinning ? styles.spinBtnSpinning : ''}`}
         onClick={spin}
         disabled={isSpinning || !items || items.length === 0}
-        aria-label="Învârte roata"
+        aria-label={t('games.spin')}
       >
         {isSpinning ? (
-          <><span className={styles.spinBtnIcon}>⏳</span> Se învârte...</>
+          <><span className={styles.spinBtnIcon}>⏳</span> {t('games.spinning')}</>
         ) : (
-          <><span className={styles.spinBtnIcon}>🎲</span> Învârte!</>
+          <><span className={styles.spinBtnIcon}>🎲</span> {t('games.spin')}</>
         )}
       </button>
 
@@ -206,7 +214,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
       {showResult && result && (
         <div className={`${styles.resultCard} animate-bounce-in`}>
           <div className={styles.resultEmoji}>🎉</div>
-          <p className={styles.resultLabel}>Decizia finală:</p>
+          <p className={styles.resultLabel}>{t('games.finalDecision')}</p>
           <div
             className={styles.resultItem}
             style={{ background: `${result.color}30`, borderColor: `${result.color}80` }}
@@ -217,7 +225,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
             className={styles.spinAgainBtn}
             onClick={() => { setShowResult(false); setTimeout(spin, 200); }}
           >
-            🔄 Încearcă din nou
+            {t('games.tryAgain')}
           </button>
         </div>
       )}
@@ -226,11 +234,11 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
       {showAddModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
           <div className={`${styles.modalContent} animate-scale-in`} onClick={e => e.stopPropagation()} style={{padding: '20px', borderRadius: '15px'}}>
-            <h3 style={{marginBottom: '15px'}}>Adaugă Opțiune Nouă</h3>
+            <h3 style={{marginBottom: '15px'}}>{t('games.addNewOption')}</h3>
             <form onSubmit={handleAddSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
               <input 
                 type="text" 
-                placeholder="Ex: Pizza" 
+                placeholder={t('games.pizzaPlaceholder')} 
                 value={newItemLabel} 
                 onChange={e => setNewItemLabel(e.target.value)}
                 style={{padding: '10px', borderRadius: '8px', border: '1px solid #ddd'}}
@@ -238,7 +246,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
                 required
               />
               <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                <label style={{fontSize: '0.9rem', color: '#666'}}>Culoare fundal:</label>
+                <label style={{fontSize: '0.9rem', color: '#666'}}>{t('games.bgColor')}</label>
                 <input 
                   type="color" 
                   value={newItemColor} 
@@ -247,8 +255,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
                 />
               </div>
               <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={{flex: 1, padding: '10px', background: '#eee', border: 'none', borderRadius: '8px'}}>Anulează</button>
-                <button type="submit" style={{flex: 1, padding: '10px', background: 'var(--color-rose-dark)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold'}}>Adaugă</button>
+                <button type="button" onClick={() => setShowAddModal(false)} style={{flex: 1, padding: '10px', background: '#eee', border: 'none', borderRadius: '8px'}}>{t('games.cancel')}</button>
+                <button type="submit" style={{flex: 1, padding: '10px', background: 'var(--color-rose-dark)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold'}}>{t('games.add')}</button>
               </div>
             </form>
           </div>
@@ -258,8 +266,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
       {/* Lista de opțiuni editabila */}
       <div className={styles.itemsList}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-          <p className={styles.itemsTitle} style={{marginBottom: 0}}>Opțiunile de azi:</p>
-          <button onClick={() => setShowAddModal(true)} style={{background: 'none', border: 'none', color: 'var(--color-rose-dark)', fontWeight: 'bold', fontSize: '0.9rem'}}>+ Adaugă</button>
+          <p className={styles.itemsTitle} style={{marginBottom: 0}}>{t('games.todaysOptions')}</p>
+          <button onClick={() => setShowAddModal(true)} style={{background: 'none', border: 'none', color: 'var(--color-rose-dark)', fontWeight: 'bold', fontSize: '0.9rem'}}>{t('games.addBtn')}</button>
         </div>
         <div className={styles.itemsGrid}>
           {items.map((item) => (
@@ -277,7 +285,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
               </button>
             </div>
           ))}
-          {items.length === 0 && <p style={{fontSize: '0.8rem', color: '#999'}}>Nicio opțiune. Adaugă câteva!</p>}
+          {items.length === 0 && <p style={{fontSize: '0.8rem', color: '#999'}}>{t('games.noOptionsAddSome')}</p>}
         </div>
       </div>
     </div>
@@ -289,15 +297,32 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem }) {
 // ============================================================
 export default function GamesPage() {
   const [activeTab, setActiveTab] = useState('food'); // 'food' | 'date'
-  
+  const { t } = useLanguage();
   const foodHook = useWheelItems('food');
   const dateHook = useWheelItems('date');
+
+  const loadDefaults = async (type) => {
+    const hook = type === 'food' ? foodHook : dateHook;
+    const defaults = type === 'food' 
+      ? t('games.defaults.food', { returnObjects: true }).map((label, idx) => {
+        const colors = ['#FFB5B5', '#B5C8FF', '#FFCBA4', '#B5EAD7', '#C8B6FF', '#FFB5C8'];
+        return { label, color: colors[idx % colors.length] };
+      })
+      : t('games.defaults.date', { returnObjects: true }).map((label, idx) => {
+        const colors = ['#FFB5B5', '#B5C8FF', '#FFCBA4', '#B5EAD7', '#C8B6FF', '#FFB5C8'];
+        return { label, color: colors[idx % colors.length] };
+      });
+    
+    for (const item of defaults) {
+      await hook.addItem(item);
+    }
+  };
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Idei & Mâncare 💡</h1>
-        <p className={styles.subtitle}>Lasă soarta să decidă pentru voi</p>
+        <h1 className={styles.title}>{t('games.ideasFood')}</h1>
+        <p className={styles.subtitle}>{t('games.letFateDecide')}</p>
       </header>
 
       <div style={{display: 'flex', gap: '10px', padding: '0 20px', marginBottom: '20px'}}>
@@ -305,36 +330,60 @@ export default function GamesPage() {
           onClick={() => setActiveTab('food')}
           style={{flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 'bold', background: activeTab === 'food' ? 'var(--color-rose-dark)' : '#f0f0f0', color: activeTab === 'food' ? 'white' : '#666'}}
         >
-          🍔 Mâncare
+          {t('games.foodTab')}
         </button>
         <button 
           onClick={() => setActiveTab('date')}
           style={{flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 'bold', background: activeTab === 'date' ? 'var(--color-rose-dark)' : '#f0f0f0', color: activeTab === 'date' ? 'white' : '#666'}}
         >
-          🌹 Date-uri
+          {t('games.datesTab')}
         </button>
       </div>
 
       <main className={styles.content}>
         <div className="animate-fade-in-up">
           {activeTab === 'food' ? (
-            foodHook.loading ? <p style={{textAlign: 'center'}}>Încărcare...</p> :
-            <SpinWheel 
-              items={foodHook.items} 
-              title="Ce mâncăm deseară? 🍽️" 
-              subtitle="Apasă roata și lasă soarta să decidă!" 
-              onAddItem={foodHook.addItem}
-              onDeleteItem={foodHook.deleteItem}
-            />
+            foodHook.loading ? <p style={{textAlign: 'center'}}>{t('games.loading')}</p> :
+            <>
+              {foodHook.items.length === 0 && (
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <button 
+                    onClick={() => loadDefaults('food')}
+                    style={{ padding: '10px 20px', background: 'var(--color-rose-dark)', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}
+                  >
+                    {t('games.loadDefaultsBtn')}
+                  </button>
+                </div>
+              )}
+              <SpinWheel 
+                items={foodHook.items} 
+                title={t('games.foodTitle')} 
+                subtitle={t('games.foodSubtitle')} 
+                onAddItem={foodHook.addItem}
+                onDeleteItem={foodHook.deleteItem}
+              />
+            </>
           ) : (
-            dateHook.loading ? <p style={{textAlign: 'center'}}>Încărcare...</p> :
-            <SpinWheel 
-              items={dateHook.items} 
-              title="Ce facem azi? 🌹" 
-              subtitle="O idee perfectă de date!" 
-              onAddItem={dateHook.addItem}
-              onDeleteItem={dateHook.deleteItem}
-            />
+            dateHook.loading ? <p style={{textAlign: 'center'}}>{t('games.loading')}</p> :
+            <>
+              {dateHook.items.length === 0 && (
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <button 
+                    onClick={() => loadDefaults('date')}
+                    style={{ padding: '10px 20px', background: 'var(--color-rose-dark)', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}
+                  >
+                    {t('games.loadDefaultsBtn')}
+                  </button>
+                </div>
+              )}
+              <SpinWheel 
+                items={dateHook.items} 
+                title={t('games.dateTitle')} 
+                subtitle={t('games.dateSubtitle')} 
+                onAddItem={dateHook.addItem}
+                onDeleteItem={dateHook.deleteItem}
+              />
+            </>
           )}
         </div>
       </main>

@@ -4,10 +4,12 @@ import styles from './LibraryPage.module.css';
 import modalStyles from './MoviesPage.module.css'; // Refolosim stilurile pentru modal
 import { useWatchlistMovies, removeMoviePreference } from '../hooks/useDatabase';
 import { getImageUrl, getMediaDetails } from '../utils/tmdb';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function LibraryPage({ role }) {
   const navigate = useNavigate();
   const likedMovies = useWatchlistMovies(role);
+  const { t } = useLanguage();
   
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaDetails, setMediaDetails] = useState(null);
@@ -61,14 +63,14 @@ export default function LibraryPage({ role }) {
     <div className={styles.container}>
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>←</button>
-        <h1 className={styles.title}>Librăria Mea</h1>
+        <h1 className={styles.title}>{t('movies.library')}</h1>
       </div>
 
       {likedMovies.length === 0 ? (
         <div className={styles.emptyState}>
-          <h2>Librăria e goală</h2>
-          <p>Filmele pe care le apreciezi (❤️) vor apărea aici pentru a le putea viziona mai târziu.</p>
-          <button className={modalStyles.actionBtn} style={{background: 'var(--accent)'}} onClick={() => navigate(-1)}>Caută Filme</button>
+          <h2>{t('movies.emptyLibrary')}</h2>
+          <p>{t('movies.emptyLibraryDesc')}</p>
+          <button className={modalStyles.actionBtn} style={{background: 'var(--accent)'}} onClick={() => navigate(-1)}>{t('movies.searchMovies')}</button>
         </div>
       ) : (
         <div className={styles.mediaGrid}>
@@ -92,7 +94,7 @@ export default function LibraryPage({ role }) {
                 <div style={{flex: 1}}>
                   <h2 className={modalStyles.modalTitle}>{selectedMedia.title || selectedMedia.name}</h2>
                   {loadingDetails ? (
-                    <p>Se încarcă detaliile...</p>
+                    <p>{t('movies.loadingDetails')}</p>
                   ) : mediaDetails ? (
                     <>
                       <p className={modalStyles.modalMeta}>
@@ -114,7 +116,7 @@ export default function LibraryPage({ role }) {
                   
                   {mediaDetails.credits?.cast?.length > 0 && (
                     <div style={{marginTop: '20px'}}>
-                      <h3 style={{fontSize: '1rem', marginBottom: '10px', color: 'var(--text-primary)'}}>Distribuție</h3>
+                      <h3 style={{fontSize: '1rem', marginBottom: '10px', color: 'var(--text-primary)'}}>{t('movies.cast')}</h3>
                       <div className={modalStyles.castList}>
                         {mediaDetails.credits.cast.slice(0, 10).map(actor => actor.profile_path && (
                           <div key={actor.id} className={modalStyles.actorCard}>
@@ -137,7 +139,7 @@ export default function LibraryPage({ role }) {
                     if(trailer) window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank');
                   }}
                 >
-                  ▶️ Urmărește Trailer
+                  {t('movies.watchTrailer')}
                 </button>
               )}
 
@@ -146,7 +148,7 @@ export default function LibraryPage({ role }) {
                   className={modalStyles.dislikeBtn} 
                   onClick={handleRemove}
                 >
-                  ❌ Elimină din Listă
+                  {t('movies.removeFromList')}
                 </button>
               </div>
             </div>

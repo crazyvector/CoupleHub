@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEvents } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './CalendarPage.module.css';
 
 // Helpers
@@ -12,14 +13,13 @@ function getFirstDayOfMonth(year, month) {
   return day === 0 ? 6 : day - 1; // Luni=0, Duminică=6
 }
 
-const monthNames = [
-  'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
-  'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
-];
-
 export default function CalendarPage() {
   const { events, addEvent, deleteEvent, updateEvent, loading } = useEvents();
+  const { t } = useLanguage();
   
+  const monthNames = t('calendar.months') || [];
+  const dayNames = t('calendar.days') || [];
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEvent, setNewEvent] = useState({ id: null, name: '', date: '', details: '', importance: 'Medium', recurrence: 'none' });
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -50,7 +50,7 @@ export default function CalendarPage() {
 
   const handleDeleteEvent = async (id, e) => {
     if (e) e.stopPropagation();
-    if (window.confirm("Sigur vrei să ștergi acest eveniment?")) {
+    if (window.confirm(t('calendar.deleteConfirm'))) {
       await deleteEvent(id);
       setShowAddModal(false);
     }
@@ -142,7 +142,7 @@ export default function CalendarPage() {
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
   if (loading) {
-    return <div className={styles.page}><div className={styles.loading}>Se încarcă Calendarul...</div></div>;
+    return <div className={styles.page}><div className={styles.loading}>{t('calendar.loading')}</div></div>;
   }
 
   // Toate evenimentele din ziua curent selectata in modal
@@ -151,30 +151,26 @@ export default function CalendarPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Calendar 📅</h1>
-        <p className={styles.subtitle}>Zilele noastre speciale</p>
+        <h1 className={styles.title}>{t('calendar.title')}</h1>
+        <p className={styles.subtitle}>{t('calendar.subtitle')}</p>
       </header>
 
       <main className={styles.content}>
         <section className={styles.fullCalendarSection}>
           <div className={styles.calendarControls}>
             <button onClick={prevMonth} className={styles.calNavBtn}>‹</button>
-            <h3 className={styles.calMonthTitle}>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h3>
+            <h3 className={styles.calMonthTitle}>{(monthNames && monthNames.length > 0) ? monthNames[currentDate.getMonth()] : ''} {currentDate.getFullYear()}</h3>
             <button onClick={nextMonth} className={styles.calNavBtn}>›</button>
           </div>
           
           <div className={styles.calendarGrid}>
-            <div className={styles.calDayHeader}>L</div>
-            <div className={styles.calDayHeader}>M</div>
-            <div className={styles.calDayHeader}>M</div>
-            <div className={styles.calDayHeader}>J</div>
-            <div className={styles.calDayHeader}>V</div>
-            <div className={styles.calDayHeader}>S</div>
-            <div className={styles.calDayHeader}>D</div>
+            {(dayNames && dayNames.length > 0) ? dayNames.map((d, i) => (
+              <div key={i} className={styles.calDayHeader}>{d}</div>
+            )) : null}
             {renderCalendar()}
           </div>
           <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>
-            💡 Apasă pe orice zi pentru a adăuga un eveniment. Apasă pe un eveniment pentru a-l edita.
+            {t('calendar.hint')}
           </p>
         </section>
       </main>
@@ -183,7 +179,7 @@ export default function CalendarPage() {
       {showAddModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>{newEvent.id ? 'Editează Eveniment ✏️' : 'Adaugă Eveniment ✨'}</h3>
+            <h3 className={styles.modalTitle}>{newEvent.id ? t('calendar.editTitle') : t('calendar.addTitle')}</h3>
             
             {selectedDayEvents.length > 1 && (
               <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '10px', scrollbarWidth: 'none' }}>
@@ -204,7 +200,7 @@ export default function CalendarPage() {
                       cursor: 'pointer'
                     }}
                   >
-                    {ev.name || `Eveniment ${idx + 1}`}
+                    {ev.name || `${t('calendar.defaultEventName')} ${idx + 1}`}
                   </button>
                 ))}
               </div>
@@ -217,47 +213,58 @@ export default function CalendarPage() {
                   onClick={() => openAddForDate(newEvent.date)}
                   style={{ background: 'none', border: 'none', color: '#FF6B6B', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}
                 >
-                  + Adaugă alt eveniment în această zi
+                  {t('calendar.addAnother')}
                 </button>
+              </div>
+            )}
+
+            {/* Affiliate Banner for Gifts */}
+            {newEvent.id && newEvent.name?.toLowerCase().includes('aniversare') && (
+              <div style={{ background: '#f9f9f9', border: '1px dashed #FF6B6B', padding: '10px', borderRadius: '8px', marginBottom: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => window.open('https://www.emag.ro/cmp/cadouri-pentru-ea', '_blank')}>
+                <div style={{ fontSize: '2rem' }}>🎁</div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#333' }}>{t('calendar.giftIdeaTitle') || 'Idei de cadouri pentru aniversare!'}</h4>
+                  <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#666' }}>{t('calendar.giftIdeaDesc') || 'Vezi selecția de bijuterii și parfumuri pe eMAG.'}</p>
+                </div>
               </div>
             )}
 
             <form onSubmit={handleSaveEvent} className={styles.form}>
               <div className={styles.inputGroup}>
-                <label>Nume Eveniment</label>
+                <label>{t('calendar.eventNameLabel')}</label>
                 <input type="text" value={newEvent.name} onChange={e => setNewEvent({...newEvent, name: e.target.value})} required />
               </div>
               <div className={styles.inputGroup} style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
                 <div style={{ flex: 1 }}>
-                  <label>Data</label>
+                  <label>{t('calendar.dateLabel')}</label>
                   <input type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} required style={{width: '100%', boxSizing: 'border-box'}}/>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label>Repetare</label>
+                  <label>{t('calendar.recurrenceLabel')}</label>
                   <select value={newEvent.recurrence || 'none'} onChange={e => setNewEvent({...newEvent, recurrence: e.target.value})} style={{width: '100%', boxSizing: 'border-box'}}>
-                    <option value="none">Doar o dată</option>
-                    <option value="weekly">La 7 zile</option>
-                    <option value="monthly">În fiecare lună</option>
-                    <option value="yearly">În fiecare an</option>
+                    <option value="none">{t('calendar.recNone')}</option>
+                    <option value="weekly">{t('calendar.recWeekly')}</option>
+                    <option value="monthly">{t('calendar.recMonthly')}</option>
+                    <option value="yearly">{t('calendar.recYearly')}</option>
                   </select>
                 </div>
               </div>
               <div className={styles.inputGroup}>
-                <label>Detalii (opțional)</label>
+                <label>{t('calendar.detailsLabel')}</label>
                 <textarea 
                   value={newEvent.details || ''} 
                   onChange={e => setNewEvent({...newEvent, details: e.target.value})} 
-                  placeholder="Mai multe detalii despre eveniment..."
+                  placeholder={t('calendar.detailsPlaceholder')}
                   rows={3}
                   style={{width: '100%', boxSizing: 'border-box', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', resize: 'none', fontFamily: 'inherit'}}
                 />
               </div>
               <div className={styles.inputGroup}>
-                <label>Importanță</label>
+                <label>{t('calendar.importanceLabel')}</label>
                 <select value={newEvent.importance} onChange={e => setNewEvent({...newEvent, importance: e.target.value})}>
-                  <option value="High">Mare ❤️</option>
-                  <option value="Medium">Medie 💛</option>
-                  <option value="Low">Mică 💙</option>
+                  <option value="High">{t('calendar.high')}</option>
+                  <option value="Medium">{t('calendar.medium')}</option>
+                  <option value="Low">{t('calendar.low')}</option>
                 </select>
               </div>
               <div className={styles.modalActions}>
@@ -267,10 +274,10 @@ export default function CalendarPage() {
                   onClick={(e) => newEvent.id ? handleDeleteEvent(newEvent.id, e) : null}
                   style={{ opacity: newEvent.id ? 1 : 0.3, pointerEvents: newEvent.id ? 'auto' : 'none' }}
                 >
-                  Șterge
+                  {t('calendar.deleteBtn')}
                 </button>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowAddModal(false)}>Anulează</button>
-                <button type="submit" className={styles.saveBtn}>Salvează</button>
+                <button type="button" className={styles.cancelBtn} onClick={() => setShowAddModal(false)}>{t('calendar.cancelBtn')}</button>
+                <button type="submit" className={styles.saveBtn}>{t('calendar.saveBtn')}</button>
               </div>
             </form>
           </div>

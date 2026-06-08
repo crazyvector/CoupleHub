@@ -1,3 +1,4 @@
+import { useGlobalAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import {
   collection,
@@ -17,6 +18,9 @@ import {
 import { db } from '../firebase';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Preferences } from '@capacitor/preferences';
+import { updateWidgets } from '../utils/widgetUpdater';
 
 // Collections
 const MOODS_COL = 'moods';
@@ -32,6 +36,10 @@ const CUSTOM_COUPONS_COL = 'custom_coupons';
 // Hook: Moods (Specific per rol)
 // ==========================================
 export function useMoods(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [moods, setMoods] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +47,7 @@ export function useMoods(role) {
 
   useEffect(() => {
     if (!role) { setLoading(false); return; }
-    const q = query(collection(db, colName), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'couples', coupleId, colName), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMoods(data);
@@ -52,20 +60,20 @@ export function useMoods(role) {
   }, [role, colName]);
 
   const addMood = async (moodData) => {
-    await addDoc(collection(db, colName), {
+    await addDoc(collection(db, 'couples', coupleId, colName), {
       ...moodData,
       timestamp: new Date().toISOString()
     });
   };
 
   const clearMoods = async () => {
-    const snapshot = await getDocs(query(collection(db, colName)));
+    const snapshot = await getDocs(query(collection(db, 'couples', coupleId, colName)));
     const batch = snapshot.docs.map(d => deleteDoc(d.ref));
     await Promise.all(batch);
   };
 
   const deleteMood = async (id) => {
-    await deleteDoc(doc(db, colName, id));
+    await deleteDoc(doc(db, 'couples', coupleId, colName, id));
   };
 
   return { moods, addMood, clearMoods, deleteMood, loading };
@@ -75,6 +83,10 @@ export function useMoods(role) {
 // Hook: Diary (Specific per rol)
 // ==========================================
 export function useDiary(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +95,7 @@ export function useDiary(role) {
 
   useEffect(() => {
     if (!role) { setLoading(false); return; }
-    const q = query(collection(db, colName), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'couples', coupleId, colName), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setEntries(data);
@@ -96,7 +108,7 @@ export function useDiary(role) {
   }, [role, colName]);
 
   const addEntry = async (encryptedContent, preview, wordCount) => {
-    await addDoc(collection(db, colName), {
+    await addDoc(collection(db, 'couples', coupleId, colName), {
       encrypted: encryptedContent,
       preview,
       wordCount,
@@ -105,7 +117,7 @@ export function useDiary(role) {
   };
 
   const deleteEntry = async (id) => {
-    await deleteDoc(doc(db, colName, id));
+    await deleteDoc(doc(db, 'couples', coupleId, colName, id));
   };
 
   return { entries, addEntry, deleteEntry, loading };
@@ -115,16 +127,27 @@ export function useDiary(role) {
 // Hook: Events (Calendar)
 // ==========================================
 export function useEvents() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, EVENTS_COL), orderBy('date', 'asc'));
+    const q = query(collection(db, 'couples', coupleId, EVENTS_COL), orderBy('date', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       // Punem ...doc.data() primul pentru ca id: doc.id sa suprascrie orice 'id' salvat din greseala in document
       const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
       setEvents(data);
       setLoading(false);
+      
+      // Update data for widgets
+      if (Capacitor.isNativePlatform()) {
+        Preferences.set({ key: 'widget_events', value: JSON.stringify(data) })
+          .then(updateWidgets)
+          .catch(console.error);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -132,7 +155,7 @@ export function useEvents() {
   const addEvent = async (eventData) => {
     // Nu salvam field-ul 'id' in interiorul bazei de date
     const { id, ...dataToSave } = eventData;
-    await addDoc(collection(db, EVENTS_COL), {
+    await addDoc(collection(db, 'couples', coupleId, EVENTS_COL), {
       ...dataToSave,
       createdAt: new Date().toISOString()
     });
@@ -140,13 +163,13 @@ export function useEvents() {
 
   const deleteEvent = async (id) => {
     if (!id) return;
-    await deleteDoc(doc(db, EVENTS_COL, id));
+    await deleteDoc(doc(db, 'couples', coupleId, EVENTS_COL, id));
   };
 
   const updateEvent = async (id, eventData) => {
     const { id: _id, ...dataWithoutId } = eventData;
     if (!id) return;
-    await setDoc(doc(db, EVENTS_COL, id), {
+    await setDoc(doc(db, 'couples', coupleId, EVENTS_COL, id), {
       ...dataWithoutId,
       updatedAt: new Date().toISOString()
     });
@@ -159,11 +182,15 @@ export function useEvents() {
 // Util: System State (Coupons, Scratch)
 // ==========================================
 export function useSystemState() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [systemState, setSystemState] = useState({ coupons: {}, scratchCards: {}, customCompliments: {}, barista: {} });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe1 = onSnapshot(doc(db, SYSTEM_COL, 'coupons'), (d) => {
+    const unsubscribe1 = onSnapshot(doc(db, 'couples', coupleId, SYSTEM_COL, 'coupons'), (d) => {
       if (d.exists()) {
         const data = d.data();
         const updatedCoupons = { ...data };
@@ -179,7 +206,7 @@ export function useSystemState() {
           }
         });
         if (changed) {
-          setDoc(doc(db, SYSTEM_COL, 'coupons'), updatedCoupons);
+          setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'coupons'), updatedCoupons);
         }
         setSystemState(prev => ({ ...prev, coupons: updatedCoupons }));
       }
@@ -188,7 +215,7 @@ export function useSystemState() {
       }
     });
 
-    const unsubscribe2 = onSnapshot(doc(db, SYSTEM_COL, 'scratchCards'), (d) => {
+    const unsubscribe2 = onSnapshot(doc(db, 'couples', coupleId, SYSTEM_COL, 'scratchCards'), (d) => {
       if (d.exists()) {
         const data = d.data();
         let needsReset = false;
@@ -214,7 +241,7 @@ export function useSystemState() {
         });
 
         if (needsReset) {
-          setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
+          setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'scratchCards'), {
             his: { revealed: false, revealedAt: null },
             her: { revealed: false, revealedAt: null },
             customCard: null
@@ -227,7 +254,7 @@ export function useSystemState() {
       setLoading(false);
     });
 
-    const unsubscribe3 = onSnapshot(doc(db, SYSTEM_COL, 'compliments'), (d) => {
+    const unsubscribe3 = onSnapshot(doc(db, 'couples', coupleId, SYSTEM_COL, 'compliments'), (d) => {
       if (d.exists()) {
         setSystemState(prev => ({ ...prev, customCompliments: d.data() }));
       } else {
@@ -235,7 +262,7 @@ export function useSystemState() {
       }
     });
 
-    const unsubscribe4 = onSnapshot(doc(db, SYSTEM_COL, 'barista'), (d) => {
+    const unsubscribe4 = onSnapshot(doc(db, 'couples', coupleId, SYSTEM_COL, 'barista'), (d) => {
       if (d.exists()) {
         setSystemState(prev => ({ ...prev, barista: d.data() }));
       } else {
@@ -249,24 +276,24 @@ export function useSystemState() {
 
 
   const setCouponUsed = async (couponId, note) => {
-    await setDoc(doc(db, SYSTEM_COL, 'coupons'), {
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'coupons'), {
       [couponId]: { usedAt: new Date().toISOString(), note }
     }, { merge: true });
   };
 
   const resetCoupons = async () => {
-    await setDoc(doc(db, SYSTEM_COL, 'coupons'), {});
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'coupons'), {});
   };
 
   const setScratchRevealed = async (role, revealed) => {
     if (!role) {
-      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
+      await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'scratchCards'), {
         his: { revealed: false, revealedAt: null },
         her: { revealed: false, revealedAt: null },
         customCard: null
       }, { merge: true });
     } else {
-      await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
+      await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'scratchCards'), {
         [role]: {
           revealed,
           revealedAt: revealed ? new Date().toISOString() : null
@@ -276,17 +303,17 @@ export function useSystemState() {
   };
 
   const setSystemStateDirectly = async (data) => {
-    await setDoc(doc(db, SYSTEM_COL, 'coupons'), data.coupons || {});
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'coupons'), data.coupons || {});
   };
 
   const setCustomCompliment = async (targetRole, text) => {
-    await setDoc(doc(db, SYSTEM_COL, 'compliments'), {
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'compliments'), {
       [targetRole]: text
     }, { merge: true });
   };
 
   const incrementBaristaCount = async (role) => {
-    const docRef = doc(db, SYSTEM_COL, 'barista');
+    const docRef = doc(db, 'couples', coupleId, SYSTEM_COL, 'barista');
     const dSnap = await getDoc(docRef);
     const today = new Date().toDateString();
 
@@ -301,11 +328,11 @@ export function useSystemState() {
   };
 
   const resetBaristaCounts = async () => {
-    await setDoc(doc(db, SYSTEM_COL, 'barista'), {});
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'barista'), {});
   };
 
   const setCustomScratchCard = async (customCard) => {
-    await setDoc(doc(db, SYSTEM_COL, 'scratchCards'), {
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'scratchCards'), {
       customCard,
       revealed: false,
       revealedAt: null
@@ -319,21 +346,42 @@ export function useSystemState() {
 // Hook: Notifications (In-App)
 // ==========================================
 export function useNotifications(currentRole) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [notifications, setNotifications] = useState([]);
   const isInitialLoad = useRef(true);
   const permissionChecked = useRef(false);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform() && !permissionChecked.current) {
+    if (Capacitor.isNativePlatform() && !permissionChecked.current && currentRole && coupleId) {
+      PushNotifications.requestPermissions().then((result) => {
+        if (result.receive === 'granted') {
+          PushNotifications.register();
+        }
+      });
+
+      PushNotifications.addListener('registration', async (token) => {
+        try {
+          await updateDoc(doc(db, 'couples', coupleId, PROFILES_COL, currentRole), {
+            fcmToken: token.value
+          });
+        } catch (e) {
+          console.error("Error saving FCM token:", e);
+        }
+      });
+
+      // Păstrăm și LocalNotifications ca fallback/afișare internă dacă e nevoie
       LocalNotifications.requestPermissions().then((res) => {
         permissionChecked.current = true;
       });
     }
-  }, []);
+  }, [currentRole, coupleId]);
 
   useEffect(() => {
     if (!currentRole) return;
-    const q = query(collection(db, NOTIFICATIONS_COL), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'couples', coupleId, NOTIFICATIONS_COL), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const mine = all.filter(n => !n.targetRole || n.targetRole === currentRole);
@@ -346,11 +394,11 @@ export function useNotifications(currentRole) {
             const data = change.doc.data();
             const target = data.targetRole || (data.sender === 'his' ? 'her' : 'his');
             if (target === currentRole && data.sender !== currentRole) {
-              // Trimite notificare locală
+              // Trimite notificare locală doar dacă suntem în foreground
               LocalNotifications.schedule({
                 notifications: [
                   {
-                    title: data.title || 'Notificare nouă',
+                    title: data.title || 'Notification',
                     body: data.body || '',
                     id: Math.floor(Math.random() * 2000000000)
                   }
@@ -368,7 +416,7 @@ export function useNotifications(currentRole) {
 
   const addNotification = async (title, body, sender, customTargetRole) => {
     const targetRole = customTargetRole || (sender === 'his' ? 'her' : 'his');
-    await addDoc(collection(db, NOTIFICATIONS_COL), {
+    await addDoc(collection(db, 'couples', coupleId, NOTIFICATIONS_COL), {
       title,
       body,
       sender,
@@ -379,7 +427,7 @@ export function useNotifications(currentRole) {
   };
 
   const markAsRead = async (id, role) => {
-    const dRef = doc(db, NOTIFICATIONS_COL, id);
+    const dRef = doc(db, 'couples', coupleId, NOTIFICATIONS_COL, id);
     const dSnap = await getDoc(dRef);
     if (dSnap.exists()) {
       const currentReaders = dSnap.data().readBy || [];
@@ -390,7 +438,7 @@ export function useNotifications(currentRole) {
   };
 
   const deleteNotification = async (id) => {
-    await deleteDoc(doc(db, NOTIFICATIONS_COL, id));
+    await deleteDoc(doc(db, 'couples', coupleId, NOTIFICATIONS_COL, id));
   };
 
   return { notifications, addNotification, markAsRead, deleteNotification };
@@ -400,15 +448,19 @@ export function useNotifications(currentRole) {
 // Hook: Profiles
 // ==========================================
 export function useProfiles(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!role || role === 'admin') {
+    if (!role || role === 'admin' || !coupleId) {
       setLoading(false);
       return;
     }
-    const unsubscribe = onSnapshot(doc(db, PROFILES_COL, role), (d) => {
+    const unsubscribe = onSnapshot(doc(db, 'couples', coupleId, PROFILES_COL, role), (d) => {
       if (d.exists()) setProfile({ id: d.id, ...d.data() });
       else setProfile(null);
       setLoading(false);
@@ -417,7 +469,7 @@ export function useProfiles(role) {
   }, [role]);
 
   const updateProfile = async (data) => {
-    await setDoc(doc(db, PROFILES_COL, role), data, { merge: true });
+    await setDoc(doc(db, 'couples', coupleId, PROFILES_COL, role), data, { merge: true });
   };
 
   return { profile, updateProfile, loading };
@@ -427,11 +479,15 @@ export function useProfiles(role) {
 // Hook: Memories (Cu suport pentru imagini)
 // ==========================================
 export function useMemories() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, MEMORIES_COL), orderBy('date', 'desc'));
+    const q = query(collection(db, 'couples', coupleId, MEMORIES_COL), orderBy('date', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setMemories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -440,7 +496,7 @@ export function useMemories() {
   }, []);
 
   const addMemory = async (memoryData) => {
-    await addDoc(collection(db, MEMORIES_COL), {
+    await addDoc(collection(db, 'couples', coupleId, MEMORIES_COL), {
       ...memoryData,
       reactions: [],
       timestamp: new Date().toISOString()
@@ -448,11 +504,11 @@ export function useMemories() {
   };
 
   const updateMemory = async (id, data) => {
-    await updateDoc(doc(db, MEMORIES_COL, id), data);
+    await updateDoc(doc(db, 'couples', coupleId, MEMORIES_COL, id), data);
   };
 
   const addReaction = async (id, reaction) => {
-    const dRef = doc(db, MEMORIES_COL, id);
+    const dRef = doc(db, 'couples', coupleId, MEMORIES_COL, id);
     const dSnap = await getDoc(dRef);
     if (dSnap.exists()) {
       const current = dSnap.data().reactions || [];
@@ -461,7 +517,7 @@ export function useMemories() {
   };
 
   const deleteMemory = async (id) => {
-    await deleteDoc(doc(db, MEMORIES_COL, id));
+    await deleteDoc(doc(db, 'couples', coupleId, MEMORIES_COL, id));
   };
 
   return { memories, addMemory, updateMemory, addReaction, deleteMemory, loading };
@@ -471,11 +527,15 @@ export function useMemories() {
 // Hook: Coupons (Definitions)
 // ==========================================
 export function useCoupons() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'couponsList'));
+    const q = query(collection(db, 'couples', coupleId, 'couponsList'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCoupons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -484,11 +544,11 @@ export function useCoupons() {
   }, []);
 
   const addCoupon = async (data) => {
-    await addDoc(collection(db, 'couponsList'), data);
+    await addDoc(collection(db, 'couples', coupleId, 'couponsList'), data);
   };
 
   const deleteCoupon = async (id) => {
-    await deleteDoc(doc(db, 'couponsList', id));
+    await deleteDoc(doc(db, 'couples', coupleId, 'couponsList', id));
   };
 
   return { coupons, addCoupon, deleteCoupon, loading };
@@ -497,14 +557,18 @@ export function useCoupons() {
 // ==========================================
 // Hook: Wheel Items (Spinners)
 // ==========================================
-export function useWheelItems(wheelType) { // 'food' or 'date'
+export function useWheelItems(wheelType) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+ // 'food' or 'date'
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!wheelType) return;
     const colName = `wheel_${wheelType}`;
-    const q = query(collection(db, colName));
+    const q = query(collection(db, 'couples', coupleId, colName));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -514,58 +578,130 @@ export function useWheelItems(wheelType) { // 'food' or 'date'
 
   const addItem = async (data) => {
     const colName = `wheel_${wheelType}`;
-    await addDoc(collection(db, colName), data);
+    await addDoc(collection(db, 'couples', coupleId, colName), data);
   };
 
   const deleteItem = async (id) => {
     const colName = `wheel_${wheelType}`;
-    await deleteDoc(doc(db, colName, id));
+    await deleteDoc(doc(db, 'couples', coupleId, colName, id));
   };
 
   return { items, addItem, deleteItem, loading };
 }
 
 // ==========================================
-// Hook: Daily Quote (Surpriza Zilei cu citate din DB)
+// Hook: Daily Poem (Surpriza Zilei cu Gemini AI)
 // ==========================================
-export function useDailyQuote() {
+export function useDailyQuote(language = 'ro') {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchQuote = async () => {
+    if (!coupleId) return;
+
+    const generateDailyPoem = async () => {
       try {
         const now = new Date();
         const targetTime = new Date(now);
-        // Dacă e înainte de ora 8:00 dimineața, folosim citatul de ieri
         if (now.getHours() < 8) {
           targetTime.setDate(targetTime.getDate() - 1);
         }
 
-        const start = new Date(targetTime.getFullYear(), 0, 0);
-        const diff = targetTime - start;
-        const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const dateKey = targetTime.toISOString().slice(0, 10); // YYYY-MM-DD
+        const langKey = language || 'ro';
+        const cacheDocId = `poem_${dateKey}_${langKey}`;
 
-        // 100 citate în baza de date
-        const quoteIndex = dayOfYear % 100;
+        // Check cache first
+        const cacheRef = doc(db, 'couples', coupleId, 'daily_poems', cacheDocId);
+        const cacheSnap = await getDoc(cacheRef);
 
-        const q = query(collection(db, 'daily_quotes'));
-        const snapshot = await getDocs(q);
-        const allQuotes = snapshot.docs.map(d => d.data());
-
-        if (allQuotes.length > 0) {
-          const indexToUse = dayOfYear % allQuotes.length;
-          const found = allQuotes.find(q => q.index === indexToUse) || allQuotes[0];
-          setQuote(found.text);
+        if (cacheSnap.exists()) {
+          setQuote(cacheSnap.data().poem);
+          setLoading(false);
+          return;
         }
+
+        // Generate quote via public API instead of AI
+        // 1. Fetch from public API
+        const response = await fetch('https://dummyjson.com/quotes/random');
+        if (!response.ok) throw new Error('API quote fetch failed');
+        const data = await response.json();
+        
+        let finalQuote = `"${data.quote}"\n\n— ${data.author}`;
+        
+        // 2. Translate if needed using MyMemory free API
+        if (langKey === 'ro') {
+          try {
+            const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(finalQuote)}&langpair=en|ro`;
+            const tRes = await fetch(translateUrl);
+            if (tRes.ok) {
+              const tData = await tRes.json();
+              if (tData?.responseData?.translatedText) {
+                finalQuote = tData.responseData.translatedText;
+              }
+            }
+          } catch (tErr) {
+            console.error('Translation failed, falling back to EN', tErr);
+          }
+        }
+
+        // Cache the quote
+        await setDoc(cacheRef, {
+          poem: finalQuote,
+          date: dateKey,
+          language: langKey,
+          generatedAt: new Date().toISOString(),
+        });
+
+        setQuote(finalQuote);
       } catch (err) {
-        console.error("Eroare la preluarea citatului:", err);
+        console.error('Eroare la generarea quote-ului:', err);
+        // Fallback: try to load from old daily_quotes collection
+        try {
+          const start = new Date(new Date().getFullYear(), 0, 0);
+          const diff = new Date() - start;
+          const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+          
+          const q2 = query(collection(db, 'couples', coupleId, 'daily_quotes'));
+          const snapshot = await getDocs(q2);
+          const allQuotes = snapshot.docs.map(d => d.data());
+          if (allQuotes.length > 0) {
+            const indexToUse = dayOfYear % allQuotes.length;
+            const found = allQuotes.find(q => q.index === indexToUse) || allQuotes[0];
+            setQuote(found.text);
+          } else {
+            // Absolute ultimate fallback (hardcoded)
+            const fallbackPoemsRO = [
+              "Stelele pe cer dansează,\nCând la tine mă gândesc,\nOrice vis se luminează,\nDoar pe tine te iubesc.",
+              "Ești soarele meu de dimineață,\nCe-mi aduce zâmbet și viață,\nÎn ochii tăi găsesc alinare,\nO iubire adâncă, fără hotare.",
+              "Un univers întreg de am căutat,\nNimic mai scump nu aș fi aflat.\nEști liniștea din nopțile târzii,\nMotivul pentru care vreau să fiu mereu aici.",
+              "Zâmbetul tău, un colț de rai,\nVocea ta, un dulce grai.\nMă pierd în tine neîncetat,\nEști tot ce mi-am dorit cu-adevărat.",
+              "Prin ploaie și vânt vom păși mereu,\nCăci tu ești sufletul din mine, iar eu sunt al tău.\nO dragoste rară, un dor infinit,\nCu tine alături mă simt împlinit."
+            ];
+            const fallbackPoemsEN = [
+              "The stars above begin to dance,\nWhen I am caught within your trance.\nEvery dream becomes so bright,\nYou are my heart, my guiding light.",
+              "You are my morning's gentle sun,\nWith you, my life has just begun.\nIn your sweet eyes, I find my peace,\nA love so deep it will not cease.",
+              "I searched the universe far and wide,\nBut found my treasure by your side.\nYou are the calm in every storm,\nWith you I'm safe, with you I'm warm.",
+              "Your smile is like a piece of art,\nYour voice a melody for the heart.\nI lose myself in you each day,\nI love you more than words can say.",
+              "Through wind and rain we'll walk as one,\nOur beautiful journey has just begun.\nA rare romance, an endless sea,\nYou are the only one for me."
+            ];
+            
+            const list = langKey === 'en' ? fallbackPoemsEN : fallbackPoemsRO;
+            setQuote(list[dayOfYear % list.length]);
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback quote failed:', fallbackErr);
+          setQuote(langKey === 'en' ? "I love you endlessly. ❤️" : "Te iubesc la infinit. ❤️");
+        }
       }
       setLoading(false);
     };
 
-    fetchQuote();
-  }, []);
+    generateDailyPoem();
+  }, [coupleId, language]);
 
   return { quote, loading };
 }
@@ -574,32 +710,40 @@ export function useDailyQuote() {
 // Hook: Custom Coupons
 // ==========================================
 export function useCustomCoupons() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, CUSTOM_COUPONS_COL), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'couples', coupleId, CUSTOM_COUPONS_COL), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(docSnap => {
+      const data = [];
+      snapshot.docs.forEach(docSnap => {
         const item = { id: docSnap.id, ...docSnap.data() };
-        if (item.isUsed && item.usedAt) {
-          const usedDate = new Date(item.usedAt).toDateString();
-          if (usedDate !== new Date().toDateString()) {
-            // S-a folosit în altă zi, deci se resetează azi!
-            updateDoc(doc(db, CUSTOM_COUPONS_COL, docSnap.id), { isUsed: false, usedAt: null, note: null });
-            item.isUsed = false;
-          }
+        
+        // Verifica daca a fost creat intr-o zi anterioara
+        let createdDate = item.createdAt ? new Date(item.createdAt).toDateString() : null;
+        const today = new Date().toDateString();
+        
+        if (createdDate && createdDate !== today) {
+          // Sterge cuponul daca e din alta zi
+          deleteDoc(doc(db, 'couples', coupleId, CUSTOM_COUPONS_COL, docSnap.id));
+          return; // Nu il adauga in starea locala
         }
-        return item;
+        
+        data.push(item);
       });
       setCoupons(data);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [coupleId]);
 
   const addCoupon = async (couponData) => {
-    await addDoc(collection(db, CUSTOM_COUPONS_COL), {
+    await addDoc(collection(db, 'couples', coupleId, CUSTOM_COUPONS_COL), {
       ...couponData,
       isUsed: false,
       usedAt: null,
@@ -609,7 +753,7 @@ export function useCustomCoupons() {
   };
 
   const useCoupon = async (id, note) => {
-    await updateDoc(doc(db, CUSTOM_COUPONS_COL, id), {
+    await updateDoc(doc(db, 'couples', coupleId, CUSTOM_COUPONS_COL, id), {
       isUsed: true,
       usedAt: new Date().toISOString(),
       note: note || ''
@@ -617,23 +761,61 @@ export function useCustomCoupons() {
   };
 
   const deleteCoupon = async (id) => {
-    await deleteDoc(doc(db, CUSTOM_COUPONS_COL, id));
+    await deleteDoc(doc(db, 'couples', coupleId, CUSTOM_COUPONS_COL, id));
   };
 
   return { coupons, addCoupon, useCoupon, deleteCoupon, loading };
 }
 
 // ==========================================
+// Hook: Drawings Inbox
+// ==========================================
+export function useDrawings() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+
+  const [drawings, setDrawings] = useState([]);
+
+  useEffect(() => {
+    if (!coupleId) return;
+    const q = query(collection(db, 'couples', coupleId, 'drawings'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snap) => {
+      setDrawings(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsub();
+  }, [coupleId]);
+
+  const sendDrawing = async (imageData, authorRole, targetRole) => {
+    await addDoc(collection(db, 'couples', coupleId, 'drawings'), {
+      image: imageData,
+      author: authorRole,
+      target: targetRole,
+      createdAt: new Date().toISOString()
+    });
+  };
+
+  const deleteDrawing = async (id) => {
+    await deleteDoc(doc(db, 'couples', coupleId, 'drawings', id));
+  };
+
+  return { drawings, sendDrawing, deleteDrawing };
+}
+
+// ==========================================
 // Hook: Unread Messages Count
 // ==========================================
 export function useUnreadMessagesCount(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     const partnerRole = role === 'his' ? 'her' : 'his';
     // Observăm doar mesajele trimise de partener care nu sunt citite
     const q = query(
-      collection(db, MESSAGES_COL),
+      collection(db, 'couples', coupleId, MESSAGES_COL),
       where('sender', '==', partnerRole),
       where('read', '==', false)
     );
@@ -649,12 +831,12 @@ export function useUnreadMessagesCount(role) {
 }
 
 // ============== MOVIES PREFERENCES & SEARCH ==============
-export const saveMoviePreference = async (role, movie, preference) => {
+export const saveMoviePreference = async (role, movie, preference, coupleId) => {
   try {
     // Folosim un prefix diferit pentru watchlist vs like/dislike, 
     // ca să nu se suprascrie una pe cealaltă!
     const docPrefix = preference === 'watchlist' ? 'watchlist' : 'vote';
-    const prefRef = doc(db, 'movie_preferences', `${role}_${docPrefix}_${movie.id}`);
+    const prefRef = doc(db, 'couples', coupleId, 'movie_preferences', `${role}_${docPrefix}_${movie.id}`);
     await setDoc(prefRef, {
       role,
       movieId: movie.id,
@@ -669,11 +851,11 @@ export const saveMoviePreference = async (role, movie, preference) => {
   }
 };
 
-export const removeMoviePreference = async (role, movieId, preferenceType = 'watchlist') => {
+export const removeMoviePreference = async (role, movieId, coupleId, preferenceType = 'watchlist') => {
   try {
     const docPrefix = preferenceType === 'watchlist' ? 'watchlist' : 'vote';
-    const newFormatRef = doc(db, 'movie_preferences', `${role}_${docPrefix}_${movieId}`);
-    const oldFormatRef = doc(db, 'movie_preferences', `${role}_${movieId}`);
+    const newFormatRef = doc(db, 'couples', coupleId, 'movie_preferences', `${role}_${docPrefix}_${movieId}`);
+    const oldFormatRef = doc(db, 'couples', coupleId, 'movie_preferences', `${role}_${movieId}`);
 
     // Ștergem ambele variante ca să prindem și datele vechi
     await deleteDoc(newFormatRef);
@@ -684,12 +866,16 @@ export const removeMoviePreference = async (role, movieId, preferenceType = 'wat
 };
 
 export function useWatchlistMovies(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [watchlistMovies, setWatchlistMovies] = useState([]);
 
   useEffect(() => {
     if (!role) return;
     const q = query(
-      collection(db, 'movie_preferences'),
+      collection(db, 'couples', coupleId, 'movie_preferences'),
       where('role', '==', role),
       where('preference', '==', 'watchlist')
     );
@@ -709,6 +895,10 @@ export function useWatchlistMovies(role) {
 }
 
 export function useMoviePreferences(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [likedGenres, setLikedGenres] = useState([]);
   const [likedIds, setLikedIds] = useState([]);
   const [dislikedIds, setDislikedIds] = useState([]);
@@ -716,7 +906,7 @@ export function useMoviePreferences(role) {
   useEffect(() => {
     if (!role) return;
     const q = query(
-      collection(db, 'movie_preferences'),
+      collection(db, 'couples', coupleId, 'movie_preferences'),
       where('role', '==', role)
       // scoatem where('preference', '==', 'like') pentru a aduce și dislikes
     );
@@ -753,6 +943,10 @@ export function useMoviePreferences(role) {
 }
 
 export function useMovieSearches(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [searches, setSearches] = useState([]);
 
   useEffect(() => {
@@ -795,13 +989,17 @@ export function useMovieSearches(role) {
 // Hook: Chat (Private Messages)
 // ==========================================
 export function useChat(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [messages, setMessages] = useState([]);
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 1. Ascultare mesaje
   useEffect(() => {
-    const q = query(collection(db, MESSAGES_COL), orderBy('timestamp', 'asc'));
+    const q = query(collection(db, 'couples', coupleId, MESSAGES_COL), orderBy('timestamp', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMessages(data);
@@ -812,7 +1010,7 @@ export function useChat(role) {
 
   // 2. Ascultare Typing Status
   useEffect(() => {
-    const dRef = doc(db, SYSTEM_COL, 'typing_status');
+    const dRef = doc(db, 'couples', coupleId, SYSTEM_COL, 'typing_status');
     const unsubscribe = onSnapshot(dRef, (dSnap) => {
       if (dSnap.exists()) {
         const data = dSnap.data();
@@ -828,7 +1026,7 @@ export function useChat(role) {
   // Trimite mesaj
   const sendMessage = async (text) => {
     if (!text.trim()) return;
-    await addDoc(collection(db, MESSAGES_COL), {
+    await addDoc(collection(db, 'couples', coupleId, MESSAGES_COL), {
       type: 'text',
       text: text.trim(),
       sender: role,
@@ -841,7 +1039,7 @@ export function useChat(role) {
   // Trimite sticker
   const sendSticker = async (stickerUrl) => {
     if (!stickerUrl) return;
-    await addDoc(collection(db, MESSAGES_COL), {
+    await addDoc(collection(db, 'couples', coupleId, MESSAGES_COL), {
       type: 'sticker',
       stickerUrl,
       sender: role,
@@ -853,7 +1051,7 @@ export function useChat(role) {
 
   // Setează isTyping
   const setTyping = async () => {
-    const dRef = doc(db, SYSTEM_COL, 'typing_status');
+    const dRef = doc(db, 'couples', coupleId, SYSTEM_COL, 'typing_status');
     await setDoc(dRef, { [role]: Date.now() }, { merge: true });
   };
 
@@ -865,7 +1063,7 @@ export function useChat(role) {
     if (unreadMessages.length > 0) {
       const readAt = new Date().toISOString();
       await Promise.all(
-        unreadMessages.map(m => updateDoc(doc(db, MESSAGES_COL, m.id), {
+        unreadMessages.map(m => updateDoc(doc(db, 'couples', coupleId, MESSAGES_COL, m.id), {
           read: true,
           readAt: readAt
         }))
@@ -875,7 +1073,7 @@ export function useChat(role) {
 
   // Adaugă/Șterge o reacție (long press)
   const setReaction = async (messageId, emoji) => {
-    const dRef = doc(db, MESSAGES_COL, messageId);
+    const dRef = doc(db, 'couples', coupleId, MESSAGES_COL, messageId);
     await updateDoc(dRef, { reaction: emoji });
   };
 
@@ -895,6 +1093,10 @@ export function useChat(role) {
 // Hook: App Version Checker
 // ==========================================
 export function useAppVersion() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [latestVersion, setLatestVersion] = useState(null);
   const [downloadUrl, setDownloadUrl] = useState(null);
 
@@ -924,13 +1126,17 @@ export function useAppVersion() {
 // Hook: To-Do List (Personal)
 // ==========================================
 export function useTodos(role) {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+  const loadingAuth = auth?.isLoading;
+
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!role) return;
     const q = query(
-      collection(db, 'todos'),
+      collection(db, 'couples', coupleId, 'todos'),
       where('role', '==', role)
     );
 
@@ -938,6 +1144,13 @@ export function useTodos(role) {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setTodos(data);
       setLoading(false);
+
+      // Update data for widgets
+      if (Capacitor.isNativePlatform()) {
+        Preferences.set({ key: 'widget_todos', value: JSON.stringify(data) })
+          .then(updateWidgets)
+          .catch(console.error);
+      }
     }, (error) => {
       console.error("Eroare la încărcarea To-Do list:", error);
       setLoading(false);
@@ -947,7 +1160,7 @@ export function useTodos(role) {
   }, [role]);
 
   const addTodo = async (todoData) => {
-    await addDoc(collection(db, 'todos'), {
+    await addDoc(collection(db, 'couples', coupleId, 'todos'), {
       ...todoData,
       role,
       isCompleted: false,
@@ -957,18 +1170,18 @@ export function useTodos(role) {
   };
 
   const updateTodo = async (id, updates) => {
-    await updateDoc(doc(db, 'todos', id), updates);
+    await updateDoc(doc(db, 'couples', coupleId, 'todos', id), updates);
   };
 
   const toggleTodoStatus = async (id, currentStatus) => {
-    await updateDoc(doc(db, 'todos', id), {
+    await updateDoc(doc(db, 'couples', coupleId, 'todos', id), {
       isCompleted: !currentStatus,
       completedAt: !currentStatus ? new Date().toISOString() : null
     });
   };
 
   const deleteTodo = async (id) => {
-    await deleteDoc(doc(db, 'todos', id));
+    await deleteDoc(doc(db, 'couples', coupleId, 'todos', id));
   };
 
   return { todos, addTodo, updateTodo, toggleTodoStatus, deleteTodo, loading };

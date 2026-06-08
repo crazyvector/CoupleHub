@@ -1,7 +1,8 @@
-import { useState, useContext, createContext, useRef } from 'react';
+import { useState, useContext, createContext, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { encryptText, decryptText } from '../hooks/useCrypto';
 import { useMoods, useDiary, useNotifications, useProfiles } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import styles from './MoodPage.module.css';
 
@@ -11,26 +12,35 @@ export const DiaryPassContext = createContext(null);
 // ============================================================
 // Date & constante
 // ============================================================
-const getMoods = (role) => {
+const getMoods = (role, t) => {
   const isAna = role === 'her';
   return [
-    { id: 'angry',   emoji: '😠', label: isAna ? 'Supărată' : 'Supărat',     color: '#FFB5B5', intensity: 1 },
-    { id: 'awful',   emoji: '😔', label: isAna ? 'Tristă' : 'Trist',       color: '#B5C8FF', intensity: 2 },
-    { id: 'meh',     emoji: '😐', label: 'Meh',          color: '#C8D8FF', intensity: 3 },
-    { id: 'okay',    emoji: '🙂', label: 'Ok',            color: '#FFCBA4', intensity: 4 },
-    { id: 'good',    emoji: '😊', label: 'Bine',          color: '#B5EAD7', intensity: 5 },
-    { id: 'great',   emoji: '😄', label: 'Super',         color: '#FFB5C8', intensity: 6 },
-    { id: 'amazing', emoji: '🥰', label: isAna ? 'Îndrăgostită' : 'Îndrăgostit', color: '#C8B6FF', intensity: 7 },
-    { id: 'custom',  emoji: '✍️', label: 'Altceva...',    color: '#E0E0E0', intensity: 0 },
+    { id: 'angry',   emoji: '😠', label: isAna ? t('mood.moodAngryHer') : t('mood.moodAngryHis'),     color: '#FFB5B5', intensity: 1 },
+    { id: 'awful',   emoji: '😔', label: isAna ? t('mood.moodSadHer') : t('mood.moodSadHis'),       color: '#B5C8FF', intensity: 2 },
+    { id: 'meh',     emoji: '😐', label: t('mood.moodMeh'),          color: '#C8D8FF', intensity: 3 },
+    { id: 'okay',    emoji: '🙂', label: t('mood.moodOkay'),            color: '#FFCBA4', intensity: 4 },
+    { id: 'good',    emoji: '😊', label: t('mood.moodGood'),          color: '#B5EAD7', intensity: 5 },
+    { id: 'great',   emoji: '😄', label: t('mood.moodGreat'),         color: '#FFB5C8', intensity: 6 },
+    { id: 'amazing', emoji: '🥰', label: isAna ? t('mood.moodInLoveHer') : t('mood.moodInLoveHis'), color: '#C8B6FF', intensity: 7 },
+    { id: 'custom',  emoji: '✍️', label: t('mood.moodCustom'),    color: '#E0E0E0', intensity: 0 },
   ];
 };
 
-const getFeelings = (role) => {
+const getFeelings = (role, t) => {
   const isAna = role === 'her';
   return [
-    `😴 Obosit${isAna ? 'ă' : ''}`, `💪 Energic${isAna ? 'ă' : ''}`, `🤗 Fericit${isAna ? 'ă' : ''}`, `🥺 Sensibil${isAna ? 'ă' : ''}`,
-    `😤 Frustrat${isAna ? 'ă' : ''}`, `🌸 Relaxat${isAna ? 'ă' : ''}`, `🦋 Entuziasmat${isAna ? 'ă' : ''}`, `🥶 Frig`,
-    `🤒 Răcit${isAna ? 'ă' : ''}`, `💕 Îndrăgostit${isAna ? 'ă' : ''}`, `🎉 Sărbătorind`, `🧘 Meditativ${isAna ? 'ă' : ''}`,
+    isAna ? t('mood.feelTiredHer') : t('mood.feelTiredHis'), 
+    isAna ? t('mood.feelEnergeticHer') : t('mood.feelEnergeticHis'), 
+    isAna ? t('mood.feelHappyHer') : t('mood.feelHappyHis'), 
+    isAna ? t('mood.feelSensitiveHer') : t('mood.feelSensitiveHis'),
+    isAna ? t('mood.feelFrustratedHer') : t('mood.feelFrustratedHis'), 
+    isAna ? t('mood.feelRelaxedHer') : t('mood.feelRelaxedHis'), 
+    isAna ? t('mood.feelExcitedHer') : t('mood.feelExcitedHis'), 
+    t('mood.feelCold'),
+    isAna ? t('mood.feelSickHer') : t('mood.feelSickHis'), 
+    isAna ? t('mood.feelInLoveHer') : t('mood.feelInLoveHis'), 
+    t('mood.feelCelebrating'), 
+    isAna ? t('mood.feelMeditativeHer') : t('mood.feelMeditativeHis'),
   ];
 };
 
@@ -96,6 +106,7 @@ function SwipeableMoodItem({ entry, moodDef, onDelete }) {
 // MOOD TRACKER
 // ============================================================
 function MoodTracker({ role }) {
+  const { t } = useLanguage();
   const { moods: moodHistory, addMood, deleteMood, loading } = useMoods(role);
   const { addNotification } = useNotifications(role);
   const { profile } = useProfiles(role); // Profile of current user
@@ -107,8 +118,8 @@ function MoodTracker({ role }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const roleMoods = getMoods(role);
-  const roleFeelings = getFeelings(role);
+  const roleMoods = getMoods(role, t);
+  const roleFeelings = getFeelings(role, t);
 
   const toggleFeeling = (feeling) => {
     setSelectedFeelings(prev =>
@@ -160,8 +171,8 @@ function MoodTracker({ role }) {
       <div className={styles.moodGreeting}>
         <span className={`${styles.moodGreetingEmoji} animate-float`}>💝</span>
         <div>
-          <h2 className={styles.moodTitle}>Cum te simți?</h2>
-          <p className={styles.moodSubtitle}>{role === 'Ana' ? 'El' : 'Ea'} va primi o notificare cu starea ta ✨</p>
+          <h2 className={styles.moodTitle}>{t('mood.title')}</h2>
+          <p className={styles.moodSubtitle}>{role === 'her' ? t('mood.sheWillReceive') : t('mood.heWillReceive')}</p>
         </div>
       </div>
 
@@ -195,10 +206,10 @@ function MoodTracker({ role }) {
           
           {selectedMood.id === 'custom' && (
             <div className={styles.customMoodInput}>
-              <label className={styles.noteLabel}>Spune-mi mai exact ce simți...</label>
+              <label className={styles.noteLabel}>{t('mood.more')}</label>
               <input
                 type="text"
-                placeholder={role === 'her' ? "Ex: Sunt foarte confuză..." : "Ex: Sunt foarte confuz..."}
+                placeholder={role === 'her' ? t('mood.moodCustomPlaceholderHer') : t('mood.moodCustomPlaceholderHis')}
                 value={customMoodText}
                 onChange={e => setCustomMoodText(e.target.value)}
                 className={styles.noteTextarea}
@@ -206,7 +217,7 @@ function MoodTracker({ role }) {
             </div>
           )}
 
-          <p className={styles.feelingsTitle}>Mai exact? <span>(opțional)</span></p>
+          <p className={styles.feelingsTitle}>{t('mood.more')}</p>
           <div className={styles.feelingsGrid}>
             {roleFeelings.map((feeling) => (
               <button
@@ -224,12 +235,12 @@ function MoodTracker({ role }) {
           {/* Notă scurtă */}
           <div className={styles.noteSection}>
             <label className={styles.noteLabel} htmlFor="mood-note">
-              Adaugă un mesaj pentru {role === 'her' ? 'el' : 'ea'}:
+              {role === 'her' ? t('mood.addMessageHer') : t('mood.addMessageHis')}
             </label>
             <textarea
               id="mood-note"
               className={styles.noteTextarea}
-              placeholder="ex: Mă gândesc la tine 🥺..."
+              placeholder={t('mood.notePlaceholder')}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={200}
@@ -245,9 +256,9 @@ function MoodTracker({ role }) {
             onClick={handleSend}
             disabled={sending || !selectedMood || (selectedMood.id === 'custom' && !customMoodText.trim())}
           >
-            {sent ? '✅ Trimis! El știe acum 💕' :
-             sending ? '📲 Se trimite...' :
-             `${selectedMood?.emoji} Trimite starea mea`}
+            {sent ? t('mood.sentMsg') :
+             sending ? t('mood.sending') :
+             `${selectedMood?.emoji} ${t('mood.send')}`}
           </button>
         </div>
       )}
@@ -280,6 +291,7 @@ function MoodTracker({ role }) {
 // JURNAL PRIVAT — criptat AES-GCM și Firebase
 // ============================================================
 function PrivateDiary({ role }) {
+  const { t } = useLanguage();
   const { entries, addEntry, deleteEntry, loading: diaryLoading } = useDiary(role);
   const [currentText, setCurrentText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -292,21 +304,7 @@ function PrivateDiary({ role }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const auth = getAuth();
-    if (auth.currentUser) {
-      try {
-        await signInWithEmailAndPassword(auth, auth.currentUser.email, localPass);
-        setIsAuthenticated(true);
-        setLoginError('');
-      } catch (err) {
-        setLoginError('Parolă incorectă!');
-      }
-    } else {
-       setLoginError('Nu ești autentificat în cont.');
-    }
-  };
+
 
   const saveEntry = async () => {
     if (!currentText.trim() || !isAuthenticated) return;
@@ -349,18 +347,31 @@ function PrivateDiary({ role }) {
     setDeleteConfirm(null);
   };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    if (localPass.length < 3) {
+      setLoginError('Parola trebuie să aibă minim 3 caractere.');
+      return;
+    }
+    // We just set authenticated. Decryption will fail if it's the wrong pass.
+    setIsAuthenticated(true);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className={styles.diaryNoPass}>
         <span className={`animate-float`} style={{ fontSize: '3rem' }}>🔐</span>
-        <h3 className={styles.diaryNoPassTitle}>Jurnal Securizat</h3>
+        <h3 className={styles.diaryNoPassTitle}>{t('mood.diaryTitle')}</h3>
         <p className={styles.diaryNoPassMsg}>
-          Introdu parola contului pentru a accesa și decripta jurnalul tău privat.
+          {t('mood.diaryUnlockMsg')}
+          <br/><br/>
+          <span style={{ fontSize: '0.85rem', color: '#ff4d4d' }}>{t('mood.diaryWarning')}</span>
         </p>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
           <input
             type="password"
-            placeholder="Parola..."
+            placeholder={t('login.passLabel') || 'Parola'}
             value={localPass}
             onChange={(e) => setLocalPass(e.target.value)}
             style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
@@ -368,7 +379,7 @@ function PrivateDiary({ role }) {
           />
           {loginError && <span style={{ color: 'red', fontSize: '0.85rem' }}>{loginError}</span>}
           <button type="submit" style={{ padding: '10px', background: 'var(--color-rose-dark)', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 'bold' }}>
-            Deblochează
+            {t('mood.diaryUnlockBtn')}
           </button>
         </form>
       </div>
@@ -408,20 +419,20 @@ function PrivateDiary({ role }) {
         </div>
         <textarea
           className={styles.diaryTextarea}
-          placeholder="Scrie gândurile tale... Doar tu le vei putea citi. 🌸"
+          placeholder={t('mood.diaryPlaceholder')}
           value={currentText}
           onChange={(e) => setCurrentText(e.target.value)}
           rows={5}
           maxLength={5000}
         />
         <div className={styles.diaryEditorFooter}>
-          <span className={styles.diaryWordCount}>{currentText.split(/\s+/).filter(Boolean).length} cuvinte</span>
+          <span className={styles.diaryWordCount}>{currentText.split(/\s+/).filter(Boolean).length} {t('mood.words')}</span>
           <button
             className={`${styles.diarySaveBtn} ${isSaving ? styles.diarySavingBtn : ''}`}
             onClick={saveEntry}
             disabled={!currentText.trim() || isSaving}
           >
-            {isSaving ? '🔒 Se criptează...' : '💾 Salvează în cloud'}
+            {isSaving ? t('mood.encrypting') : t('mood.saveCloud')}
           </button>
         </div>
       </div>
@@ -429,16 +440,16 @@ function PrivateDiary({ role }) {
       {/* Lista intrări */}
       {diaryLoading ? (
         <div className={styles.diaryLoading}>
-          <span className="animate-heartbeat">📔</span> Se încarcă din cloud...
+          <span className="animate-heartbeat">📔</span> {t('mood.diaryLoading')}
         </div>
       ) : entries.length === 0 ? (
         <div className={styles.diaryEmpty}>
           <span style={{ fontSize: '2rem' }}>🌸</span>
-          <p>Prima ta intrare în jurnal te așteaptă.<br/>Scrie ceva frumos! 💕</p>
+          <p>{t('mood.diaryEmptyText')}</p>
         </div>
       ) : (
         <div className={styles.diaryEntries}>
-          <h3 className={styles.diaryEntriesTitle}>Intrările tale ({entries.length})</h3>
+          <h3 className={styles.diaryEntriesTitle}>{t('mood.yourEntries')} ({entries.length})</h3>
           {entries.map((entry) => {
             const date = new Date(entry.timestamp);
             const isOpen = selectedEntry?.id === entry.id;
@@ -467,7 +478,7 @@ function PrivateDiary({ role }) {
                   <div className={`${styles.diaryEntryContent} animate-fade-in`}>
                     {isDecrypting ? (
                       <div className={styles.diaryDecrypting}>
-                        <span className="animate-heartbeat">🔓</span> Se decriptează local...
+                        <span className="animate-heartbeat">🔓</span> {t('mood.decrypting')}
                       </div>
                     ) : (
                       <>
@@ -475,13 +486,13 @@ function PrivateDiary({ role }) {
                         <div className={styles.diaryEntryActions}>
                           {deleteConfirm === entry.id ? (
                             <div className={styles.deleteConfirm}>
-                              <span>Ești sigură?</span>
-                              <button className={styles.deleteYes} onClick={() => handleDelete(entry.id)}>Da</button>
-                              <button className={styles.deleteNo} onClick={() => setDeleteConfirm(null)}>Nu</button>
+                              <span>{t('mood.areYouSure')}</span>
+                              <button className={styles.deleteYes} onClick={() => handleDelete(entry.id)}>{t('mood.yes')}</button>
+                              <button className={styles.deleteNo} onClick={() => setDeleteConfirm(null)}>{t('mood.no')}</button>
                             </div>
                           ) : (
                             <button className={styles.deleteEntryBtn} onClick={() => setDeleteConfirm(entry.id)}>
-                              🗑️ Șterge
+                              {t('mood.deleteBtn')}
                             </button>
                           )}
                         </div>
@@ -503,18 +514,19 @@ function PrivateDiary({ role }) {
 // ============================================================
 export default function MoodPage() {
   const { role } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('mood');
 
   const tabs = [
-    { id: 'mood',  label: 'Cum mă simt',  emoji: '💭' },
-    { id: 'diary', label: 'Jurnalul meu', emoji: '📔' },
+    { id: 'mood',  label: t('mood.tabMood'),  emoji: '💭' },
+    { id: 'diary', label: t('mood.tabDiary'), emoji: '📔' },
   ];
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Spațiul Meu 🌸</h1>
-        <p className={styles.subtitle}>Privat și doar pentru tine</p>
+        <h1 className={styles.title}>{t('mood.pageTitle')}</h1>
+        <p className={styles.subtitle}>{t('mood.pageSubtitle')}</p>
       </header>
 
       {/* Tab Bar */}

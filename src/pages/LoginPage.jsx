@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './LoginPage.module.css';
 
-// Particulele animate din background
 function FloatingParticles() {
   const particles = Array.from({ length: 12 }, (_, i) => ({
     id: i,
@@ -35,209 +35,302 @@ function FloatingParticles() {
   );
 }
 
-export default function LoginPage({ onSuccess, onResetPassword }) {
-  const [selectedAccount, setSelectedAccount] = useState(null); // 'her', 'his', 'admin'
+export default function LoginPage({ useAuthHook }) {
+  const { user, userData, loginWithEmail, registerWithEmail, resetPasswordEmail, linkPartner, logout } = useAuthHook();
+  const { t } = useLanguage();
+  
+  const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot'
+  
+  // Form fields
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [resetStatus, setResetStatus] = useState(''); // '' | 'sending' | 'sent' | 'error'
-  const inputRef = useRef(null);
+  const [name, setName] = useState('');
+  const [gender, setGender] = useState('F');
+  
+  const [partnerKey, setPartnerKey] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState('');
 
-  // Focus pe input când se selectează un cont
-  useEffect(() => {
-    if (selectedAccount) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    setLoading(true);
+    setError('');
+    const res = await loginWithEmail(email, password);
+    if (!res.success) setError(res.error);
+    setLoading(false);
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (!email || !password || !name) return;
+    setLoading(true);
+    setError('');
+    const res = await registerWithEmail(email, password, name, gender);
+    if (!res.success) setError(res.error);
+    setLoading(false);
+  };
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setError(t('login.errorEmail'));
+      return;
     }
-  }, [selectedAccount]);
-
-  const handleAccountSelect = (acc) => {
-    setSelectedAccount(acc);
-    setPassword('');
-    setError(false);
-  };
-
-  const handleBack = () => {
-    setSelectedAccount(null);
-    setPassword('');
-    setError(false);
-    setResetStatus('');
-  };
-
-  const handleResetPassword = async () => {
-    if (!onResetPassword || selectedAccount === 'admin') return;
-    setResetStatus('sending');
-    const success = await onResetPassword(selectedAccount);
-    setResetStatus(success ? 'sent' : 'error');
-    setTimeout(() => {
-      if (success) setResetStatus('');
-    }, 4000);
-  };
-
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!password) return;
-
-    // onSuccess acum returnează rolul obținut ('her', 'his', 'admin') sau false
-    const result = await onSuccess(password, selectedAccount);
-    
-    // Verificăm dacă a reușit
-    if (result) {
-      setIsSuccess(true);
+    setLoading(true);
+    setError('');
+    const res = await resetPasswordEmail(email);
+    if (res.success) {
+      setMsg(t('login.successReset'));
+      setMode('login');
     } else {
-      setError(true);
-      setAttempts((a) => a + 1);
-      setTimeout(() => {
-        setError(false);
-      }, 2000);
+      setError(res.error);
     }
+    setLoading(false);
   };
 
-  const getWelcomeMessage = () => {
-    if (selectedAccount === 'her') return { title: 'Bine ai venit Ana 🌸', subtitle: 'Introdu parola contului tău.' };
-    if (selectedAccount === 'his') return { title: 'Bine ai venit Andrei 💙', subtitle: 'Introdu parola contului tău.' };
-    if (selectedAccount === 'admin') return { title: 'Panou Admin 🛠️', subtitle: 'Introdu parola de securitate.' };
-    return { title: 'Bine ai venit! 💕', subtitle: 'Alege profilul tău' };
+  const handleLink = async (e) => {
+    e.preventDefault();
+    if (!partnerKey.trim()) return;
+    setLoading(true);
+    setError('');
+    const result = await linkPartner(partnerKey.trim().toUpperCase(), userData?.name, userData?.gender || 'M');
+    if (!result.success) {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
-  const msg = getWelcomeMessage();
+  const isWaiting = user && userData?.status === 'waiting';
 
   return (
-    <div className={`${styles.container} ${isSuccess ? styles.containerSuccess : ''}`}>
+    <div className={styles.container}>
       <FloatingParticles />
-
-      {/* Blob-uri decorative */}
       <div className={styles.blobTop} aria-hidden="true" />
       <div className={styles.blobBottom} aria-hidden="true" />
 
       <div className={`${styles.card} animate-scale-in`}>
-        {/* Header */}
         <div className={styles.header}>
-          <div className={`${styles.heartIcon} ${isSuccess ? 'animate-heartbeat' : 'animate-float'}`}>
-            {isSuccess ? '💖' : '🔐'}
+          <div className={`${styles.heartIcon} animate-float`}>
+            {isWaiting ? '🔗' : (mode === 'register' ? '👋' : '💕')}
           </div>
           <h1 className={styles.title}>
-            {isSuccess ? 'Ne conectăm... 💕' : msg.title}
+            {isWaiting ? t('login.welcomeTitle') : 'Couple Hub'}
           </h1>
           <p className={styles.subtitle}>
-            {isSuccess ? 'Așteaptă un moment' : msg.subtitle}
+            {isWaiting ? t('login.connectPartner') : (mode === 'register' ? t('login.createAcc') : t('login.signIn'))}
           </p>
         </div>
 
-        {/* PASUL 1: SELECȚIE CONT */}
-        {!selectedAccount && !isSuccess && (
-          <div className={styles.accountGrid}>
-            <button className={styles.accountBtn} onClick={() => handleAccountSelect('her')}>
-              <span className={styles.accountEmoji}>👩</span>
-              <span className={styles.accountName}>Pentru Ea</span>
-            </button>
-            <button className={styles.accountBtn} onClick={() => handleAccountSelect('his')}>
-              <span className={styles.accountEmoji}>👨</span>
-              <span className={styles.accountName}>Pentru El</span>
-            </button>
-            <button className={styles.accountBtnAdmin} onClick={() => handleAccountSelect('admin')}>
-              <span className={styles.accountEmojiSmall}>🛠️</span>
-              <span className={styles.accountNameSmall}>Sistem Admin</span>
-            </button>
+        {/* --- UNLOGGED FLOW: LOGIN / REGISTER / FORGOT --- */}
+        {!isWaiting && (
+          <div className="animate-fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <button onClick={() => {setMode('login'); setError(''); setMsg('');}} style={{ background: mode === 'login' ? 'var(--color-rose)' : 'transparent', color: mode === 'login' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' }}>{t('login.loginTab')}</button>
+              <button onClick={() => {setMode('register'); setError(''); setMsg('');}} style={{ background: mode === 'register' ? 'var(--color-rose)' : 'transparent', color: mode === 'register' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' }}>{t('login.registerTab')}</button>
+            </div>
+
+            {msg && <p style={{ color: 'var(--color-success)', fontSize: '0.9rem', marginBottom: '10px', textAlign: 'center' }}>{msg}</p>}
+            {error && <p style={{ color: 'var(--color-error)', fontSize: '0.9rem', marginBottom: '10px', textAlign: 'center' }}>{error}</p>}
+
+            {mode === 'login' && (
+              <form onSubmit={handleLogin} style={{width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                <input
+                  type="email"
+                  placeholder={t('login.emailLabel')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={styles.passwordInput}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #FFB5C8', fontSize: '1rem', outline: 'none', backgroundColor: '#FFF5F7', color: '#3D2C2C' }}
+                />
+                <input
+                  type="password"
+                  placeholder={t('login.passLabel')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={styles.passwordInput}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #FFB5C8', fontSize: '1rem', outline: 'none', backgroundColor: '#FFF5F7', color: '#3D2C2C' }}
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setMode('forgot')}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-rose)', fontSize: '0.8rem', textAlign: 'right', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  {t('login.forgotPass')}
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--color-rose-dark)', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', marginTop: '5px' }}
+                >
+                  {loading ? '...' : t('login.enterBtn')}
+                </button>
+              </form>
+            )}
+
+            {mode === 'register' && (
+              <form onSubmit={handleRegister} style={{width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                <input
+                  type="text"
+                  placeholder={t('login.placeholderName')}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={styles.passwordInput}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: `2px solid ${gender === 'M' ? '#6C5CE7' : '#FFB5C8'}`, fontSize: '1rem', outline: 'none', backgroundColor: gender === 'M' ? '#F0F0FF' : '#FFF5F7', color: '#3D2C2C' }}
+                />
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button 
+                    type="button"
+                    onClick={() => setGender('F')}
+                    style={{ flex: 1, padding: '10px', borderRadius: '12px', border: '2px solid #FFB5C8', backgroundColor: gender === 'F' ? '#FFB5C8' : 'white', color: gender === 'F' ? 'white' : '#3D2C2C', fontWeight: 'bold', cursor: 'pointer' }}>
+                    {t('login.girl')}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setGender('M')}
+                    style={{ flex: 1, padding: '10px', borderRadius: '12px', border: '2px solid #6C5CE7', backgroundColor: gender === 'M' ? '#6C5CE7' : 'white', color: gender === 'M' ? 'white' : '#3D2C2C', fontWeight: 'bold', cursor: 'pointer' }}>
+                    {t('login.boy')}
+                  </button>
+                </div>
+                <input
+                  type="email"
+                  placeholder={t('login.emailLabel')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={styles.passwordInput}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: `2px solid ${gender === 'M' ? '#6C5CE7' : '#FFB5C8'}`, fontSize: '1rem', outline: 'none', backgroundColor: gender === 'M' ? '#F0F0FF' : '#FFF5F7', color: '#3D2C2C', marginTop: '5px' }}
+                />
+                <input
+                  type="password"
+                  placeholder={t('login.passRules')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={styles.passwordInput}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: `2px solid ${gender === 'M' ? '#6C5CE7' : '#FFB5C8'}`, fontSize: '1rem', outline: 'none', backgroundColor: gender === 'M' ? '#F0F0FF' : '#FFF5F7', color: '#3D2C2C' }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: gender === 'M' ? '#6C5CE7' : 'var(--color-rose-dark)', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', marginTop: '10px' }}
+                >
+                  {loading ? '...' : t('login.registerBtn')}
+                </button>
+              </form>
+            )}
+
+            {mode === 'forgot' && (
+              <form onSubmit={handleForgot} style={{width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                <p style={{fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center'}}>{t('login.forgotText')}</p>
+                <input
+                  type="email"
+                  placeholder={t('login.emailLabel')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={styles.passwordInput}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #FFB5C8', fontSize: '1rem', outline: 'none', backgroundColor: '#FFF5F7', color: '#3D2C2C' }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ padding: '15px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--color-rose-dark)', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                >
+                  {loading ? '...' : t('login.resetBtn')}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setMode('login')}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  {t('login.backToLogin')}
+                </button>
+              </form>
+            )}
           </div>
         )}
 
-        {/* PASUL 2: INTRODUCERE PAROLĂ */}
-        {selectedAccount && !isSuccess && (
-          <div className="animate-fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        {/* --- WAITING FOR PARTNER FLOW --- */}
+        {isWaiting && (
+          <div className="animate-fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%'}}>
             
-            <form onSubmit={handleSubmit} style={{width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', gap: '15px'}}>
+            <div style={{ background: 'rgba(255,181,200,0.1)', padding: '15px', borderRadius: '12px', width: '100%', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('login.yourKey')}</p>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', letterSpacing: '3px', color: 'var(--color-rose-dark)' }}>
+                {userData?.pairKey}
+              </div>
+              <p style={{ margin: '10px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                {t('login.sendKey')}
+              </p>
+            </div>
+
+            <form onSubmit={handleLink} style={{width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', gap: '15px'}}>
+              <p style={{ margin: '0', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                {t('login.enterKey')}
+              </p>
               <input
-                ref={inputRef}
                 className={`${styles.passwordInput} ${error ? 'animate-shake' : ''}`}
-                type="password"
-                placeholder="Introdu parola..."
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError(false);
-                }}
-                autoComplete="current-password"
+                type="text"
+                placeholder={t('login.placeholderKey')}
+                value={partnerKey}
+                onChange={(e) => { setPartnerKey(e.target.value.toUpperCase()); setError(''); }}
+                maxLength={10}
                 style={{
-                  width: '100%',
-                  padding: '15px',
-                  borderRadius: '12px',
-                  border: error ? '2px solid #FF5252' : '2px solid #FFB5C8',
-                  fontSize: '1.2rem',
-                  textAlign: 'center',
-                  outline: 'none',
-                  backgroundColor: '#FFF5F7',
-                  color: '#3D2C2C',
-                  fontFamily: 'inherit',
-                  transition: 'all 0.3s ease'
+                  width: '100%', padding: '15px', borderRadius: '12px',
+                  border: error ? '2px solid #FF5252' : '2px solid #FFB5C8', 
+                  fontSize: '1.5rem', textAlign: 'center', letterSpacing: '2px',
+                  outline: 'none', backgroundColor: '#FFF5F7', color: '#3D2C2C',
+                  fontFamily: 'inherit', textTransform: 'uppercase'
                 }}
               />
 
-              {/* Mesaj eroare */}
               {error && (
                 <p className={styles.errorMsg} style={{color: '#FF5252', fontSize: '0.9rem', margin: '0', textAlign: 'center'}}>
-                  {attempts >= 3
-                    ? 'Parolă greșită. Verifică cu atenție! 🤫'
-                    : 'Parolă greșită. Mai încearcă! 🥺'}
+                  {error}
                 </p>
               )}
 
               <button 
                 type="submit" 
-                disabled={!password || password.length < 6}
+                disabled={partnerKey.length < 10 || loading}
                 style={{
-                  padding: '15px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: password && password.length >= 6 ? 'var(--color-rose-dark)' : '#E0E0E0',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  cursor: password && password.length >= 6 ? 'pointer' : 'not-allowed',
-                  boxShadow: password && password.length >= 6 ? '0 4px 10px rgba(255,107,143,0.3)' : 'none',
-                  transition: 'all 0.3s ease'
+                  padding: '15px', borderRadius: '12px', border: 'none',
+                  backgroundColor: partnerKey.length >= 10 ? 'var(--color-rose-dark)' : '#E0E0E0',
+                  color: 'white', fontWeight: 'bold', fontSize: '1.1rem',
+                  cursor: partnerKey.length >= 10 && !loading ? 'pointer' : 'not-allowed',
+                  boxShadow: partnerKey.length >= 10 ? '0 4px 15px rgba(255,107,145,0.4)' : 'none',
+                  transition: 'all 0.3s'
                 }}
               >
-                Intră în aplicație
+                {loading ? t('login.connecting') : t('login.connectBtn')}
               </button>
             </form>
-
-            {selectedAccount !== 'admin' && (
-              <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                {resetStatus === 'sending' && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Se trimite link-ul...</p>}
-                {resetStatus === 'sent' && <p style={{ fontSize: '0.85rem', color: '#1A6640', background: '#D4F5E9', padding: '5px 10px', borderRadius: '8px' }}>✅ Link de resetare trimis pe adresa ta reală de email!</p>}
-                {resetStatus === 'error' && <p style={{ fontSize: '0.85rem', color: '#FF5252' }}>Eroare la trimitere! Poate contul nu e complet configurat.</p>}
-                {!resetStatus && (
-                  <button 
-                    onClick={handleResetPassword}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-rose)', fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Ai uitat parola?
-                  </button>
-                )}
-              </div>
-            )}
+            
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+              {t('login.autoUpdate')}
+            </p>
 
             <button 
-              onClick={handleBack}
+              type="button" 
+              onClick={async () => {
+                if (window.confirm(t('login.logoutConfirm'))) {
+                  await logout();
+                }
+              }}
               style={{
-                marginTop: '20px',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                textDecoration: 'underline'
+                background: 'none', border: 'none', color: '#888',
+                textDecoration: 'underline', cursor: 'pointer',
+                marginTop: '10px', fontSize: '0.9rem'
               }}
             >
-              ← Alege alt profil
+              {t('login.logoutBtn')}
             </button>
           </div>
         )}
 
         {/* Footer */}
         <p className={styles.footerText}>
-          Făcut cu <span className={styles.heart}>💕</span> pentru voi
+          {t('login.footer')}
         </p>
       </div>
     </div>

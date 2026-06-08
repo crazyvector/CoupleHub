@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useSystemState, useNotifications } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './VirtualBaristaButton.module.css';
 
 export default function VirtualBaristaButton({ role }) {
   const { systemState, incrementBaristaCount } = useSystemState();
   const { addNotification } = useNotifications();
+  const { t } = useLanguage();
   const [status, setStatus] = useState('idle');
 
   // Determinam numarul de apasari de astazi pentru acest utilizator
@@ -13,10 +15,10 @@ export default function VirtualBaristaButton({ role }) {
   const pressCount = (userBaristaData?.date === today) ? (userBaristaData?.count || 0) : 0;
 
   const baristaMessages = [
-    { label: '☕ Cafea', emoji: '☕', msg: 'Alertează! Am nevoie urgentă de o cafea! 🏃‍♂️' },
-    { label: '⚠️ Atenție', emoji: '⚠️', msg: 'Misiune importantă: am nevoie de atenție! 💕' },
-    { label: '🫂 Îmbrățișare', emoji: '🫂', msg: 'Am nevoie de o îmbrățișare ACUM! 💕' },
-    { label: '💆 Masaj', emoji: '💆‍♀️', msg: 'Sunt stresat/ă, am nevoie de un masaj magic! ✨' },
+    { label: t('dashboard.baristaCoffeeLabel'), emoji: '☕', msg: t('dashboard.baristaCoffeeMsg') },
+    { label: t('dashboard.baristaAttentionLabel'), emoji: '⚠️', msg: t('dashboard.baristaAttentionMsg') },
+    { label: t('dashboard.baristaHugLabel'), emoji: '🫂', msg: t('dashboard.baristaHugMsg') },
+    { label: t('dashboard.baristaMassageLabel'), emoji: '💆‍♀️', msg: t('dashboard.baristaMassageMsg') },
   ];
 
   const [selectedAction, setSelectedAction] = useState(0);
@@ -38,8 +40,8 @@ export default function VirtualBaristaButton({ role }) {
         <div className={styles.baristaHeader}>
           <span className={styles.baristaIcon}>⚡</span>
           <div>
-            <h3 className={styles.baristaTitle}>Virtual Barista</h3>
-            <p className={styles.baristaSubtitle}>Trimite o cerere instant către partener</p>
+            <h3 className={styles.baristaTitle}>{t('dashboard.baristaTitle')}</h3>
+            <p className={styles.baristaSubtitle}>{t('dashboard.baristaSubtitle')}</p>
           </div>
         </div>
 
@@ -65,19 +67,19 @@ export default function VirtualBaristaButton({ role }) {
           aria-live="polite"
         >
           {status === 'idle' && (
-            <><span className={styles.baristaBtnIcon}>📲</span> Trimite cerere!</>
+            <><span className={styles.baristaBtnIcon}>📲</span> {t('dashboard.baristaSendBtn')}</>
           )}
           {status === 'sending' && (
-            <><span className={styles.loadingSpinner} /> Se trimite...</>
+            <><span className={styles.loadingSpinner} /> {t('dashboard.baristaSending')}</>
           )}
           {status === 'sent' && (
-            <><span>✅</span> Trimis! A primit! 💕</>
+            <><span>✅</span> {t('dashboard.baristaSent')}</>
           )}
         </button>
 
         {pressCount > 0 && (
           <p className={styles.baristaSentCount}>
-            Ai trimis {pressCount} {pressCount === 1 ? 'cerere' : 'cereri'} azi 💕
+            {t('dashboard.baristaCountOne')} {pressCount} {pressCount === 1 ? t('dashboard.baristaCountSingular') : t('dashboard.baristaCountPlural')} {t('dashboard.baristaCountToday')}
           </p>
         )}
       </div>

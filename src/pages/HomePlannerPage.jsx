@@ -7,17 +7,18 @@ import { useHomeItems } from '../hooks/useHomePlanner';
 import { fetchInteriorIdeas } from '../utils/unsplash';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useNotifications } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const ROOMS = [
-  { id: 'bucatarie', label: 'Bucătărie', icon: '🍳' },
-  { id: 'living', label: 'Living', icon: '🛋️' },
-  { id: 'dormitor', label: 'Dormitor', icon: '🛏️' },
-  { id: 'baie', label: 'Baie', icon: '🛁' },
-  { id: 'hol', label: 'Hol', icon: '🚪' },
-  { id: 'balcon', label: 'Balcon', icon: '🪴' },
-  { id: 'pod', label: 'Pod', icon: '🪜' },
-  { id: 'birou', label: 'Birou', icon: '💻' },
-  { id: 'idei_cautate', label: 'Căutări Libere', icon: '🔍' }
+const getRooms = (t) => [
+  { id: 'bucatarie', label: t('homePlanner.kitchen'), icon: '🍳' },
+  { id: 'living', label: t('homePlanner.living'), icon: '🛋️' },
+  { id: 'dormitor', label: t('homePlanner.bedroom'), icon: '🛏️' },
+  { id: 'baie', label: t('homePlanner.bathroom'), icon: '🛁' },
+  { id: 'hol', label: t('homePlanner.hallway'), icon: '🚪' },
+  { id: 'balcon', label: t('homePlanner.balcony'), icon: '🪴' },
+  { id: 'pod', label: t('homePlanner.attic'), icon: '🪜' },
+  { id: 'birou', label: t('homePlanner.office'), icon: '💻' },
+  { id: 'idei_cautate', label: t('homePlanner.freeSearches'), icon: '🔍' }
 ];
 
 const MOCK_IDEAS = [
@@ -51,6 +52,9 @@ export default function HomePlannerPage({ role }) {
   // Filters inside a room
   const [activeTag, setActiveTag] = useState('all');
 
+  const { t } = useLanguage();
+  const ROOMS = getRooms(t);
+
   const previousItemsRef = useRef([]);
 
   // Sincronizeaza elementul selectat (pt Modal) ca să se dea refresh instant când Ana sau tu dați like/comentați
@@ -70,8 +74,8 @@ export default function HomePlannerPage({ role }) {
       const partnerRole = r === 'his' ? 'her' : 'his';
       // Dacă partenerul avea deja like, e match ACUM pentru că tu tocmai ai dat like!
       if (item && item.likes?.[partnerRole] === true) {
-        addNotification("Super Match! 🌟", `Ai un match la: ${item.title}`, 'system', 'his');
-        addNotification("Super Match! 🌟", `Ai un match la: ${item.title}`, 'system', 'her');
+        addNotification(t('homePlanner.superMatchTitlePush'), `${t('homePlanner.superMatchBodyPush')}${item.title}`, 'system', 'his');
+        addNotification(t('homePlanner.superMatchTitlePush'), `${t('homePlanner.superMatchBodyPush')}${item.title}`, 'system', 'her');
       }
     }
   };
@@ -88,16 +92,16 @@ export default function HomePlannerPage({ role }) {
           // Push notification pe device
           LocalNotifications.schedule({
             notifications: [{
-              title: "Super Match la Design! 🌟",
-              body: `S-a creat un match nou: ${item.title || 'idee de design'}!`,
+              title: t('homePlanner.superMatchTitlePush'),
+              body: `${t('homePlanner.superMatchBodyPush')}${item.title || 'idee de design'}!`,
               id: new Date().getTime()
             }]
           }).catch(console.error);
 
           // Notificare In-App
           setMatchNotification({
-            title: "Super Match! 🌟",
-            body: `Amândoi ați apreciat: ${item.title || 'o idee de design'}`
+            title: t('homePlanner.superMatchTitleInApp'),
+            body: `${t('homePlanner.superMatchBodyInApp')}${item.title || 'o idee de design'}`
           });
           
           setTimeout(() => setMatchNotification(null), 6000);
@@ -195,7 +199,7 @@ export default function HomePlannerPage({ role }) {
   };
 
   // ------- RENDERING -------
-  if (loading) return <div className={styles.loading}>Se încarcă proiectul...</div>;
+  if (loading) return <div className={styles.loading}>{t('homePlanner.loadingProject')}</div>;
 
   const renderDashboard = () => {
     if (selectedRoom) {
@@ -209,7 +213,7 @@ export default function HomePlannerPage({ role }) {
           <div className={styles.roomHeader}>
             <button className={styles.backBtn} onClick={() => setSelectedRoom(null)}>←</button>
             <h2>{roomLabel}</h2>
-            <span className={styles.itemCount}>{roomItems.length} salvate</span>
+            <span className={styles.itemCount}>{roomItems.length} {t('homePlanner.saved')}</span>
           </div>
 
           <div className={styles.tagsFilter}>
@@ -219,14 +223,14 @@ export default function HomePlannerPage({ role }) {
                 className={`${styles.filterTag} ${activeTag === tag ? styles.activeFilter : ''}`}
                 onClick={() => setActiveTag(tag)}
               >
-                {tag === 'all' ? 'Toate' : `#${tag}`}
+                {tag === 'all' ? t('homePlanner.all') : `#${tag}`}
               </button>
             ))}
           </div>
 
           {filteredItems.filter(i => !i.unsplashId).length > 0 && (
             <>
-              <h3 className={styles.subSectionTitle} style={{marginTop: 20}}>Elemente Adăugate 🛒</h3>
+              <h3 className={styles.subSectionTitle} style={{marginTop: 20}}>{t('homePlanner.addedItems')}</h3>
               <div className={styles.itemsGrid}>
                 {filteredItems.filter(i => !i.unsplashId).map(item => {
                   const hasMyLike = item.likes?.[role] === true;
@@ -250,10 +254,10 @@ export default function HomePlannerPage({ role }) {
                               className={styles.gridLink}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              🔗 Deschide Link
+                              {t('homePlanner.openLink')}
                             </a>
                           ) : (
-                            '🔗 Fără Poză'
+                            t('homePlanner.noPicture')
                           )}
                         </div>
                       )}
@@ -267,7 +271,7 @@ export default function HomePlannerPage({ role }) {
                             className={styles.gridMiniLink}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            🔗 Vezi Link
+                            {t('homePlanner.viewLink')}
                           </a>
                         )}
                         <div className={styles.itemMeta}>
@@ -287,7 +291,7 @@ export default function HomePlannerPage({ role }) {
 
           {filteredItems.filter(i => i.unsplashId).length > 0 && (
             <>
-              <h3 className={styles.subSectionTitle} style={{marginTop: 30}}>Idei din Swipe 💡</h3>
+              <h3 className={styles.subSectionTitle} style={{marginTop: 30}}>{t('homePlanner.swipeIdeas')}</h3>
               <div className={styles.itemsGrid}>
                 {filteredItems.filter(i => i.unsplashId).map(item => {
                   const hasMyLike = item.likes?.[role] === true;
@@ -302,7 +306,7 @@ export default function HomePlannerPage({ role }) {
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.title} className={styles.itemImg} />
                       ) : (
-                        <div className={styles.itemNoImg}>🔗 Link</div>
+                        <div className={styles.itemNoImg}>{t('homePlanner.link')}</div>
                       )}
                       <div className={styles.itemInfo}>
                         <p className={styles.itemTitle}>{item.title}</p>
@@ -323,7 +327,7 @@ export default function HomePlannerPage({ role }) {
 
           {filteredItems.length === 0 && (
             <div className={styles.emptyState}>
-              Nu ai salvat încă nimic aici. Folosește butonul + sau Swipe.
+              {t('homePlanner.emptyRoom')}
             </div>
           )}
         </div>
@@ -333,13 +337,27 @@ export default function HomePlannerPage({ role }) {
     return (
       <div className={styles.dashboardView}>
         <div className={styles.statsCard}>
-          <h3>Proiectul Nostru 🏠</h3>
-          <p>Total idei salvate: {items.length}</p>
-          <p>Idei/Link-uri adăugate de voi: {items.filter(i => !i.unsplashId).length} 🔗</p>
-          <p>Super Matches: {getMatches().length} 🌟</p>
+          <h3>{t('homePlanner.ourProject')}</h3>
+          <p>{t('homePlanner.totalIdeasSaved')}{items.length}</p>
+          <p>{t('homePlanner.ideasAddedByYou')}{items.filter(i => !i.unsplashId).length} 🔗</p>
+          <p>{t('homePlanner.superMatches')}{getMatches().length} 🌟</p>
           <p style={{ fontSize: '0.85rem', marginTop: '10px', opacity: 0.9 }}>
-            💰 Cost estimativ cumulat: ~{calculateTotal(items)} RON
+            {t('homePlanner.estimatedCost')}{calculateTotal(items)} {t('homePlanner.currency')}
           </p>
+        </div>
+
+        {/* Affiliate Banner for Home Deco */}
+        <div style={{
+          background: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)',
+          borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 242, 254, 0.3)'
+        }} onClick={() => window.open('https://www.ikea.com/ro/ro/', '_blank')}>
+           <div>
+            <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Căutați mobilă nouă?'}</h3>
+            <p style={{ margin: '5px 0 0', fontSize: '0.8rem', opacity: 0.9 }}>{t('homePlanner.affiliateDesc') || 'Descoperiți ofertele IKEA pentru un cuib perfect.'}</p>
+          </div>
+          <div style={{ background: 'white', color: '#00f2fe', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+            {t('homePlanner.affiliateBtn') || 'Vezi oferte'}
+          </div>
         </div>
 
         <div className={styles.dashboardSearch}>
@@ -347,7 +365,7 @@ export default function HomePlannerPage({ role }) {
             <span>🔍</span>
             <input 
               type="text" 
-              placeholder="Caută în ideile salvate (după titlu, tag sau link)..." 
+              placeholder={t('homePlanner.searchSavedIdeas')} 
               value={globalSearch}
               onChange={e => setGlobalSearch(e.target.value)}
               className={styles.searchInput}
@@ -360,7 +378,7 @@ export default function HomePlannerPage({ role }) {
 
         {!globalSearch ? (
           <>
-            <h3 className={styles.sectionTitle}>Camere</h3>
+            <h3 className={styles.sectionTitle}>{t('homePlanner.rooms')}</h3>
             <div className={styles.roomsGrid}>
               {ROOMS.map(room => {
                 const roomItems = getRoomItems(room.id);
@@ -372,7 +390,7 @@ export default function HomePlannerPage({ role }) {
                     <div className={styles.folderIcon}>{room.icon}</div>
                     <div className={styles.folderName}>{room.label}</div>
                     <div className={styles.folderCount}>
-                      {count} {count === 1 ? 'element' : 'elemente'} {roomTotal > 0 && `| ~${roomTotal} lei`}
+                      {count} {count === 1 ? t('homePlanner.item') : t('homePlanner.items')} {roomTotal > 0 && `| ~${roomTotal} ${t('homePlanner.currency')}`}
                     </div>
                   </div>
                 );
@@ -381,7 +399,7 @@ export default function HomePlannerPage({ role }) {
           </>
         ) : (
           <div className={styles.searchResults}>
-            <h3 className={styles.sectionTitle}>Rezultate Căutare</h3>
+            <h3 className={styles.sectionTitle}>{t('homePlanner.searchResults')}</h3>
             {(() => {
               const query = globalSearch.toLowerCase();
               const results = items.filter(i => 
@@ -391,7 +409,7 @@ export default function HomePlannerPage({ role }) {
               );
               
               if (results.length === 0) {
-                return <div className={styles.emptyState}>Nu am găsit nicio idee pentru "{globalSearch}"</div>;
+                return <div className={styles.emptyState}>{t('homePlanner.noIdeasFor')} "{globalSearch}"</div>;
               }
 
               return (
@@ -411,7 +429,7 @@ export default function HomePlannerPage({ role }) {
                           <img src={item.imageUrl} alt={item.title} className={styles.itemImg} />
                         ) : (
                           <div className={styles.itemNoImg}>
-                            {item.link ? '🔗 Link' : '🔗 Fără Poză'}
+                            {item.link ? t('homePlanner.link') : t('homePlanner.noPicture')}
                           </div>
                         )}
                         <div className={styles.itemInfo}>
@@ -446,7 +464,7 @@ export default function HomePlannerPage({ role }) {
             if (customSearch.trim()) {
               const cat = { 
                 id: customSearch.trim(), 
-                label: `Căutare: ${customSearch}`, 
+                label: `${t('homePlanner.searchLabel')}${customSearch}`, 
                 icon: '🔍', 
                 roomId: 'idei_cautate' // Merge în folderul specific
               };
@@ -458,7 +476,7 @@ export default function HomePlannerPage({ role }) {
               <span>🔍</span>
               <input 
                 type="text" 
-                placeholder="Caută în engleză pt rezultate optime (ex: black sofa)..." 
+                placeholder={t('homePlanner.searchPlaceholderSwipe')} 
                 value={customSearch}
                 onChange={e => setCustomSearch(e.target.value)}
                 className={styles.searchInput}
@@ -466,7 +484,7 @@ export default function HomePlannerPage({ role }) {
             </div>
           </form>
 
-          <h3 className={styles.sectionTitle}>Sau alege o cameră:</h3>
+          <h3 className={styles.sectionTitle}>{t('homePlanner.orChooseRoom')}</h3>
           <div className={styles.roomsGrid}>
             {ROOMS.map(r => {
               const unsplashSearchMap = {
@@ -503,15 +521,15 @@ export default function HomePlannerPage({ role }) {
     return (
       <div className={styles.swipeArea}>
         <div className={styles.swipeHeader}>
-          <button className={styles.backBtn} onClick={() => setSwipeCategory(null)}>← Înapoi</button>
+          <button className={styles.backBtn} onClick={() => setSwipeCategory(null)}>{t('homePlanner.backBtn')}</button>
           <span className={styles.activeCategoryTag}>{swipeCategory.icon} {swipeCategory.label}</span>
         </div>
 
         {swipeLoading ? (
-          <div className={styles.emptyState}>Se caută idei premium... ⏳</div>
+          <div className={styles.emptyState}>{t('homePlanner.searchingPremiumIdeas')}</div>
         ) : cards.length > 0 ? (
           <>
-            {isPlanB && <div className={styles.planBWarning}>⚠️ Folosim Pinterest-ul local (Plan B)</div>}
+            {isPlanB && <div className={styles.planBWarning}>{t('homePlanner.planBWarning')}</div>}
             <div className={styles.cardStack}>
               {cards.slice(-3).map((item, index, array) => {
                 const isTop = index === array.length - 1;
@@ -545,8 +563,8 @@ export default function HomePlannerPage({ role }) {
           </>
         ) : (
           <div className={styles.emptyState}>
-            <h2>Ai văzut tot!</h2>
-            <button className={styles.reloadBtn} onClick={() => loadSwipeImages(swipeCategory)}>Mai caută</button>
+            <h2>{t('homePlanner.seenItAll')}</h2>
+            <button className={styles.reloadBtn} onClick={() => loadSwipeImages(swipeCategory)}>{t('homePlanner.searchMore')}</button>
           </div>
         )}
       </div>
@@ -555,15 +573,15 @@ export default function HomePlannerPage({ role }) {
 
   const renderMatches = () => {
     const matches = getMatches();
-    if (matches.length === 0) return <div className={styles.emptyState}>Încă nu aveți potriviri aprobate amândoi.</div>;
+    if (matches.length === 0) return <div className={styles.emptyState}>{t('homePlanner.noMatchesYet')}</div>;
 
     return (
       <div className={styles.matchesView}>
-        <h3 className={styles.sectionTitle}>Decizii Aprobate (Match-uri) 🌟</h3>
+        <h3 className={styles.sectionTitle}>{t('homePlanner.approvedDecisions')}</h3>
         <div className={styles.itemsGrid}>
           {matches.map(item => (
             <div key={item.id} className={`${styles.itemCard} ${styles.matchCard}`} onClick={() => setSelectedItem(item)}>
-              {item.imageUrl ? <img src={item.imageUrl} alt={item.title} className={styles.itemImg} /> : <div className={styles.itemNoImg}>🔗 Link</div>}
+              {item.imageUrl ? <img src={item.imageUrl} alt={item.title} className={styles.itemImg} /> : <div className={styles.itemNoImg}>{t('homePlanner.link')}</div>}
               <div className={styles.itemInfo}>
                 <p className={styles.itemTitle}>{item.title}</p>
                 <span className={styles.roomMiniTag}>{item.room}</span>
@@ -578,14 +596,14 @@ export default function HomePlannerPage({ role }) {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Home Planner 🏡</h1>
-        <p className={styles.subtitle}>Proiectul pentru cuibușorul nostru</p>
+        <h1 className={styles.title}>{t('homePlanner.homePlannerTitle')}</h1>
+        <p className={styles.subtitle}>{t('homePlanner.homePlannerSubtitle')}</p>
       </div>
 
       <div className={styles.tabs}>
-        <button className={`${styles.tabBtn} ${activeTab === 'dashboard' ? styles.active : ''}`} onClick={() => setActiveTab('dashboard')}>Proiect</button>
-        <button className={`${styles.tabBtn} ${activeTab === 'swipe' ? styles.active : ''}`} onClick={() => setActiveTab('swipe')}>Inspirație</button>
-        <button className={`${styles.tabBtn} ${activeTab === 'matches' ? styles.active : ''}`} onClick={() => setActiveTab('matches')}>Matches</button>
+        <button className={`${styles.tabBtn} ${activeTab === 'dashboard' ? styles.active : ''}`} onClick={() => setActiveTab('dashboard')}>{t('homePlanner.projectTab')}</button>
+        <button className={`${styles.tabBtn} ${activeTab === 'swipe' ? styles.active : ''}`} onClick={() => setActiveTab('swipe')}>{t('homePlanner.inspirationTab')}</button>
+        <button className={`${styles.tabBtn} ${activeTab === 'matches' ? styles.active : ''}`} onClick={() => setActiveTab('matches')}>{t('homePlanner.matchesTab')}</button>
       </div>
 
       <div className={styles.contentArea}>
@@ -637,14 +655,14 @@ export default function HomePlannerPage({ role }) {
       {swipeRoomPrompt && (
         <div className={styles.promptOverlay}>
           <div className={styles.promptModal}>
-            <h3>Unde salvăm imaginea?</h3>
+            <h3>{t('homePlanner.whereToSave')}</h3>
             <img src={swipeRoomPrompt.imageUrl} alt="preview" className={styles.promptImg} />
             <div className={styles.promptRooms}>
               {ROOMS.map(r => (
                 <button key={r.id} onClick={() => handleConfirmSwipeSave(r.id)}>{r.icon} {r.label}</button>
               ))}
             </div>
-            <button className={styles.promptCancel} onClick={handleCancelSwipeSave}>Anulează</button>
+            <button className={styles.promptCancel} onClick={handleCancelSwipeSave}>{t('homePlanner.cancel')}</button>
           </div>
         </div>
       )}
@@ -662,7 +680,7 @@ export default function HomePlannerPage({ role }) {
                 handleSwipeRight(fullScreenSwipeItem);
                 setFullScreenSwipeItem(null);
               }}>
-                Apreciază ❤️
+                {t('homePlanner.likeSwipeBtn')}
               </button>
             </div>
           </div>

@@ -1,17 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEvents, useProfiles } from '../hooks/useDatabase';
+import { useEvents, useProfiles, useSystemState, useNotifications } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import ScratchCard from '../components/ScratchCard';
 import VirtualBaristaButton from '../components/VirtualBaristaButton';
-import { useSystemState, useNotifications } from '../hooks/useDatabase';
+import LiveCanvasWidget from '../components/LiveCanvasWidget';
 import styles from './DashboardPage.module.css';
 
 // Componentă pentru Live Timer
-function LiveTimer() {
+function LiveTimer({ startDate }) {
+  const { t } = useLanguage();
   const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const anniversaryDate = new Date('2025-03-26T00:00:00');
+    const anniversaryDate = startDate ? new Date(startDate) : new Date('2025-03-26T00:00:00');
     
     const updateTime = () => {
       const diff = Math.max(0, new Date() - anniversaryDate);
@@ -27,32 +33,53 @@ function LiveTimer() {
     updateTime(); // initial call
     const timerId = setInterval(updateTime, 1000);
     return () => clearInterval(timerId);
-  }, []);
+  }, [startDate]);
 
   return (
     <div className={styles.timerContainer}>
-      <h2 className={styles.timerTitle}>Suntem împreună de:</h2>
+      <h2 className={styles.timerTitle}>{t('dashboard.togetherSince')}</h2>
       <div className={styles.timerGrid}>
         <div className={styles.timeBox}>
           <span className={styles.timeValue}>{time.days}</span>
-          <span className={styles.timeLabel}>Zile</span>
+          <span className={styles.timeLabel}>{t('dashboard.days')}</span>
         </div>
         <div className={styles.timeSeparator}>:</div>
         <div className={styles.timeBox}>
           <span className={styles.timeValue}>{time.hours < 10 ? `0${time.hours}` : time.hours}</span>
-          <span className={styles.timeLabel}>Ore</span>
+          <span className={styles.timeLabel}>{t('dashboard.hours')}</span>
         </div>
         <div className={styles.timeSeparator}>:</div>
         <div className={styles.timeBox}>
           <span className={styles.timeValue}>{time.minutes < 10 ? `0${time.minutes}` : time.minutes}</span>
-          <span className={styles.timeLabel}>Min</span>
+          <span className={styles.timeLabel}>{t('dashboard.mins')}</span>
         </div>
         <div className={styles.timeSeparator}>:</div>
         <div className={styles.timeBox}>
           <span className={styles.timeValue}>{time.seconds < 10 ? `0${time.seconds}` : time.seconds}</span>
-          <span className={styles.timeLabel}>Sec</span>
+          <span className={styles.timeLabel}>{t('dashboard.secs')}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SortableTile({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : 'auto',
+    opacity: isDragging ? 0.8 : 1,
+    position: 'relative',
+    touchAction: 'pan-y'
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div {...attributes} {...listeners} style={{ cursor: 'grab', padding: '10px', display: 'flex', justifyContent: 'center', marginBottom: '-15px', position: 'relative', zIndex: 10 }}>
+        <div style={{ width: '40px', height: '5px', background: 'var(--text-muted)', opacity: 0.3, borderRadius: '5px' }} />
+      </div>
+      {children}
     </div>
   );
 }
@@ -60,16 +87,17 @@ function LiveTimer() {
 export default function DashboardPage({ role }) {
   const { events, loading } = useEvents();
   const { profile, updateProfile } = useProfiles(role);
+  const { t } = useLanguage();
   
   const [localStress, setLocalStress] = useState(0);
   const [localAnger, setLocalAnger] = useState(0);
 
   useEffect(() => {
     if (profile) {
-      setLocalStress(profile.stressLevel || 0);
-      setLocalAnger(profile.angerLevel || 0);
+      if (profile.stressLevel !== undefined) setLocalStress(profile.stressLevel);
+      if (profile.angerLevel !== undefined) setLocalAnger(profile.angerLevel);
     }
-  }, [profile?.stressLevel, profile?.angerLevel]);
+  }, [profile]);
   
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
@@ -82,6 +110,37 @@ export default function DashboardPage({ role }) {
   const { addNotification } = useNotifications();
   const [isWritingCompliment, setIsWritingCompliment] = useState(false);
   const [complimentText, setComplimentText] = useState('');
+
+  const DEFAULT_ORDER = ['timer', 'compliment', 'calendar', 'shortcuts', 'canvas', 'barista', 'scratch', 'buzzer', 'status'];
+  const [tileOrder, setTileOrder] = useState(DEFAULT_ORDER);
+
+  useEffect(() => {
+    if (profile?.dashboardOrder && Array.isArray(profile.dashboardOrder)) {
+      // Ensure all tiles exist in the loaded order, and no duplicates/removed tiles break it
+      const loaded = profile.dashboardOrder.filter(id => DEFAULT_ORDER.includes(id));
+      const missing = DEFAULT_ORDER.filter(id => !loaded.includes(id));
+      setTileOrder([...loaded, ...missing]);
+    }
+  }, [profile?.dashboardOrder]);
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setTileOrder((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        updateProfile({ dashboardOrder: newOrder });
+        return newOrder;
+      });
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // Numele din profile
   const myName = profile?.name || (role === 'her' ? 'Ana' : 'Andrei');
@@ -105,7 +164,10 @@ export default function DashboardPage({ role }) {
     if (!complimentText.trim()) return;
     await setCustomCompliment(targetRole, complimentText.trim());
     if (role) {
-      await addNotification('Compliment Nou 💌', `Auzi, ${myName} a vrut să îți spună ceva frumos: "${complimentText.trim()}"`, role);
+      const body = t('dashboard.newComplimentBody')
+        .replace('{{name}}', myName)
+        .replace('{{text}}', complimentText.trim());
+      await addNotification(t('dashboard.newComplimentTitle'), body, role);
     }
     setComplimentText('');
     setIsWritingCompliment(false);
@@ -156,7 +218,7 @@ export default function DashboardPage({ role }) {
   };
 
   if (loading) {
-    return <div className={styles.page}><div className={styles.loading}>Se încarcă Acasă... 💕</div></div>;
+    return <div className={styles.page}><div className={styles.loading}>{t('dashboard.loading')} 💕</div></div>;
   }
 
   return (
@@ -164,8 +226,8 @@ export default function DashboardPage({ role }) {
       
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Acasă 💕</h1>
-          <p className={styles.subtitle}>Bine ai venit, {myName}!</p>
+          <h1 className={styles.title}>{t('nav.home')} 💕</h1>
+          <p className={styles.subtitle}>{t('dashboard.welcome')}, {myName}!</p>
         </div>
       </header>
 
@@ -174,63 +236,210 @@ export default function DashboardPage({ role }) {
         <div className={styles.onboardingPrompt} style={{margin: '0 var(--space-5) var(--space-4)'}}>
           <div className={styles.onboardingIcon}>👋</div>
           <div>
-            <h3 style={{fontSize: '1.1rem', margin: '0 0 5px 0'}}>Bine ai venit!</h3>
-            <p style={{fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0}}>Se pare că profilul tău nu este complet. Hai să adăugăm o poză!</p>
-            <button onClick={() => navigate('/profile')} className={styles.onboardingBtn}>Completează Profilul</button>
+            <h3 style={{fontSize: '1.1rem', margin: '0 0 5px 0'}}>{t('dashboard.welcome')}!</h3>
+            <p style={{fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0}}>{t('profile.onboardingWelcome')}</p>
+            <button onClick={() => navigate('/profile')} className={styles.onboardingBtn}>{t('profile.onboardingBtn')}</button>
           </div>
         </div>
       )}
 
-      {/* BENTO GRID LAYOUT */}
-      <div className={styles.bentoGrid}>
-        
-        {/* TILE 1: TIMER (Full Width) */}
-        <div className={`${styles.bentoTile} ${styles.tileHero}`}>
-          <LiveTimer />
-        </div>
+      {/* DASHBOARD TILES (DRAG & DROP) */}
+      <div style={{ margin: '0 var(--space-5) var(--space-4)' }}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={tileOrder} strategy={verticalListSortingStrategy}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              {tileOrder.map((id) => {
+                let content = null;
+                switch (id) {
+                  case 'timer':
+                    content = (
+                      <div className={`${styles.bentoTile} ${styles.tileHero}`}>
+                        <LiveTimer startDate={profile?.anniversaryDate || targetProfile?.anniversaryDate} />
+                      </div>
+                    );
+                    break;
+                  case 'compliment':
+                    content = (
+                      <div className={`${styles.bentoTile} ${styles.tileCompliment}`} onClick={() => setIsWritingCompliment(!isWritingCompliment)}>
+                        <div className={styles.tileHeader}>
+                          <span className={styles.tileIcon}>💌</span>
+                          <span className={styles.tileTitle}>Compliment</span>
+                        </div>
+                        {complimentPrimit ? (
+                          <>
+                            <p className={styles.complimentText}>"{complimentPrimit}"</p>
+                            <span className={styles.complimentAuthor}>{t('dashboard.from')} {partnerName}</span>
+                          </>
+                        ) : (
+                          <p className={styles.complimentText} style={{ opacity: 0.6 }}>
+                            Nu ai primit niciun compliment recent. 😢
+                          </p>
+                        )}
+                        <div className={styles.openCalendarBtn} style={{marginTop: '10px'}}>{isWritingCompliment ? t('dashboard.complimentCancel') : t('dashboard.complimentWrite')}</div>
+                      </div>
+                    );
+                    break;
+                  case 'calendar':
+                    content = (
+                      <div className={`${styles.bentoTile} ${styles.tileCalendar}`} onClick={() => navigate('/calendar')}>
+                        <div className={styles.tileHeader}>
+                          <span className={styles.tileIcon}>📅</span>
+                          <span className={styles.tileTitle}>{t('dashboard.upcoming')}</span>
+                        </div>
+                        {nextEvent ? (
+                          <div className={styles.nextEventPreview}>
+                            <h4 className={styles.nextEventName}>{nextEvent.name}</h4>
+                            <span className={styles.nextEventDays}>{calculateDaysLeft(nextEvent.nextDate)} {t('dashboard.daysLeft')}</span>
+                          </div>
+                        ) : (
+                          <p className={styles.noEventsText}>{t('dashboard.noEvents')}</p>
+                        )}
+                        <div className={styles.openCalendarBtn}>{t('dashboard.openCalendar')}</div>
+                      </div>
+                    );
+                    break;
+                  case 'shortcuts':
+                    content = (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <button 
+                          onClick={() => navigate('/games')}
+                          style={{ padding: '15px', background: 'var(--bg-card)', border: '2px solid var(--border-color)', borderRadius: '16px', fontWeight: 'bold', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', boxShadow: 'var(--shadow-sm)' }}
+                        >
+                          <span style={{ fontSize: '1.5rem' }}>💡</span>
+                          {t('dashboard.whatWeDo')}
+                        </button>
+                        <button 
+                          onClick={() => navigate('/truth-dare')}
+                          style={{ padding: '15px', background: 'var(--bg-card)', border: '2px solid var(--border-color)', borderRadius: '16px', fontWeight: 'bold', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', boxShadow: 'var(--shadow-sm)' }}
+                        >
+                          <span style={{ fontSize: '1.5rem' }}>🎭</span>
+                          {t('dashboard.truthDare')}
+                        </button>
+                      </div>
+                    );
+                    break;
+                  case 'canvas':
+                    content = <LiveCanvasWidget />;
+                    break;
+                  case 'barista':
+                    content = <VirtualBaristaButton role={role} />;
+                    break;
+                  case 'scratch':
+                    content = <ScratchCard compact={true} />;
+                    break;
+                  case 'buzzer':
+                    content = (
+                      <button 
+                        onClick={async () => {
+                          const buzzMsg = t('dashboard.buzzMsg').replace('{{name}}', myName);
+                          await addNotification(t('dashboard.buzzTitle'), buzzMsg, role);
+                          alert(t('dashboard.buzzSuccess'));
+                        }}
+                        className="animate-pulse"
+                        style={{ 
+                          width: '100%', padding: '16px', borderRadius: '16px', 
+                          background: role === 'his' 
+                            ? 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)' 
+                            : 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', 
+                          color: '#fff', fontWeight: '900', fontSize: '1.2rem', 
+                          border: 'none', boxShadow: 'var(--shadow-md)', cursor: 'pointer',
+                          textTransform: 'uppercase', letterSpacing: '1px'
+                        }}
+                      >
+                        {t('dashboard.buzzer')}
+                      </button>
+                    );
+                    break;
+                  case 'status':
+                    content = (
+                      <div style={{ background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>{t('dashboard.ourState')}</h3>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                            <span>{t('dashboard.yourStress')} {localStress}% 🤯</span>
+                          </label>
+                          <input 
+                            type="range" 
+                            min="0" max="100" 
+                            value={localStress} 
+                            onChange={(e) => setLocalStress(Number(e.target.value))}
+                            onMouseUp={() => updateProfile({ stressLevel: localStress })}
+                            onTouchEnd={() => updateProfile({ stressLevel: localStress })}
+                            style={{ width: '100%', accentColor: 'var(--color-purple)' }}
+                          />
+                        </div>
 
-        {/* TILE 2: COMPLIMENT (Half Width) */}
-        <div className={`${styles.bentoTile} ${styles.tileCompliment}`} onClick={() => setIsWritingCompliment(!isWritingCompliment)}>
-          <div className={styles.tileIcon}>{complimentPrimit ? '💌' : '✨'}</div>
-          <p className={styles.complimentText}>
-            "{complimentPrimit || complimentZilei}"
-          </p>
-          {complimentPrimit && <span className={styles.complimentAuthor}>De la {partnerName}</span>}
-          <div className={styles.openCalendarBtn} style={{marginTop: '10px'}}>{isWritingCompliment ? 'Anulează' : 'Scrie-i tu ceva ›'}</div>
-        </div>
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                            <span>{t('dashboard.yourAnger')} {localAnger}% 😡</span>
+                          </label>
+                          <input 
+                            type="range" 
+                            min="0" max="100" 
+                            value={localAnger} 
+                            onChange={(e) => setLocalAnger(Number(e.target.value))}
+                            onMouseUp={() => updateProfile({ angerLevel: localAnger })}
+                            onTouchEnd={() => updateProfile({ angerLevel: localAnger })}
+                            style={{ width: '100%', accentColor: '#e74c3c' }}
+                          />
+                        </div>
 
-        {/* TILE 3: CALENDAR PREVIEW (Half Width) */}
-        <div className={`${styles.bentoTile} ${styles.tileCalendar}`} onClick={() => navigate('/calendar')}>
-          <div className={styles.tileHeader}>
-            <span className={styles.tileIcon}>📅</span>
-            <span className={styles.tileTitle}>Urmează</span>
-          </div>
-          {nextEvent ? (
-            <div className={styles.nextEventPreview}>
-              <h4 className={styles.nextEventName}>{nextEvent.name}</h4>
-              <span className={styles.nextEventDays}>{calculateDaysLeft(nextEvent.nextDate)} zile</span>
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                            {targetProfile?.gender === 'F' ? t('dashboard.partnerStateLabel') : t('dashboard.partnerStateLabel')}, {partnerName}:
+                          </p>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                              <span>{t('dashboard.partnerStress')} 🤯</span>
+                              <span>{targetProfile?.stressLevel || 0}%</span>
+                            </div>
+                            <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                              <div style={{ width: `${targetProfile?.stressLevel || 0}%`, background: 'var(--color-purple)', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                            </div>
+                          </div>
+                          
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                              <span>{t('dashboard.anger')} 😡</span>
+                              <span>{targetProfile?.angerLevel || 0}%</span>
+                            </div>
+                            <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                              <div style={{ width: `${targetProfile?.angerLevel || 0}%`, background: '#e74c3c', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                    break;
+                  default:
+                    return null;
+                }
+
+                return (
+                  <SortableTile key={id} id={id}>
+                    {content}
+                  </SortableTile>
+                );
+              })}
             </div>
-          ) : (
-            <p className={styles.noEventsText}>Niciun eveniment programat.</p>
-          )}
-          <div className={styles.openCalendarBtn}>Deschide Calendarul ›</div>
-        </div>
-
+          </SortableContext>
+        </DndContext>
       </div>
       
       {/* CUSTOM COMPLIMENT INPUT */}
       {isWritingCompliment && (
-        <div className="animate-fade-in" style={{ margin: '0 var(--space-5) var(--space-4)', background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem' }}>Trimite-i un compliment:</h3>
+        <div className="animate-fade-in" style={{ margin: 'var(--space-4) var(--space-5)', background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem' }}>{t('dashboard.sendComplimentPrompt')}</h3>
           {complimentScrisDeMine && (
              <p style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px'}}>
-               Ultimul trimis: "{complimentScrisDeMine}"
+               {t('dashboard.lastSent')} "{complimentScrisDeMine}"
              </p>
           )}
           <textarea 
             value={complimentText}
             onChange={(e) => setComplimentText(e.target.value)}
-            placeholder={`Scrie ceva frumos pentru ${partnerName}...`}
+            placeholder={`${t('dashboard.writeNice')} ${partnerName}...`}
             style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: '#ffffff', color: '#000000', fontSize: '1rem' }}
           />
           <button 
@@ -238,94 +447,10 @@ export default function DashboardPage({ role }) {
             disabled={!complimentText.trim()}
             style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-color)', color: role === 'her' ? '#000000' : '#ffffff', fontWeight: 'bold', border: 'none', opacity: !complimentText.trim() ? 0.5 : 1 }}
           >
-            Trimite Complimentul 💌
+            {t('dashboard.complimentSend')}
           </button>
         </div>
       )}
-
-      {/* FULL WIDTH TILES */}
-      <div style={{ margin: '0 var(--space-5) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        <VirtualBaristaButton role={role} />
-        <ScratchCard compact={true} />
-        
-        {/* BUZZER */}
-        <button 
-          onClick={async () => {
-            const buzzMsg = `🐝 Bzzzz! ${myName} îți trimite un Buzz! Bună dimineața sau... trezește-te!`;
-            await addNotification('BUZZ! 🐝', buzzMsg, role);
-            alert('Buzz trimis cu succes!');
-          }}
-          className="animate-pulse"
-          style={{ 
-            width: '100%', padding: '16px', borderRadius: '16px', 
-            background: role === 'his' 
-              ? 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)' 
-              : 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', 
-            color: '#fff', fontWeight: '900', fontSize: '1.2rem', 
-            border: 'none', boxShadow: 'var(--shadow-md)', cursor: 'pointer',
-            textTransform: 'uppercase', letterSpacing: '1px'
-          }}
-        >
-          Buzzer Bună Dimineața 🐝
-        </button>
-
-        {/* STATUS SLIDERS */}
-        <div style={{ background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>Starea Noastră 📊</h3>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-              <span>Stresul tău: {localStress}% 🤯</span>
-            </label>
-            <input 
-              type="range" min="0" max="100" 
-              value={localStress}
-              onChange={(e) => setLocalStress(parseInt(e.target.value))}
-              onMouseUp={() => updateProfile({ stressLevel: localStress })}
-              onTouchEnd={() => updateProfile({ stressLevel: localStress })}
-              style={{ width: '100%', accentColor: '#A88EFF' }}
-            />
-            
-            <label style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-              <span>Nervii tăi: {localAnger}% 😡</span>
-            </label>
-            <input 
-              type="range" min="0" max="100" 
-              value={localAnger}
-              onChange={(e) => setLocalAnger(parseInt(e.target.value))}
-              onMouseUp={() => updateProfile({ angerLevel: localAnger })}
-              onTouchEnd={() => updateProfile({ angerLevel: localAnger })}
-              style={{ width: '100%', accentColor: '#FF8FAB' }}
-            />
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px' }}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-              Starea lui {partnerName}:
-            </p>
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-                <span>Stres 🤯</span>
-                <span>{targetProfile?.stressLevel || 0}%</span>
-              </div>
-              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
-                <div style={{ width: `${targetProfile?.stressLevel || 0}%`, background: '#A88EFF', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
-              </div>
-            </div>
-            
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-                <span>Nervi 😡</span>
-                <span>{targetProfile?.angerLevel || 0}%</span>
-              </div>
-              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
-                <div style={{ width: `${targetProfile?.angerLevel || 0}%`, background: '#FF8FAB', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 }

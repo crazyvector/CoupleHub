@@ -13,6 +13,7 @@ import {
   arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useGlobalAuth } from '../contexts/AuthContext';
 
 const HOME_ITEMS_COL = 'home_items';
 
@@ -34,11 +35,15 @@ const HOME_ITEMS_COL = 'home_items';
  */
 
 export function useHomeItems() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, HOME_ITEMS_COL), orderBy('createdAt', 'desc'));
+    if (!coupleId) return;
+    const q = query(collection(db, 'couples', coupleId, HOME_ITEMS_COL), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setItems(data);
@@ -48,10 +53,11 @@ export function useHomeItems() {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [coupleId]);
 
   const addItem = async (itemData) => {
-    await addDoc(collection(db, HOME_ITEMS_COL), {
+    if (!coupleId) return;
+    await addDoc(collection(db, 'couples', coupleId, HOME_ITEMS_COL), {
       createdAt: serverTimestamp(),
       likes: { his: null, her: null },
       comments: [],
@@ -60,27 +66,31 @@ export function useHomeItems() {
   };
 
   const deleteItem = async (id) => {
-    await deleteDoc(doc(db, HOME_ITEMS_COL, id));
+    if (!coupleId) return;
+    await deleteDoc(doc(db, 'couples', coupleId, HOME_ITEMS_COL, id));
   };
 
   const updateItem = async (id, data) => {
-    await updateDoc(doc(db, HOME_ITEMS_COL, id), data);
+    if (!coupleId) return;
+    await updateDoc(doc(db, 'couples', coupleId, HOME_ITEMS_COL, id), data);
   };
 
   const setItemLike = async (id, role, isLiked) => {
+    if (!coupleId) return;
     // isLiked can be true (aprob), false (resping), or null (pending)
-    await updateDoc(doc(db, HOME_ITEMS_COL, id), {
+    await updateDoc(doc(db, 'couples', coupleId, HOME_ITEMS_COL, id), {
       [`likes.${role}`]: isLiked
     });
   };
 
   const addComment = async (id, role, text) => {
+    if (!coupleId) return;
     const newComment = {
       sender: role,
       text,
       timestamp: Date.now()
     };
-    await updateDoc(doc(db, HOME_ITEMS_COL, id), {
+    await updateDoc(doc(db, 'couples', coupleId, HOME_ITEMS_COL, id), {
       comments: arrayUnion(newComment)
     });
   };

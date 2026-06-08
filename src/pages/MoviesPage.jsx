@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MoviesPage.module.css';
 import { searchMedia, getImageUrl, getMediaDetails, discoverMedia, MOVIE_GENRES, TV_GENRES } from '../utils/tmdb';
 import { saveMoviePreference, removeMoviePreference, useMoviePreferences, useMovieSearches, useWatchlistMovies } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function MoviesPage({ role }) {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function MoviesPage({ role }) {
   const { likedGenres, likedIds, dislikedIds } = useMoviePreferences(role);
   const watchlistMovies = useWatchlistMovies(role);
   const { searches, addSearch, removeSearch } = useMovieSearches(role);
+  const { t } = useLanguage();
   
   const [recommendedList, setRecommendedList] = useState([]);
   const [showSearchHistory, setShowSearchHistory] = useState(false);
@@ -121,12 +123,12 @@ export default function MoviesPage({ role }) {
             ⭐ {media.vote_average?.toFixed(1)}
           </div>
           {isLiked && (
-            <div className={`${styles.actionBadge} ${styles.likedBadge}`} title="Îți place">
+            <div className={`${styles.actionBadge} ${styles.likedBadge}`} title={t('movies.youLikeIt')}>
               ❤️
             </div>
           )}
           {!isLiked && isWatchlisted && (
-            <div className={`${styles.actionBadge} ${styles.watchlistBadge}`} title="În Lista Ta">
+            <div className={`${styles.actionBadge} ${styles.watchlistBadge}`} title={t('movies.inYourList')}>
               ✅
             </div>
           )}
@@ -144,13 +146,13 @@ export default function MoviesPage({ role }) {
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title} style={{fontSize: '1.6rem'}}>Recomandări</h1>
+        <h1 className={styles.title} style={{fontSize: '1.6rem'}}>{t('movies.recommendationsTitle')}</h1>
         <div style={{display: 'flex', gap: '8px'}}>
           <button 
             className={styles.coupleMatchBtn} 
             onClick={() => navigate('/movies/library')}
             style={{background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '8px 12px'}}
-            title="Librărie"
+            title={t('movies.library')}
           >
             📚
           </button>
@@ -158,10 +160,25 @@ export default function MoviesPage({ role }) {
             className={styles.coupleMatchBtn} 
             onClick={() => navigate('/movies/match')}
             style={{padding: '8px 12px'}}
-            title="Couple Match"
+            title={t('movies.coupleMatch')}
           >
-            💞 Match
+            💞 {t('movies.coupleMatch')}
           </button>
+        </div>
+      </div>
+
+      {/* Affiliate Banner */}
+      <div className={styles.affiliateBanner} onClick={() => window.open('https://www.cinemacity.ro', '_blank')} style={{
+        background: 'linear-gradient(45deg, #FF6B6B, #FF8E53)',
+        borderRadius: '12px', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between',
+        alignItems: 'center', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 4px 10px rgba(255, 107, 107, 0.3)'
+      }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '1.1rem' }}>🍿 {t('movies.affiliateTitle') || 'Vrei să ieșiți la un film?'}</h3>
+          <p style={{ margin: '5px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>{t('movies.affiliateDesc') || 'Rezervă bilete acum și bucurați-vă de o seară specială.'}</p>
+        </div>
+        <div style={{ background: 'white', color: '#FF6B6B', padding: '8px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+          {t('movies.affiliateBtn') || 'Cumpără Bilete'}
         </div>
       </div>
 
@@ -170,7 +187,7 @@ export default function MoviesPage({ role }) {
           <span>🔍</span>
           <input 
             type="text" 
-            placeholder="Caută un film sau serial..." 
+            placeholder={t('movies.searchPlaceholder')} 
             className={styles.searchInput}
             value={searchQuery}
             onChange={handleSearch}
@@ -202,28 +219,28 @@ export default function MoviesPage({ role }) {
 
       {searchQuery.length <= 2 && (
         <>
-          <h2 className={styles.sectionTitle}>Recomandate pentru tine ✨</h2>
+          <h2 className={styles.sectionTitle}>{t('movies.recommendedForYou')}</h2>
           {recommendedList.length > 0 ? (
             <div className={styles.horizontalScroll}>
               {recommendedList.slice(0, 10).map(renderMediaCard)}
               <div className={styles.showMoreCard} onClick={() => navigate('/movies/recommended')}>
-                <span>Vezi mai multe ➔</span>
+                <span>{t('movies.seeMore')}</span>
               </div>
             </div>
           ) : (
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 25, fontStyle: 'italic' }}>
-              Apreciază (❤️) câteva filme sau seriale pentru a primi recomandări personalizate!
+              {t('movies.likeSomeMovies')}
             </p>
           )}
 
-          <h2 className={styles.sectionTitle}>Populare Acum 🔥</h2>
+          <h2 className={styles.sectionTitle}>{t('movies.popularNow')}</h2>
           {loading && !mediaList.length ? (
-            <div className={styles.loading}>Se încarcă...</div>
+            <div className={styles.loading}>{t('movies.loading')}</div>
           ) : (
             <div className={styles.horizontalScroll}>
               {mediaList.slice(0, 10).map(renderMediaCard)}
               <div className={styles.showMoreCard} onClick={() => navigate('/movies/catalog')}>
-                <span>Exploarează Catalogul ➔</span>
+                <span>{t('movies.exploreCatalog')}</span>
               </div>
             </div>
           )}
@@ -234,7 +251,7 @@ export default function MoviesPage({ role }) {
         <>
           {mediaList.length > 0 && (
             <>
-              <h2 className={styles.sectionTitle}>Filme Găsite</h2>
+              <h2 className={styles.sectionTitle}>{t('movies.moviesFound')}</h2>
               <div className={styles.mediaGrid}>
                 {mediaList.map(renderMediaCard)}
               </div>
@@ -242,14 +259,14 @@ export default function MoviesPage({ role }) {
           )}
           {tvList.length > 0 && (
             <>
-              <h2 className={styles.sectionTitle}>Seriale Găsite</h2>
+              <h2 className={styles.sectionTitle}>{t('movies.tvFound')}</h2>
               <div className={styles.mediaGrid}>
                 {tvList.map(renderMediaCard)}
               </div>
             </>
           )}
           {mediaList.length === 0 && tvList.length === 0 && !loading && (
-             <div className={styles.loading}>Nu am găsit niciun rezultat.</div>
+             <div className={styles.loading}>{t('movies.noResults')}</div>
           )}
         </>
       )}
@@ -289,18 +306,18 @@ export default function MoviesPage({ role }) {
                 ))}
               </div>
 
-              <p className={styles.overview}>{mediaDetails.overview || "Nicio descriere disponibilă în limba română."}</p>
+              <p className={styles.overview}>{mediaDetails.overview || t('movies.noOverview')}</p>
 
               {mediaDetails.credits?.cast?.length > 0 && (
                 <>
-                  <h3 className={styles.sectionTitle} style={{ fontSize: '1rem' }}>Distribuție</h3>
+                  <h3 className={styles.sectionTitle} style={{ fontSize: '1rem' }}>{t('movies.cast')}</h3>
                   <div className={styles.castList}>
                     {mediaDetails.credits.cast.slice(0, 10).map(actor => (
                       <div key={actor.id} className={styles.actorCard}>
                         {actor.profile_path ? (
                           <img src={getImageUrl(actor.profile_path, 'w185')} alt={actor.name} className={styles.actorImage} />
                         ) : (
-                          <div className={styles.actorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}>Fără Poză</div>
+                          <div className={styles.actorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}>{t('movies.noPicture')}</div>
                         )}
                         <span className={styles.actorName}>{actor.name}</span>
                         <span className={styles.actorCharacter}>{actor.character}</span>
@@ -318,7 +335,7 @@ export default function MoviesPage({ role }) {
                     if(trailer) window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank');
                   }}
                 >
-                  ▶️ Urmărește Trailer
+                  {t('movies.watchTrailer')}
                 </button>
               )}
 
@@ -328,7 +345,7 @@ export default function MoviesPage({ role }) {
                   onClick={handleDislike}
                   disabled={dislikedIds.includes(selectedMedia.id)}
                   style={dislikedIds.includes(selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                  title="Nu e pentru mine"
+                  title={t('movies.notForMe')}
                 >
                   👎
                 </button>
@@ -337,18 +354,18 @@ export default function MoviesPage({ role }) {
                   onClick={handleWatchlist}
                   disabled={watchlistMovies.some(m => m.id === selectedMedia.id)}
                   style={watchlistMovies.some(m => m.id === selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
-                  title="Adaugă în Lista Mea"
+                  title={t('movies.addToMyList')}
                 >
-                  {watchlistMovies.some(m => m.id === selectedMedia.id) ? '✅ Salvat' : '❤️ Adaugă'}
+                  {watchlistMovies.some(m => m.id === selectedMedia.id) ? t('movies.saved') : t('movies.add')}
                 </button>
                 <button 
                   className={styles.likeBtn} 
                   onClick={handleLike}
                   disabled={likedIds.includes(selectedMedia.id)}
                   style={likedIds.includes(selectedMedia.id) ? { opacity: 0.5, cursor: 'not-allowed', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'} : {background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
-                  title="Îmi place"
+                  title={t('movies.likeBtn')}
                 >
-                  {likedIds.includes(selectedMedia.id) ? '✅ Ai dat Like' : '❤️ Îmi place'}
+                  {likedIds.includes(selectedMedia.id) ? t('movies.liked') : t('movies.likeBtn')}
                 </button>
               </div>
             </div>

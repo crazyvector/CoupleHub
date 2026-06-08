@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useWheelItems } from '../hooks/useDatabase';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './GamesPage.module.css'; // ← exact același CSS ca GamesPage
 
 // ============================================================
 // drawWheel — identic cu GamesPage, doar accent colors diferite
 // ============================================================
-const drawWheel = (canvas, rotation, items, centerEmoji = '🎭', defaultColor = '#A78BFA') => {
+const drawWheel = (canvas, rotation, items, centerEmoji = '🎭', defaultColor = '#A78BFA', t) => {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.width / dpr;
@@ -20,7 +21,7 @@ const drawWheel = (canvas, rotation, items, centerEmoji = '🎭', defaultColor =
     ctx.font = '20px Nunito';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ccc';
-    ctx.fillText('Nicio opțiune', cx, cy);
+    ctx.fillText(t('truthDare.noOptions'), cx, cy);
     return;
   }
 
@@ -48,13 +49,19 @@ const drawWheel = (canvas, rotation, items, centerEmoji = '🎭', defaultColor =
     ctx.rotate(midAngle);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#fff';
-    const rawFontSize = Math.floor(R / (ITEM_COUNT * 0.8));
-    const fontSize = Math.max(12, Math.min(24, rawFontSize));
+    
+    let fontSize = Math.max(10, Math.min(22, Math.floor((R * 2 * Math.PI) / ITEM_COUNT) - 4));
     ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 3;
-    const maxWidth = R - 30;
-    ctx.fillText(item.label, R - 15, 5, maxWidth);
+    let textWidth = ctx.measureText(item.label).width;
+    while (textWidth > R - 40 && fontSize > 8) {
+      fontSize -= 1;
+      ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
+      textWidth = ctx.measureText(item.label).width;
+    }
+
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(item.label, R - 15, fontSize / 3);
     ctx.restore();
   });
 
@@ -95,6 +102,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState('');
   const [newItemColor, setNewItemColor] = useState(defaultColor);
+  const { t } = useLanguage();
 
   const dpr = window.devicePixelRatio || 1;
   const SIZE = Math.min(window.innerWidth - 48, 340);
@@ -108,8 +116,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
     canvas.style.height = `${SIZE}px`;
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    drawWheel(canvas, rotationRef.current, items, centerEmoji, defaultColor);
-  }, [items, SIZE, dpr, centerEmoji, defaultColor]);
+    drawWheel(canvas, rotationRef.current, items, centerEmoji, defaultColor, t);
+  }, [items, SIZE, dpr, centerEmoji, defaultColor, t]);
 
   const spin = useCallback(() => {
     if (isSpinning || !items || items.length === 0) return;
@@ -131,7 +139,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
       const progress = Math.min(elapsed / duration, 1);
       const easedProgress = easeOut(progress);
       rotationRef.current = startRotation + totalRotation * easedProgress;
-      drawWheel(canvasRef.current, rotationRef.current, items, centerEmoji, defaultColor);
+      drawWheel(canvasRef.current, rotationRef.current, items, centerEmoji, defaultColor, t);
 
       if (progress < 1) {
         animRef.current = requestAnimationFrame(animate);
@@ -171,7 +179,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
         <canvas
           ref={canvasRef}
           className={`${styles.wheelCanvas} ${isSpinning ? styles.wheelSpinning : ''}`}
-          aria-label="Roata norocului"
+          aria-label={t('truthDare.wheelAriaLabel')}
         />
       </div>
 
@@ -179,19 +187,19 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
         className={`${styles.spinBtn} ${isSpinning ? styles.spinBtnSpinning : ''}`}
         onClick={spin}
         disabled={isSpinning || !items || items.length === 0}
-        aria-label="Învârte roata"
+        aria-label={t('truthDare.spin')}
       >
         {isSpinning ? (
-          <><span className={styles.spinBtnIcon}>⏳</span> Se învârte...</>
+          <><span className={styles.spinBtnIcon}>⏳</span> {t('truthDare.spinning')}</>
         ) : (
-          <><span className={styles.spinBtnIcon}>🎲</span> Învârte!</>
+          <><span className={styles.spinBtnIcon}>🎲</span> {t('truthDare.spin')}</>
         )}
       </button>
 
       {showResult && result && (
         <div className={`${styles.resultCard} animate-bounce-in`}>
           <div className={styles.resultEmoji}>🎉</div>
-          <p className={styles.resultLabel}>Provocarea ta este:</p>
+          <p className={styles.resultLabel}>{t('truthDare.yourChallengeIs')}</p>
           <div
             className={styles.resultItem}
             style={{ background: `${result.color}30`, borderColor: `${result.color}80` }}
@@ -202,7 +210,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
             className={styles.spinAgainBtn}
             onClick={() => { setShowResult(false); setTimeout(spin, 200); }}
           >
-            🔄 Încearcă din nou
+            {t('truthDare.tryAgain')}
           </button>
         </div>
       )}
@@ -211,7 +219,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
       {showAddModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
           <div className={`${styles.modalContent} animate-scale-in`} onClick={e => e.stopPropagation()} style={{ padding: '20px', borderRadius: '15px' }}>
-            <h3 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>Adaugă o întrebare</h3>
+            <h3 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>{t('truthDare.addQuestion')}</h3>
             <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <textarea
                 placeholder={placeholder}
@@ -224,7 +232,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
                 style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.9rem', resize: 'none' }}
               />
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Culoare fundal:</label>
+                <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('truthDare.bgColor')}</label>
                 <input
                   type="color"
                   value={newItemColor}
@@ -233,8 +241,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
                 />
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-muted)' }}>Anulează</button>
-                <button type="submit" style={{ flex: 1, padding: '10px', background: addColor, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Adaugă</button>
+                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-muted)' }}>{t('truthDare.cancel')}</button>
+                <button type="submit" style={{ flex: 1, padding: '10px', background: addColor, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>{t('truthDare.add')}</button>
               </div>
             </form>
           </div>
@@ -244,8 +252,8 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
       {/* Lista opțiuni */}
       <div className={styles.itemsList}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <p className={styles.itemsTitle} style={{ marginBottom: 0 }}>Întrebările disponibile:</p>
-          <button onClick={() => setShowAddModal(true)} style={{ background: 'none', border: 'none', color: addColor, fontWeight: 'bold', fontSize: '0.9rem' }}>+ Adaugă</button>
+          <p className={styles.itemsTitle} style={{ marginBottom: 0 }}>{t('truthDare.availableQuestions')}</p>
+          <button onClick={() => setShowAddModal(true)} style={{ background: 'none', border: 'none', color: addColor, fontWeight: 'bold', fontSize: '0.9rem' }}>{t('truthDare.addBtn')}</button>
         </div>
         <div className={styles.itemsGrid}>
           {items.map((item) => (
@@ -263,7 +271,7 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
               </button>
             </div>
           ))}
-          {items.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nicio opțiune. Adaugă câteva!</p>}
+          {items.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('truthDare.noOptionsAddSome')}</p>}
         </div>
       </div>
     </div>
@@ -271,39 +279,11 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
 }
 
 // ============================================================
-// Default items
-// ============================================================
-const DEFAULT_TRUTHS = [
-  { label: 'Care e cel mai mare secret al tău?', color: '#A78BFA' },
-  { label: 'Ce te sperie cel mai mult în viață?', color: '#8B5CF6' },
-  { label: 'Care e momentul de care îți e cel mai rușine?', color: '#7C3AED' },
-  { label: 'Dacă ai putea schimba ceva la tine, ce ar fi?', color: '#C4B5FD' },
-  { label: 'Care e cel mai mare vis al tău neîmplinit?', color: '#DDD6FE' },
-  { label: 'Ce calitate apreciezi cel mai mult la mine?', color: '#A78BFA' },
-  { label: 'Care e amintirea ta preferată cu noi?', color: '#8B5CF6' },
-  { label: 'Ce te-a atras prima dată la mine?', color: '#7C3AED' },
-  { label: 'Cel mai mare secret pe care nu l-ai spus nimănui?', color: '#C4B5FD' },
-  { label: 'Cum îți imaginezi viața noastră peste 10 ani?', color: '#A78BFA' },
-];
-
-const DEFAULT_DARES = [
-  { label: 'Mimează personajul preferat din filme!', color: '#FB923C' },
-  { label: 'Cântă 30s din melodia ta preferată!', color: '#F97316' },
-  { label: 'Fă 10 flotări acum!', color: '#EA580C' },
-  { label: 'Spune 3 lucruri pe care le admiri la mine!', color: '#FDBA74' },
-  { label: 'Dansează 1 minut fără muzică!', color: '#FED7AA' },
-  { label: 'Vorbește cu accent 2 minute!', color: '#F97316' },
-  { label: 'Fă o poză haioasă și trimite-mi-o!', color: '#FB923C' },
-  { label: 'Imită 3 emoji-uri diferite!', color: '#EA580C' },
-  { label: 'Spune cât mai multe cuvinte în 30 secunde!', color: '#FDBA74' },
-  { label: 'Fă o glumă (bună sau proastă)!', color: '#F97316' },
-];
-
-// ============================================================
 // TruthDarePage
 // ============================================================
 export default function TruthDarePage() {
   const [activeTab, setActiveTab] = useState('truth');
+  const { t } = useLanguage();
 
   const truthHook = useWheelItems('truth');
   const dareHook = useWheelItems('dare');
@@ -311,21 +291,29 @@ export default function TruthDarePage() {
   // Auto-seed la primul load
   useEffect(() => {
     if (!truthHook.loading && truthHook.items.length === 0) {
-      DEFAULT_TRUTHS.forEach(item => truthHook.addItem(item));
+      const defaultTruths = t('truthDare.defaults.truths', { returnObjects: true });
+      const colors = ['#A78BFA', '#8B5CF6', '#7C3AED', '#C4B5FD', '#DDD6FE'];
+      defaultTruths.forEach((label, idx) => {
+        truthHook.addItem({ label, color: colors[idx % colors.length] });
+      });
     }
-  }, [truthHook.loading]);
+  }, [truthHook.loading, t]);
 
   useEffect(() => {
     if (!dareHook.loading && dareHook.items.length === 0) {
-      DEFAULT_DARES.forEach(item => dareHook.addItem(item));
+      const defaultDares = t('truthDare.defaults.dares', { returnObjects: true });
+      const colors = ['#FB923C', '#F97316', '#EA580C', '#FDBA74', '#FED7AA'];
+      defaultDares.forEach((label, idx) => {
+        dareHook.addItem({ label, color: colors[idx % colors.length] });
+      });
     }
-  }, [dareHook.loading]);
+  }, [dareHook.loading, t]);
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Truth or Dare 🎭</h1>
-        <p className={styles.subtitle}>Cine cutează... câștigă 😈</p>
+        <h1 className={styles.title}>{t('truthDare.title')}</h1>
+        <p className={styles.subtitle}>{t('truthDare.subtitle')}</p>
       </header>
 
       <div style={{ display: 'flex', gap: '10px', padding: '0 20px', marginBottom: '20px' }}>
@@ -338,7 +326,7 @@ export default function TruthDarePage() {
             border: activeTab === 'truth' ? 'none' : '1px solid var(--border-color)',
           }}
         >
-          🤍 Truth
+          {t('truthDare.truthTab')}
         </button>
         <button
           onClick={() => setActiveTab('dare')}
@@ -349,37 +337,37 @@ export default function TruthDarePage() {
             border: activeTab === 'dare' ? 'none' : '1px solid var(--border-color)',
           }}
         >
-          🔥 Dare
+          {t('truthDare.dareTab')}
         </button>
       </div>
 
       <main className={styles.content}>
         <div className="animate-fade-in-up">
           {activeTab === 'truth' ? (
-            truthHook.loading ? <p style={{ textAlign: 'center' }}>Încărcare...</p> :
+            truthHook.loading ? <p style={{ textAlign: 'center' }}>{t('truthDare.loading')}</p> :
             <SpinWheel
               items={truthHook.items}
-              title="Truth 🤍"
-              subtitle="Roata alege întrebarea. Nu poți minți!"
+              title={t('truthDare.truthTitle')}
+              subtitle={t('truthDare.truthSubtitle')}
               onAddItem={truthHook.addItem}
               onDeleteItem={truthHook.deleteItem}
               centerEmoji="🤍"
               defaultColor="#8B5CF6"
               addColor="#7C3AED"
-              placeholder="Ex: Care e cel mai mare secret al tău?"
+              placeholder={t('truthDare.truthPlaceholder')}
             />
           ) : (
-            dareHook.loading ? <p style={{ textAlign: 'center' }}>Încărcare...</p> :
+            dareHook.loading ? <p style={{ textAlign: 'center' }}>{t('truthDare.loading')}</p> :
             <SpinWheel
               items={dareHook.items}
-              title="Dare 🔥"
-              subtitle="Roata alege provocarea. Curaj!"
+              title={t('truthDare.dareTitle')}
+              subtitle={t('truthDare.dareSubtitle')}
               onAddItem={dareHook.addItem}
               onDeleteItem={dareHook.deleteItem}
               centerEmoji="🔥"
               defaultColor="#F97316"
               addColor="#EA580C"
-              placeholder="Ex: Fă 10 genuflexiuni acum!"
+              placeholder={t('truthDare.darePlaceholder')}
             />
           )}
         </div>
