@@ -377,23 +377,20 @@ export default function HomePlannerPage({ role }) {
           </p>
         </div>
 
-        {/* Affiliate Banner for Home Deco */}
         {!isPro && (
           <div style={{
-            background: 'linear-gradient(135deg, #003399 0%, #002266 100%)',
-            borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 51, 153, 0.3)'
-          }} onClick={() => window.open('https://jysk.ro', '_blank')}>
+            background: 'linear-gradient(135deg, #005eb8 0%, #004282 100%)',
+            borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 94, 184, 0.3)'
+          }} onClick={() => window.open('https://l.profitshare.ro/l/15962579', '_blank')}>
               <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{ fontFamily: 'Arial, sans-serif', fontWeight: '900', fontSize: '1.2rem', letterSpacing: '1px' }}>JYSK</span>
-                <svg viewBox="0 0 24 24" height="20" fill="white">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-                </svg>
+                <span style={{ fontFamily: 'Arial, sans-serif', fontWeight: '900', fontSize: '1.2rem', letterSpacing: '1px', color: '#ff2929' }}>e</span>
+                <span style={{ fontFamily: 'Arial, sans-serif', fontWeight: '900', fontSize: '1.2rem', letterSpacing: '1px', color: 'white', marginLeft: '-8px' }}>MAG</span>
               </div>
-              <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Inspiră-te din Jysk'}</h3>
+              <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Mobilă și decorațiuni'}</h3>
               <p style={{ margin: '5px 0 0', fontSize: '0.8rem', opacity: 0.9 }}>{t('homePlanner.affiliateDesc') || 'Găsește decorațiunile perfecte pentru cuibul vostru.'}</p>
             </div>
-            <div style={{ background: 'white', color: '#003399', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+            <div style={{ background: 'white', color: '#005eb8', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
               {t('homePlanner.affiliateBtn') || 'Vezi oferte'}
             </div>
           </div>

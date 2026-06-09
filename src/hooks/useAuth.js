@@ -138,14 +138,15 @@ export function useAuth() {
 
     try {
       // SECRET KEYS FOR MIGRATION (Andrei & Ana)
-      if (partnerKey === 'A9K3B7X2P5' || partnerKey === 'F4M8R1W6Y9') {
-        const assignedRole = partnerKey === 'F4M8R1W6Y9' ? 'her' : 'his';
-        const hardcodedGender = partnerKey === 'F4M8R1W6Y9' ? 'F' : 'M';
+      if (partnerKey === 'A9K3B7X2P5' || partnerKey === 'F4M8R1W6Y9' || partnerKey === 'ANDREI2024' || partnerKey === 'ANA2024') {
+        const assignedRole = (partnerKey === 'F4M8R1W6Y9' || partnerKey === 'ANDREI2024') ? 'her' : 'his';
+        const hardcodedGender = (partnerKey === 'F4M8R1W6Y9' || partnerKey === 'ANDREI2024') ? 'F' : 'M';
+        const adminCoupleId = 'v86tFk9x7jS5z2K2lO7R';
         await setDoc(doc(db, 'users', user.uid), {
           name: myName,
           gender: hardcodedGender,
           pairKey: 'MIGRATED',
-          coupleId: 'default_couple_hub',
+          coupleId: adminCoupleId,
           role: assignedRole,
           status: 'paired',
           isPro: true, // Acorda PRO gratuit
@@ -153,7 +154,7 @@ export function useAuth() {
         }, { merge: true });
         
         // Asigurăm că profilul din couples are și el genul și isPro (dacă vrem să-l folosim acolo)
-        await setDoc(doc(db, 'couples', 'default_couple_hub', 'profiles', assignedRole), {
+        await setDoc(doc(db, 'couples', adminCoupleId, 'profiles', assignedRole), {
           name: myName,
           gender: hardcodedGender,
         }, { merge: true });
@@ -176,15 +177,28 @@ export function useAuth() {
       if (partnerData.coupleId) {
         return { success: false, error: 'Această cheie este deja asociată unui cuplu activ!' };
       }
+
+      // Fetch my own data to check for memory restoration
+      let myData = userData;
+      if (!myData) {
+        const mySnap = await getDocs(query(usersRef, where('__name__', '==', user.uid)));
+        if (!mySnap.empty) myData = mySnap.docs[0].data();
+      }
       
-      const newCoupleId = partnerDoc.id + '_' + user.uid;
+      let newCoupleId;
+      // Memory Restoration: Check if both users share the exact same oldCoupleId
+      if (myData?.oldCoupleId && partnerData.oldCoupleId && myData.oldCoupleId === partnerData.oldCoupleId) {
+        newCoupleId = myData.oldCoupleId;
+      } else {
+        newCoupleId = partnerDoc.id + '_' + user.uid;
+      }
       
       // Salvăm datele noastre (caz nou) - fără să rescriem pairKey
       await setDoc(doc(db, 'users', user.uid), {
         name: myName,
         gender: myGender,
         coupleId: newCoupleId,
-        role: 'her', // Partenerul secundar
+        role: 'her', // Partenerul secundar devine automat 'her' la împerechere generică
         status: 'paired',
         createdAt: Date.now()
       }, { merge: true });
@@ -192,7 +206,8 @@ export function useAuth() {
       // Actualizăm partenerul
       await updateDoc(doc(db, 'users', partnerDoc.id), {
         coupleId: newCoupleId,
-        status: 'paired'
+        status: 'paired',
+        role: 'his' // Primul partener devine 'his' automat
       });
       
       // Cream profilele initiale in colectia couples
@@ -200,13 +215,13 @@ export function useAuth() {
         name: myName,
         gender: myGender,
         isConfigured: false
-      });
+      }, { merge: true });
       
       await setDoc(doc(db, 'couples', newCoupleId, 'profiles', 'his'), {
         name: partnerData.name,
-        gender: partnerData.gender || 'F', // Fallback in caz ca partenerul nu avea setat
+        gender: partnerData.gender || 'M', // Fallback in caz ca partenerul nu avea setat
         isConfigured: false
-      });
+      }, { merge: true });
       
       return { success: true };
     } catch(err) {
@@ -225,32 +240,8 @@ export function useAuth() {
     try {
       const coupleId = userData.coupleId;
       
-      // Delete subcollections for this couple
-      const subcollections = [
-        'home_planner_items', 'finance_transactions', 'finance_goals', 
-        'events', 'notifications', 'memories', 'couponsList', 'used_coupons',
-        'custom_coupons', 'daily_quotes', 'drawings', 'messages',
-        'movie_preferences', 'todos', 'study_tasks', 'profiles', 'finances', 'scratch_cards'
-      ];
-      
-      // Fast parallel deletion
-      await Promise.all(subcollections.map(async (subcol) => {
-        try {
-          const subcolRef = collection(db, 'couples', coupleId, subcol);
-          const subcolSnap = await getDocs(subcolRef);
-          const deletePromises = subcolSnap.docs.map(docSnap => deleteDoc(docSnap.ref));
-          await Promise.all(deletePromises);
-        } catch (e) {
-          console.warn(`Could not delete subcollection ${subcol}:`, e);
-        }
-      }));
-      
-      // Delete the couple document itself
-      try {
-        await deleteDoc(doc(db, 'couples', coupleId));
-      } catch (e) {
-        console.warn("Could not delete couple document:", e);
-      }
+      // IMPORTANT: We NO LONGER delete any data or subcollections.
+      // This allows for "memory restoration" if they reconcile.
 
       // Reset both users
       try {
@@ -263,6 +254,7 @@ export function useAuth() {
           return updateDoc(docSnap.ref, {
             status: 'new',
             coupleId: null,
+            oldCoupleId: coupleId, // Save for potential reconciliation!
             pairKey: newKey,
             role: null
           });
@@ -275,7 +267,6 @@ export function useAuth() {
       await logout();
     } catch(err) {
       console.error("Error breaking up", err);
-      // We still want to log them out even if some deletes fail
       await logout();
     }
   };
