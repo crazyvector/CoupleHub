@@ -388,23 +388,12 @@ export function useNotifications(currentRole) {
       setNotifications(mine);
 
       // Verificăm dacă sunt documente adăugate recent (doar după load-ul inițial)
+      // (Afișarea notificărilor se face acum exclusiv prin push-notifications plugin configurat în capacitor.config.json pentru a evita dublarea lor)
       if (!isInitialLoad.current && Capacitor.isNativePlatform()) {
         snapshot.docChanges().forEach(change => {
           if (change.type === 'added') {
-            const data = change.doc.data();
-            const target = data.targetRole || (data.sender === 'his' ? 'her' : 'his');
-            if (target === currentRole && data.sender !== currentRole) {
-              // Trimite notificare locală doar dacă suntem în foreground
-              LocalNotifications.schedule({
-                notifications: [
-                  {
-                    title: data.title || 'Notification',
-                    body: data.body || '',
-                    id: Math.floor(Math.random() * 2000000000)
-                  }
-                ]
-              });
-            }
+            // Nu mai programăm notificare locală aici, se va ocupa Capacitor Push Notifications
+            // să afișeze notificarea trimisă de Firebase Cloud Function!
           }
         });
       }
