@@ -512,8 +512,8 @@ const translations = {
       calendar: 'Calendar'
     },
     profile: {
-      breakUpBtn: 'Despărțire (Păstrează Amintirile)',
-      breakUpConfirm: 'Ești sigur că vrei să te desparți? Nu îți face griji, datele vor fi păstrate în siguranță dacă decideți să vă împăcați!',
+      breakUpBtn: 'Despărțire',
+      breakUpConfirm: 'Ești sigur că vrei să pui capăt? 🥺💔',
       title: 'Profilul Tău',
       subtitle: 'Personalizează-ți colțul tău din aplicație',
       completed: 'completat',
@@ -564,6 +564,12 @@ const translations = {
       proThankYou: 'Mulțumim! Acum ești PRO! 👑',
       onboardingWelcome: 'Se pare că profilul tău nu este complet. Hai să adăugăm o poză!',
       onboardingBtn: 'Completează Profilul'
+    },
+    reward: {
+      title: 'Ai atins limita!',
+      desc: 'Pentru a continua, treci la Premium sau vizionează o scurtă reclamă pentru a primi o recompensă acum.',
+      watchAd: 'Vezi o reclamă 🎁',
+      goPro: 'Treci la Premium (Nelimitat)'
     },
     notifications: {
       eventTomorrowTitle: '🗓️ Mâine: {title}',
@@ -1265,8 +1271,8 @@ const translations = {
       calendar: 'Calendar'
     },
     profile: {
-      breakUpBtn: 'Break Up (Keep Memories)',
-      breakUpConfirm: "Are you sure you want to break up? Do not worry, your data will be safely kept in case you reconcile!",
+      breakUpBtn: 'Break Up',
+      breakUpConfirm: "Are you sure you want to end it? 🥺💔",
       title: 'Your Profile',
       subtitle: 'Customize your corner of the app',
       completed: 'completed',
@@ -1317,6 +1323,12 @@ const translations = {
       proThankYou: 'Thank you! You are now PRO! 👑',
       onboardingWelcome: 'It looks like your profile is not complete. Let\'s add a photo!',
       onboardingBtn: 'Complete Profile'
+    },
+    reward: {
+      title: 'Limit reached!',
+      desc: 'To continue, upgrade to Premium or watch a short ad to get a reward now.',
+      watchAd: 'Watch Ad 🎁',
+      goPro: 'Get Premium (Unlimited)'
     },
     notifications: {
       eventTomorrowTitle: '🗓️ Tomorrow: {title}',

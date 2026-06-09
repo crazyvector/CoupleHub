@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
+import { useState, useEffect, useRef } from 'react';
+import { AdMob, BannerAdSize, BannerAdPosition, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { useGlobalAuth } from '../contexts/AuthContext';
@@ -12,6 +12,7 @@ export function useMonetization() {
   const [isLifetimePro, setIsLifetimePro] = useState(false);
   const [offerings, setOfferings] = useState(null);
   const [isAdMobReady, setIsAdMobReady] = useState(false);
+  const rewardCallbackRef = useRef(null);
 
   // Verifică statusul Lifetime Promo Code din Firebase
   useEffect(() => {
@@ -93,6 +94,66 @@ export function useMonetization() {
     initAdMob();
   }, []);
 
+  // Listeners pentru Rewarded Ads
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const setupListeners = async () => {
+      await AdMob.addListener(RewardAdPluginEvents.Rewarded, (rewardItem) => {
+        if (rewardCallbackRef.current) {
+          rewardCallbackRef.current(rewardItem);
+          rewardCallbackRef.current = null;
+        }
+      });
+
+      await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+        prepareRewardedAd(); // re-încarcă următoarea reclamă
+      });
+    };
+    setupListeners();
+    
+    return () => {
+      AdMob.removeAllListeners();
+    };
+  }, []);
+
+  const prepareRewardedAd = async () => {
+    if (!isAdMobReady || isRCPro || isLifetimePro || !Capacitor.isNativePlatform()) return;
+    try {
+      await AdMob.prepareRewardVideoAd({
+        adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded ID
+        isTesting: false
+      });
+    } catch (e) {
+      console.error("Failed to prepare rewarded ad", e);
+    }
+  };
+
+  // Preîncarcă reclama când AdMob este gata
+  useEffect(() => {
+    if (isAdMobReady) {
+      prepareRewardedAd();
+    }
+  }, [isAdMobReady]);
+
+  const showRewardedAd = async (callback) => {
+    const isPro = isRCPro || isLifetimePro;
+    if (isPro || !Capacitor.isNativePlatform()) {
+      // Dacă e Pro sau pe Web, dăm recompensa instant
+      if (callback) callback();
+      return;
+    }
+    
+    try {
+      rewardCallbackRef.current = callback;
+      await AdMob.showRewardVideoAd();
+    } catch (e) {
+      console.error("Show Rewarded Ad error:", e);
+      alert("Nu am putut afișa reclama. Încearcă din nou mai târziu.");
+      rewardCallbackRef.current = null;
+    }
+  };
+
   const purchasePackage = async (rcPackage) => {
     try {
       const { customerInfo } = await Purchases.purchasePackage({ aPackage: rcPackage });
@@ -165,6 +226,8 @@ export function useMonetization() {
     showBanner,
     hideBanner,
     redeemPromoCode,
-    isLifetimePro
+    isLifetimePro,
+    prepareRewardedAd,
+    showRewardedAd
   };
 }

@@ -463,7 +463,7 @@ export default function ProfilePage({ role }) {
           onClick={() => setShowBreakupConfirm(true)}
           style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', marginTop: '10px', opacity: loading ? 0.5 : 1 }}
         >
-          {loading ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire (Păstrează Amintirile)')}
+          {loading ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire')}
         </button>
       </div>
 
@@ -472,7 +472,7 @@ export default function ProfilePage({ role }) {
         <div className={styles.modalOverlay} onClick={() => setShowBreakupConfirm(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
             <h3 style={{ color: '#e74c3c', marginTop: 0 }}>{t('profile.breakUpBtn') || 'Despărțire'}</h3>
-            <p>{t('profile.breakUpConfirm') || 'Ești sigur că vrei să te desparți? Nu îți face griji, datele vor fi păstrate în siguranță dacă decideți să vă împăcați!'}</p>
+            <p>{t('profile.breakUpConfirm') || 'Ești sigur că vrei să te desparți? 🥺💔'}</p>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
               <button 
                 onClick={() => setShowBreakupConfirm(false)}
