@@ -1,11 +1,11 @@
 import { registerPlugin, Capacitor } from '@capacitor/core';
 
-const WidgetUpdater = registerPlugin('WidgetUpdater');
+const WidgetSync = registerPlugin('WidgetSync');
 
 export const updateWidgets = async () => {
   if (Capacitor.isNativePlatform()) {
     try {
-      await WidgetUpdater.update({ widgetType: 'all' });
+      await WidgetSync.syncWidgets();
     } catch (e) {
       console.error('Failed to update widgets', e);
     }

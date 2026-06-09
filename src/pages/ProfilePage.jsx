@@ -33,6 +33,7 @@ export default function ProfilePage({ role }) {
   
   const [passwordData, setPasswordData] = useState({ oldPass: '', newPass: '', confirmPass: '' });
   const [isChangingPass, setIsChangingPass] = useState(false);
+  const [showBreakupConfirm, setShowBreakupConfirm] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -459,19 +460,46 @@ export default function ProfilePage({ role }) {
         <button 
           className={styles.logoutBtn} 
           disabled={loading}
-          onClick={async () => {
-            if(window.confirm(t('profile.breakUpConfirm') || 'Ești sigur că vrei să te desparți? Toate datele vor fi șterse definitiv!')) {
-              setLoading(true);
-              await breakUp();
-              setLoading(false);
-            }
-          }}
+          onClick={() => setShowBreakupConfirm(true)}
           style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', marginTop: '10px', opacity: loading ? 0.5 : 1 }}
         >
-          {loading ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire (Șterge Datele)')}
+          {loading ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire (Păstrează Amintirile)')}
         </button>
       </div>
 
+      {/* Breakup Confirmation Modal */}
+      {showBreakupConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setShowBreakupConfirm(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <h3 style={{ color: '#e74c3c', marginTop: 0 }}>{t('profile.breakUpBtn') || 'Despărțire'}</h3>
+            <p>{t('profile.breakUpConfirm') || 'Ești sigur că vrei să te desparți? Nu îți face griji, datele vor fi păstrate în siguranță dacă decideți să vă împăcați!'}</p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button 
+                onClick={() => setShowBreakupConfirm(false)}
+                style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: '#f0f0f0', color: '#333', fontWeight: 'bold' }}
+              >
+                Anulare
+              </button>
+              <button 
+                onClick={async () => {
+                  setShowBreakupConfirm(false);
+                  try {
+                    setLoading(true);
+                    await breakUp();
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: '#e74c3c', color: 'white', fontWeight: 'bold' }}
+              >
+                Confirmă
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Version Checker */}
       <div style={{ textAlign: 'center', marginTop: '20px', paddingBottom: '30px', color: 'var(--text-muted)' }}>
         <p style={{ fontSize: '0.8rem', margin: 0 }}>{t('profile.appVersion')}: <strong>{localVersion}</strong></p>

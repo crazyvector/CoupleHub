@@ -512,8 +512,8 @@ const translations = {
       calendar: 'Calendar'
     },
     profile: {
-      breakUpBtn: 'Despărțire (Șterge Datele)',
-      breakUpConfirm: 'Ești sigur că vrei să te desparți? Toate datele vor fi șterse definitiv!',
+      breakUpBtn: 'Despărțire (Păstrează Amintirile)',
+      breakUpConfirm: 'Ești sigur că vrei să te desparți? Nu îți face griji, datele vor fi păstrate în siguranță dacă decideți să vă împăcați!',
       title: 'Profilul Tău',
       subtitle: 'Personalizează-ți colțul tău din aplicație',
       completed: 'completat',
@@ -1265,8 +1265,8 @@ const translations = {
       calendar: 'Calendar'
     },
     profile: {
-      breakUpBtn: 'Break Up (Delete Data)',
-      breakUpConfirm: 'Are you sure you want to break up? All data will be permanently deleted!',
+      breakUpBtn: 'Break Up (Keep Memories)',
+      breakUpConfirm: "Are you sure you want to break up? Do not worry, your data will be safely kept in case you reconcile!",
       title: 'Your Profile',
       subtitle: 'Customize your corner of the app',
       completed: 'completed',
