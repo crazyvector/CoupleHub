@@ -233,30 +233,43 @@ export function useAuth() {
         'movie_preferences', 'todos', 'study_tasks', 'profiles', 'finances', 'scratch_cards'
       ];
       
-      for (const subcol of subcollections) {
-        const subcolRef = collection(db, 'couples', coupleId, subcol);
-        const subcolSnap = await getDocs(subcolRef);
-        for (const docSnap of subcolSnap.docs) {
-          await deleteDoc(docSnap.ref);
+      // Fast parallel deletion
+      await Promise.all(subcollections.map(async (subcol) => {
+        try {
+          const subcolRef = collection(db, 'couples', coupleId, subcol);
+          const subcolSnap = await getDocs(subcolRef);
+          const deletePromises = subcolSnap.docs.map(docSnap => deleteDoc(docSnap.ref));
+          await Promise.all(deletePromises);
+        } catch (e) {
+          console.warn(`Could not delete subcollection ${subcol}:`, e);
         }
-      }
+      }));
       
       // Delete the couple document itself
-      await deleteDoc(doc(db, 'couples', coupleId));
+      try {
+        await deleteDoc(doc(db, 'couples', coupleId));
+      } catch (e) {
+        console.warn("Could not delete couple document:", e);
+      }
 
       // Reset both users
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('coupleId', '==', coupleId));
-      const snap = await getDocs(q);
-      
-      for (const docSnap of snap.docs) {
-        const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
-        await updateDoc(docSnap.ref, {
-          status: 'new',
-          coupleId: null,
-          pairKey: newKey,
-          role: null
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('coupleId', '==', coupleId));
+        const snap = await getDocs(q);
+        
+        const resetPromises = snap.docs.map(docSnap => {
+          const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
+          return updateDoc(docSnap.ref, {
+            status: 'new',
+            coupleId: null,
+            pairKey: newKey,
+            role: null
+          });
         });
+        await Promise.all(resetPromises);
+      } catch (e) {
+        console.warn("Could not reset users:", e);
       }
       
       await logout();

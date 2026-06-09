@@ -458,14 +458,17 @@ export default function ProfilePage({ role }) {
         </button>
         <button 
           className={styles.logoutBtn} 
-          onClick={() => {
+          disabled={loading}
+          onClick={async () => {
             if(window.confirm(t('profile.breakUpConfirm') || 'Ești sigur că vrei să te desparți? Toate datele vor fi șterse definitiv!')) {
-              breakUp();
+              setLoading(true);
+              await breakUp();
+              setLoading(false);
             }
           }}
-          style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', marginTop: '10px' }}
+          style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', marginTop: '10px', opacity: loading ? 0.5 : 1 }}
         >
-          {t('profile.breakUpBtn') || 'Despărțire (Șterge Datele)'}
+          {loading ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire (Șterge Datele)')}
         </button>
       </div>
 
