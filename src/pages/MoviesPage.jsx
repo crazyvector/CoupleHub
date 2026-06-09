@@ -5,9 +5,12 @@ import { searchMedia, getImageUrl, getMediaDetails, discoverMedia, MOVIE_GENRES,
 import { saveMoviePreference, removeMoviePreference, useMoviePreferences, useMovieSearches, useWatchlistMovies } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMonetization } from '../hooks/useMonetization';
+import { useGlobalAuth } from '../contexts/AuthContext';
 
 export default function MoviesPage({ role }) {
   const navigate = useNavigate();
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
   const [searchQuery, setSearchQuery] = useState('');
   const [mediaList, setMediaList] = useState([]);
   const [tvList, setTvList] = useState([]);
@@ -81,24 +84,24 @@ export default function MoviesPage({ role }) {
     if (!selectedMedia) return;
     const isWatchlisted = watchlistMovies.some(m => m.id === selectedMedia.id);
     if (isWatchlisted) {
-      await removeMoviePreference(role, selectedMedia.id);
+      await removeMoviePreference(role, selectedMedia.id, coupleId, 'watchlist');
     } else {
       const genresToSave = mediaDetails?.genres ? mediaDetails.genres : [];
-      await saveMoviePreference(role, { ...selectedMedia, genres: genresToSave }, 'watchlist');
+      await saveMoviePreference(role, { ...selectedMedia, genres: genresToSave }, 'watchlist', coupleId);
     }
   };
 
   const handleLike = async () => {
     if (!selectedMedia) return;
     const genresToSave = mediaDetails?.genres ? mediaDetails.genres : [];
-    await saveMoviePreference(role, { ...selectedMedia, genres: genresToSave }, 'like');
+    await saveMoviePreference(role, { ...selectedMedia, genres: genresToSave }, 'like', coupleId);
     closeDetails();
   };
 
   const handleDislike = async () => {
     if (!selectedMedia) return;
     const genresToSave = mediaDetails?.genres ? mediaDetails.genres : [];
-    await saveMoviePreference(role, { ...selectedMedia, genres: genresToSave }, 'dislike');
+    await saveMoviePreference(role, { ...selectedMedia, genres: genresToSave }, 'dislike', coupleId);
     closeDetails();
   };
 
@@ -116,6 +119,7 @@ export default function MoviesPage({ role }) {
   const renderMediaCard = (media) => {
     const isLiked = likedIds.includes(media.id);
     const isWatchlisted = watchlistMovies.some(m => m.id === media.id);
+    const isDisliked = dislikedIds.includes(media.id);
 
     return (
       <div key={media.id} className={styles.mediaCard} onClick={() => openDetails(media)}>
@@ -125,13 +129,18 @@ export default function MoviesPage({ role }) {
             ⭐ {media.vote_average?.toFixed(1)}
           </div>
           {isLiked && (
-            <div className={`${styles.actionBadge} ${styles.likedBadge}`} title={t('movies.youLikeIt')}>
+            <div className={`${styles.actionBadge} ${styles.likedBadge}`} style={{ left: '8px' }} title={t('movies.youLikeIt')}>
               ❤️
             </div>
           )}
-          {!isLiked && isWatchlisted && (
-            <div className={`${styles.actionBadge} ${styles.watchlistBadge}`} title={t('movies.inYourList')}>
-              ✅
+          {isWatchlisted && (
+            <div className={`${styles.actionBadge} ${styles.watchlistBadge}`} style={{ left: isLiked ? '38px' : '8px' }} title={t('movies.inYourList')}>
+              📌
+            </div>
+          )}
+          {isDisliked && (
+            <div className={`${styles.actionBadge} ${styles.dislikeBadge}`} style={{ left: isLiked && isWatchlisted ? '68px' : (isLiked || isWatchlisted) ? '38px' : '8px' }} title={t('movies.notForMe')}>
+              👎
             </div>
           )}
         </div>
@@ -171,21 +180,23 @@ export default function MoviesPage({ role }) {
 
       {/* Affiliate Banner */}
       {!isPro && (
-        <div className={styles.affiliateBanner} onClick={() => window.open('https://www.cinemacity.ro', '_blank')} style={{
-          background: 'linear-gradient(45deg, #FF6B6B, #FF8E53)',
-          borderRadius: '12px', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 4px 10px rgba(255, 107, 107, 0.3)'
-        }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>🍿 {t('movies.affiliateTitle') || 'Vrei să ieșiți la un film?'}</h3>
-            <p style={{ margin: '5px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>{t('movies.affiliateDesc') || 'Rezervă bilete acum și bucurați-vă de o seară specială.'}</p>
+        <div className={styles.affiliateBanner} onClick={() => window.open('https://www.primevideo.com/', '_blank')} style={{
+          background: 'linear-gradient(135deg, #00A8E1, #008296)',
+            borderRadius: '12px', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 4px 10px rgba(0, 168, 225, 0.3)'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'Arial, sans-serif', fontWeight: '900', fontSize: '1.2rem', letterSpacing: '-0.5px' }}>prime video</span>
+              </div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>🎬 {t('movies.affiliateTitle') || 'Amazon Prime Video'}</h3>
+              <p style={{ margin: '5px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>{t('movies.affiliateDesc') || 'Locul unde găsești filme excelente!'}</p>
+            </div>
+            <div style={{ background: 'white', color: '#00A8E1', padding: '8px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+              {t('movies.affiliateBtn') || 'Încearcă gratuit'}
+            </div>
           </div>
-          <div style={{ background: 'white', color: '#FF6B6B', padding: '8px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-            {t('movies.affiliateBtn') || 'Cumpără Bilete'}
-          </div>
-        </div>
       )}
-
       <div className={styles.searchContainer}>
         <div className={styles.searchBar}>
           <span>🔍</span>

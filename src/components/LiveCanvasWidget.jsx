@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useGlobalAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useDrawings, useMemories } from '../hooks/useDatabase';
+import { useDrawings, useMemories, useNotifications } from '../hooks/useDatabase';
 import styles from './LiveCanvasWidget.module.css';
 
 export default function LiveCanvasWidget() {
@@ -9,6 +9,7 @@ export default function LiveCanvasWidget() {
   const { role } = useGlobalAuth();
   const { drawings, sendDrawing, deleteDrawing } = useDrawings();
   const { addMemory } = useMemories();
+  const { addNotification } = useNotifications();
 
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -47,6 +48,7 @@ export default function LiveCanvasWidget() {
     const dataUrl = canvasRef.current.toDataURL('image/png');
     const targetRole = role === 'her' ? 'his' : 'her';
     await sendDrawing(dataUrl, role, targetRole);
+    await addNotification(t('dashboard.drawSomething') || 'Desen nou!', 'Ai primit un desen nou pe ecranul principal!', role);
     clearCanvas();
     setIsSending(false);
     alert("Desen trimis cu succes! ✈️");
@@ -86,10 +88,11 @@ export default function LiveCanvasWidget() {
   const handleSaveToMemories = async () => {
     if (!pendingDrawing) return;
     await addMemory({
-      title: 'Un desen drăguț 🎨',
-      description: 'Primit pe Dashboard!',
-      imageUrl: pendingDrawing.image,
-      category: 'love'
+      title: t('memories.newPhoto') || 'Poză nouă',
+      description: 'Desen drăguț primit pe Dashboard! 🎨',
+      imagePath: pendingDrawing.image,
+      category: 'love',
+      date: new Date().toISOString()
     });
     await deleteDrawing(pendingDrawing.id);
     alert("Desenul a fost salvat în Amintiri! ❤️");

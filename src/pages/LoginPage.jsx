@@ -46,6 +46,7 @@ export default function LoginPage({ useAuthHook }) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [gender, setGender] = useState('F');
+  const [anniversaryDate, setAnniversaryDate] = useState('');
   
   const [partnerKey, setPartnerKey] = useState('');
   const [error, setError] = useState('');
@@ -65,9 +66,13 @@ export default function LoginPage({ useAuthHook }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!email || !password || !name) return;
+    if (!anniversaryDate) {
+      setError(lang === 'en' ? 'Please select your anniversary date!' : 'Te rugăm să introduci data aniversării voastre!');
+      return;
+    }
     setLoading(true);
     setError('');
-    const res = await registerWithEmail(email, password, name, gender);
+    const res = await registerWithEmail(email, password, name, gender, anniversaryDate);
     if (!res.success) setError(res.error);
     setLoading(false);
   };
@@ -210,6 +215,18 @@ export default function LoginPage({ useAuthHook }) {
                   className={styles.passwordInput}
                   style={{ width: '100%', padding: '15px', borderRadius: '12px', border: `2px solid ${gender === 'M' ? '#6C5CE7' : '#FFB5C8'}`, fontSize: '1rem', outline: 'none', backgroundColor: gender === 'M' ? '#F0F0FF' : '#FFF5F7', color: '#3D2C2C' }}
                 />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '5px' }}>
+                  <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '5px', fontWeight: 'bold' }}>
+                    {lang === 'en' ? 'Anniversary Date' : 'Data Aniversării'}
+                  </label>
+                  <input
+                    type="date"
+                    value={anniversaryDate}
+                    onChange={(e) => setAnniversaryDate(e.target.value)}
+                    className={styles.passwordInput}
+                    style={{ width: '100%', padding: '15px', borderRadius: '12px', border: `2px solid ${gender === 'M' ? '#6C5CE7' : '#FFB5C8'}`, fontSize: '1rem', outline: 'none', backgroundColor: gender === 'M' ? '#F0F0FF' : '#FFF5F7', color: '#3D2C2C' }}
+                  />
+                </div>
                 <button 
                   type="submit" 
                   disabled={loading}

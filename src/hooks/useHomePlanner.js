@@ -15,7 +15,7 @@ import {
 import { db } from '../firebase';
 import { useGlobalAuth } from '../contexts/AuthContext';
 
-const HOME_ITEMS_COL = 'home_items';
+const HOME_ITEMS_COL = 'nest_items';
 
 /**
  * Schema for an item:

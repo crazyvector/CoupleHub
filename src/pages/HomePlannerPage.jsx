@@ -54,7 +54,7 @@ export default function HomePlannerPage({ role }) {
   // Filters inside a room
   const [activeTag, setActiveTag] = useState('all');
 
-  const { t } = useLanguage();
+  const { t, language: lang } = useLanguage();
   const ROOMS = getRooms(t);
 
   const previousItemsRef = useRef([]);
@@ -174,18 +174,43 @@ export default function HomePlannerPage({ role }) {
     setSwipeLoading(false);
   };
 
+  const getNextMonthName = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    return d.toLocaleString(lang === 'en' ? 'en-US' : 'ro-RO', { month: 'long' });
+  };
+
+  const checkSwipeLimit = () => {
+    if (isPro) return true;
+    
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const swipeKey = `homePlanner_swipes_${currentMonth}_${role}`;
+    const swipes = parseInt(localStorage.getItem(swipeKey) || '0', 10);
+    
+    if (swipes >= 15) {
+      const monthName = getNextMonthName();
+      alert(t('homePlanner.swipeLimit') || `Ai atins limita de 15 swipe-uri gratuite pe luna aceasta. Se va reseta pe 1 ${monthName}. Treci la Premium pentru swipe-uri nelimitate!`);
+      return false;
+    }
+    
+    localStorage.setItem(swipeKey, (swipes + 1).toString());
+    return true;
+  };
+
   const handleSwipeLeft = (item) => {
+    if (!checkSwipeLimit()) return;
     setCards(prev => prev.filter(c => c.id !== item.id));
   };
 
   const handleSwipeRight = async (item) => {
+    if (!checkSwipeLimit()) return;
     const existingMatch = items.find(i => i.unsplashId === item.id);
 
     if (existingMatch) {
       await handleSetItemLike(existingMatch.id, role, true);
     } else {
-      if (!isPro && items.length >= 5) {
-        alert("Ai atins limita de 5 idei gratuite! Treci la Premium pentru stocare nelimitată.");
+      if (!isPro && items.filter(i => i.addedBy === role).length >= 100) {
+        alert("Ai atins limita maxima de idei salvate gratuite! Treci la Premium pentru stocare nelimitată.");
         return;
       }
       const roomAssigned = swipeCategory ? swipeCategory.roomId : 'living';
@@ -355,14 +380,20 @@ export default function HomePlannerPage({ role }) {
         {/* Affiliate Banner for Home Deco */}
         {!isPro && (
           <div style={{
-            background: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)',
-            borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 242, 254, 0.3)'
-          }} onClick={() => window.open('https://www.ikea.com/ro/ro/', '_blank')}>
-             <div>
-              <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Căutați mobilă nouă?'}</h3>
-              <p style={{ margin: '5px 0 0', fontSize: '0.8rem', opacity: 0.9 }}>{t('homePlanner.affiliateDesc') || 'Descoperiți ofertele IKEA pentru un cuib perfect.'}</p>
+            background: 'linear-gradient(135deg, #003399 0%, #002266 100%)',
+            borderRadius: '12px', padding: '15px', color: 'white', cursor: 'pointer', marginBottom: '20px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0, 51, 153, 0.3)'
+          }} onClick={() => window.open('https://jysk.ro', '_blank')}>
+              <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'Arial, sans-serif', fontWeight: '900', fontSize: '1.2rem', letterSpacing: '1px' }}>JYSK</span>
+                <svg viewBox="0 0 24 24" height="20" fill="white">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+                </svg>
+              </div>
+              <h3 style={{ margin: 0, fontSize: '1rem' }}>🛋️ {t('homePlanner.affiliateTitle') || 'Inspiră-te din Jysk'}</h3>
+              <p style={{ margin: '5px 0 0', fontSize: '0.8rem', opacity: 0.9 }}>{t('homePlanner.affiliateDesc') || 'Găsește decorațiunile perfecte pentru cuibul vostru.'}</p>
             </div>
-            <div style={{ background: 'white', color: '#00f2fe', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+            <div style={{ background: 'white', color: '#003399', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
               {t('homePlanner.affiliateBtn') || 'Vezi oferte'}
             </div>
           </div>

@@ -37,7 +37,7 @@ public class CalendarWidget extends AppWidgetProvider {
 
                 // Simple check if date is in the future
                 // JS sends yyyy-mm-dd
-                eventText.append("📅 ").append(dateStr).append(" - ").append(event.getString("title")).append("\n");
+                eventText.append("📅 ").append(dateStr).append(" - ").append(event.getString("name")).append("\n");
                 count++;
                 if (count >= 4) break;
             }

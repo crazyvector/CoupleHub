@@ -125,7 +125,7 @@ export function useStudyLobby(role) {
     };
 
     updatePresence(true);
-    const interval = setInterval(() => updatePresence(true), 30000);
+    const interval = setInterval(() => updatePresence(true), 10000);
 
     // On unmount, set offline
     return () => {

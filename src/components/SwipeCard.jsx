@@ -33,9 +33,11 @@ export default function SwipeCard({ item, onSwipeRight, onSwipeLeft, onClick }) 
     if (position.x > threshold) {
       // Swiped Right
       if (onSwipeRight) onSwipeRight(item);
+      setPosition({ x: 0, y: 0 });
     } else if (position.x < -threshold) {
       // Swiped Left
       if (onSwipeLeft) onSwipeLeft(item);
+      setPosition({ x: 0, y: 0 });
     } else {
       // Reset position if threshold not met
       setPosition({ x: 0, y: 0 });

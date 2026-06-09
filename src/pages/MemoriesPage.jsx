@@ -8,7 +8,7 @@ import { Directory, Filesystem } from '@capacitor/filesystem';
 import L from 'leaflet';
 import styles from './MemoriesPage.module.css';
 import 'leaflet/dist/leaflet.css';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ScrapbookExport } from '../components/ScrapbookExport';
 
@@ -292,7 +292,7 @@ function AddMemoryForm({ onSave, onCancel, onUploadFile, initialCoords, mode = '
         {file && <span className={styles.fileName}>{file.name}</span>}
         
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px', width: '100%' }}>
-          <button type="button" onClick={onCancel} className={styles.cancelBtn} style={{ flex: 1, padding: '10px', background: '#eee', border: 'none', borderRadius: '8px' }}>{t('memories.cancel')}</button>
+          <button type="button" onClick={onCancel} className={styles.cancelBtn} style={{ flex: 1, padding: '10px', background: 'var(--bg-card-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer' }}>{t('memories.cancel')}</button>
           <button type="submit" disabled={isSaving || (mode === 'photo' && !file && !initialData?.imagePath)} className={styles.saveBtn} style={{ flex: 1, padding: '10px', background: 'var(--color-rose)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
             {isSaving ? t('memories.saving') : (initialData ? t('memories.save') : t('memories.add'))}
           </button>
@@ -433,10 +433,10 @@ export default function MemoriesPage({ role }) {
               data: base64Data,
               directory: Directory.Documents
             });
-            alert(`✅ Salvare reușită / Saved successfully!\n📂 Documente / Documents -> ${fileName}`);
+            alert(`${t('memories.pdfSuccess')}${fileName}`);
           } catch (e) {
             console.error("Filesystem save error:", e);
-            alert('Eroare la salvare / Save error: ' + e.message);
+            alert(`${t('memories.pdfSaveError')}${e.message}`);
           }
         } else {
           pdf.save('CoupleHub_Memories.pdf');
@@ -520,7 +520,7 @@ export default function MemoriesPage({ role }) {
             data: base64Data,
             directory: Directory.Documents
           });
-          alert(`✅ Salvare reușită / Saved successfully!\n📂 Documente / Documents -> ${fileName}`);
+          alert(`${t('memories.pdfSuccess')}${fileName}`);
         } else {
           pdf.save('CoupleHub_Mock_Memories.pdf');
         }
@@ -594,10 +594,10 @@ export default function MemoriesPage({ role }) {
       <header className={styles.header}>
         <h1 className={styles.title}>{t('memories.ourMemories')}</h1>
         <p className={styles.subtitle}>{t('memories.specialPlaces')}</p>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
           <button 
             className={`${styles.saveBtn} animate-pulse`} 
-            style={{ flex: 1, padding: '15px', fontSize: '1rem', background: 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-purple) 100%)', boxShadow: 'var(--shadow-md)', wordBreak: 'break-word', whiteSpace: 'normal' }}
+            style={{ width: '100%', padding: '15px', fontSize: '1rem', background: 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-purple) 100%)', boxShadow: 'var(--shadow-md)' }}
             onClick={handleExportPDF} 
             disabled={isExporting}
           >
@@ -606,7 +606,7 @@ export default function MemoriesPage({ role }) {
           
           <button 
             className={styles.saveBtn} 
-            style={{ flex: 1, padding: '15px', fontSize: '1rem', background: 'var(--surface-color)', color: 'var(--text-color)', border: '2px solid var(--color-rose)', boxShadow: 'var(--shadow-md)', wordBreak: 'break-word', whiteSpace: 'normal' }}
+            style={{ width: '100%', padding: '15px', fontSize: '1rem', background: 'var(--surface-color)', color: 'var(--text-color)', border: '2px solid var(--color-rose)', boxShadow: 'var(--shadow-md)' }}
             onClick={handleMockExportPDF} 
             disabled={isExporting}
           >

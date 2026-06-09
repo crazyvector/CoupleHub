@@ -393,21 +393,21 @@ function PrivateDiary({ role }) {
         <div className={styles.diaryHeaderLeft}>
           <span className={`animate-float`} style={{ fontSize: '1.8rem' }}>📔</span>
           <div>
-            <h2 className={styles.diaryTitle}>Jurnalul Meu Privat</h2>
+            <h2 className={styles.diaryTitle}>{t('mood.privateDiary') || 'Jurnalul Meu Privat'}</h2>
             <p className={styles.diarySubtitle}>
-              🔒 Criptat • Nimeni altcineva nu poate citi
+              {t('mood.encrypted') || '🔒 Criptat • Nimeni altcineva nu poate citi'}
             </p>
           </div>
         </div>
         <div className={styles.diaryStats}>
           <span className={styles.diaryStat}>{entries.length}</span>
-          <span className={styles.diaryStatLabel}>intrări</span>
+          <span className={styles.diaryStatLabel}>{t('mood.entries') || 'intrări'}</span>
         </div>
       </div>
 
       <div className={styles.securityBadge}>
         <span>🛡️</span>
-        <span>AES-256 · Salvat sigur în cloud · El vede doar "🔒 ···"</span>
+        <span>AES-256 · {t('mood.savedSafe') || 'Salvat sigur în cloud'}</span>
       </div>
 
       {/* Editor intrare nouă */}

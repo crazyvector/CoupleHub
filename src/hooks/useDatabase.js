@@ -724,14 +724,19 @@ export function useCustomCoupons() {
       snapshot.docs.forEach(docSnap => {
         const item = { id: docSnap.id, ...docSnap.data() };
         
-        // Verifica daca a fost creat intr-o zi anterioara
-        let createdDate = item.createdAt ? new Date(item.createdAt).toDateString() : null;
+        // Resetam cuponul zilnic daca a fost folosit in zilele anterioare
+        let usedDate = item.usedAt ? new Date(item.usedAt).toDateString() : null;
         const today = new Date().toDateString();
         
-        if (createdDate && createdDate !== today) {
-          // Sterge cuponul daca e din alta zi
-          deleteDoc(doc(db, 'couples', coupleId, CUSTOM_COUPONS_COL, docSnap.id));
-          return; // Nu il adauga in starea locala
+        if (item.isUsed && usedDate && usedDate !== today) {
+          updateDoc(doc(db, 'couples', coupleId, CUSTOM_COUPONS_COL, docSnap.id), {
+            isUsed: false,
+            usedAt: null,
+            note: null
+          });
+          item.isUsed = false;
+          item.usedAt = null;
+          item.note = null;
         }
         
         data.push(item);
@@ -1010,18 +1015,26 @@ export function useChat(role) {
 
   // 2. Ascultare Typing Status
   useEffect(() => {
+    let lastPartnerTimestamp = 0;
     const dRef = doc(db, 'couples', coupleId, SYSTEM_COL, 'typing_status');
     const unsubscribe = onSnapshot(dRef, (dSnap) => {
       if (dSnap.exists()) {
         const data = dSnap.data();
         const partnerRole = role === 'his' ? 'her' : 'his';
-        const partnerTimestamp = data[partnerRole] || 0;
-        // Consideram typing activ doar daca a tastat in ultimele 3 secunde
-        setPartnerTyping(Date.now() - partnerTimestamp < 3000);
+        lastPartnerTimestamp = data[partnerRole] || 0;
+        setPartnerTyping(Date.now() - lastPartnerTimestamp < 3000);
       }
     });
-    return () => unsubscribe();
-  }, [role]);
+
+    const interval = setInterval(() => {
+      setPartnerTyping(Date.now() - lastPartnerTimestamp < 3000);
+    }, 1000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [role, coupleId]);
 
   // Trimite mesaj
   const sendMessage = async (text) => {
@@ -1105,7 +1118,7 @@ export function useAppVersion() {
   // Ruleaza apoi: npm run build && npx cap sync
   // Pune in google drive noul .apk
   // Pune versiunea curenta in system.app_version in firebase
-  const localVersion = "1.1.2";
+  const localVersion = "1.0.0";
 
   useEffect(() => {
     const dRef = doc(db, 'system', 'app_version');

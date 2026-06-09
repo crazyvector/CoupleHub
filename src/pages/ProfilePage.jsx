@@ -11,7 +11,7 @@ import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function ProfilePage({ role }) {
-  const { logout, gender, userData, changeUserPassword } = useGlobalAuth();
+  const { logout, breakUp, gender, userData, changeUserPassword } = useGlobalAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
   const { latestVersion, downloadUrl, localVersion } = useAppVersion();
   const { isPro, offerings, purchasePackage, redeemPromoCode, isLifetimePro } = useMonetization();
@@ -348,7 +348,7 @@ export default function ProfilePage({ role }) {
         
         {userData?.pairKey && (
           <div style={{ background: 'var(--surface-color)', padding: '15px', borderRadius: '12px', border: '1px dashed var(--color-rose)', textAlign: 'center', marginBottom: '15px' }}>
-            <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('onboarding.yourKey')}</p>
+            <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('login.yourKey')}</p>
             <h2 style={{ margin: 0, letterSpacing: '4px', color: 'var(--color-rose)' }}>{userData.pairKey}</h2>
           </div>
         )}
@@ -419,11 +419,11 @@ export default function ProfilePage({ role }) {
               )}
               
               <div style={{ marginTop: '20px', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '15px' }}>
-                <p style={{ fontSize: '0.8rem', textAlign: 'center', marginBottom: '8px', color: 'var(--text-muted)' }}>Ai un cod promoțional?</p>
+                <p style={{ fontSize: '0.8rem', textAlign: 'center', marginBottom: '8px', color: 'var(--text-muted)' }}>{t('profile.havePromo') || 'Ai un cod promoțional?'}</p>
                 <form onSubmit={handleRedeemCode} style={{ display: 'flex', gap: '10px' }}>
                   <input 
                     type="text" 
-                    placeholder="Cod" 
+                    placeholder={t('profile.codePlaceholder') || 'CODE'} 
                     value={promoCode}
                     onChange={e => setPromoCode(e.target.value)}
                     className={styles.input}
@@ -434,7 +434,7 @@ export default function ProfilePage({ role }) {
                     disabled={isRedeeming}
                     style={{ background: 'var(--color-rose)', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', fontWeight: 'bold' }}
                   >
-                    {isRedeeming ? '...' : 'Aplică'}
+                    {isRedeeming ? '...' : (t('profile.apply') || 'Aplică')}
                   </button>
                 </form>
               </div>
@@ -444,9 +444,7 @@ export default function ProfilePage({ role }) {
       </div>
 
       <div className={styles.logoutSection}>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px', textAlign: 'center', padding: '0 20px' }}>
-          {t('profile.logoutDesc')}
-        </p>
+        {/* Removed logout description as requested */}
         <button 
           className={styles.logoutBtn} 
           onClick={() => {
@@ -457,6 +455,17 @@ export default function ProfilePage({ role }) {
           style={{ background: '#e74c3c', color: 'white', fontWeight: 'bold' }}
         >
           {t('profile.logoutBtn')}
+        </button>
+        <button 
+          className={styles.logoutBtn} 
+          onClick={() => {
+            if(window.confirm(t('profile.breakUpConfirm') || 'Ești sigur că vrei să te desparți? Toate datele vor fi șterse definitiv!')) {
+              breakUp();
+            }
+          }}
+          style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', marginTop: '10px' }}
+        >
+          {t('profile.breakUpBtn') || 'Despărțire (Șterge Datele)'}
         </button>
       </div>
 

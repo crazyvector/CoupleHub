@@ -137,10 +137,10 @@ export default function StudyLobbyPage({ role }) {
   const partnerName = partnerProfile?.name || (role === 'his' ? 'Ana' : 'Andrei');
   const myName = myProfile?.name || (role === 'his' ? 'Andrei' : 'Ana');
 
-  // Check partner online (within 60s)
+  // Check partner online (within 25s)
   const partnerPresence = presence[partnerRole];
   const partnerOnline = partnerPresence?.online &&
-    (Date.now() - (partnerPresence?.lastSeen || 0)) < 60000;
+    (Date.now() - (partnerPresence?.lastSeen || 0)) < 25000;
 
   const myPresence = presence[role];
 
@@ -198,7 +198,7 @@ export default function StudyLobbyPage({ role }) {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${role === 'her' ? styles.themeHer : ''}`}>
       {/* Ambient Background */}
       <div className={styles.ambientBg}>
         <div className={styles.star} style={{ top: '10%', left: '15%', animationDelay: '0s' }}></div>
@@ -475,7 +475,7 @@ export default function StudyLobbyPage({ role }) {
           {/* My Tasks */}
           <div className={styles.taskColumn}>
             <div className={styles.taskColumnHeader}>
-              <h3>{role === 'his' ? '🧔‍♂️' : '👩‍🦰'} {t('studyLobby.myTasks')}</h3>
+              <h3>{myProfile?.gender === 'F' ? '👩‍🦰' : '🧔‍♂️'} {t('studyLobby.myTasks')}</h3>
               <button className={styles.addTaskBtn} onClick={() => setShowAddTask(!showAddTask)}>+</button>
             </div>
 
@@ -528,7 +528,7 @@ export default function StudyLobbyPage({ role }) {
           {/* Partner Tasks */}
           <div className={styles.taskColumn}>
             <div className={styles.taskColumnHeader}>
-              <h3>{partnerRole === 'his' ? '🧔‍♂️' : '👩‍🦰'} {partnerName}</h3>
+              <h3>{partnerProfile?.gender === 'F' ? '👩‍🦰' : '🧔‍♂️'} {partnerName}</h3>
             </div>
 
             {partnerTasks.length === 0 && (

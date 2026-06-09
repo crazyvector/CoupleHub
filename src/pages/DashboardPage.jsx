@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEvents, useProfiles, useSystemState, useNotifications } from '../hooks/useDatabase';
+import { useEvents, useProfiles, useSystemState, useNotifications, useMoods } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -9,6 +9,7 @@ import { CSS } from '@dnd-kit/utilities';
 import ScratchCard from '../components/ScratchCard';
 import VirtualBaristaButton from '../components/VirtualBaristaButton';
 import LiveCanvasWidget from '../components/LiveCanvasWidget';
+import OnboardingTour from '../components/OnboardingTour';
 import styles from './DashboardPage.module.css';
 
 // Componentă pentru Live Timer
@@ -141,16 +142,36 @@ export default function DashboardPage({ role }) {
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
 
+  const [showTour, setShowTour] = useState(false);
+
+  useEffect(() => {
+    if (profile && profile.hasSeenTour !== true) {
+      setShowTour(true);
+    }
+  }, [profile]);
+
+  const handleTourComplete = async () => {
+    setShowTour(false);
+    await updateProfile({ hasSeenTour: true });
+  };
+
   const navigate = useNavigate();
 
   const isProfileIncomplete = profile && !profile.isConfigured;
 
   const { systemState, setCustomCompliment } = useSystemState();
   const { addNotification } = useNotifications();
+
+  const { moods: targetMoods } = useMoods(targetRole);
+  const { moods: myMoods } = useMoods(role);
+  
+  const latestTargetMood = targetMoods?.[0];
+  const latestMyMood = myMoods?.[0];
+
   const [isWritingCompliment, setIsWritingCompliment] = useState(false);
   const [complimentText, setComplimentText] = useState('');
 
-  const DEFAULT_ORDER = ['timer', 'compliment', 'calendar', 'shortcuts', 'canvas', 'barista', 'scratch', 'buzzer', 'status'];
+  const DEFAULT_ORDER = ['timer', 'compliment', 'mood', 'calendar', 'shortcuts', 'canvas', 'barista', 'scratch', 'buzzer', 'status'];
   const [tileOrder, setTileOrder] = useState(DEFAULT_ORDER);
 
   useEffect(() => {
@@ -263,6 +284,8 @@ export default function DashboardPage({ role }) {
   return (
     <div className={styles.page}>
       
+      {showTour && <OnboardingTour onComplete={handleTourComplete} />}
+
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>{t('nav.home')} 💕</h1>
@@ -299,22 +322,89 @@ export default function DashboardPage({ role }) {
                     break;
                   case 'compliment':
                     content = (
-                      <div className={`${styles.bentoTile} ${styles.tileCompliment}`} onClick={() => setIsWritingCompliment(!isWritingCompliment)}>
-                        <div className={styles.tileHeader}>
-                          <span className={styles.tileIcon}>💌</span>
-                          <span className={styles.tileTitle}>Compliment</span>
-                        </div>
-                        {complimentPrimit ? (
-                          <>
-                            <p className={styles.complimentText}>"{complimentPrimit}"</p>
-                            <span className={styles.complimentAuthor}>{t('dashboard.from')} {partnerName}</span>
-                          </>
-                        ) : (
-                          <p className={styles.complimentText} style={{ opacity: 0.6 }}>
-                            Nu ai primit niciun compliment recent. 😢
-                          </p>
-                        )}
-                        <div className={styles.openCalendarBtn} style={{marginTop: '10px'}}>{isWritingCompliment ? t('dashboard.complimentCancel') : t('dashboard.complimentWrite')}</div>
+                      <div className={`${styles.bentoTile} ${styles.tileCompliment}`} style={{ padding: 0 }}>
+                        <SwipeableWidget>
+                          <div style={{ padding: 'var(--space-3)' }}>
+                            <div className={styles.tileHeader}>
+                              <span className={styles.tileIcon}>💌</span>
+                              <span className={styles.tileTitle}>{t('dashboard.complimentTitle') || 'Compliment'}</span>
+                            </div>
+                            {complimentPrimit ? (
+                              <>
+                                <p className={styles.complimentText}>"{complimentPrimit}"</p>
+                                <span className={styles.complimentAuthor}>{t('dashboard.from')} {partnerName}</span>
+                              </>
+                            ) : (
+                              <div className={styles.noComplimentState}>
+                                {t('dashboard.noCompliments') || 'Nu ai primit niciun compliment recent. 😢'}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div style={{ padding: 'var(--space-3)' }}>
+                            <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem' }}>{t('dashboard.sendComplimentPrompt')}</h3>
+                            {complimentScrisDeMine && (
+                               <p style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px'}}>
+                                 {t('dashboard.lastSent')} "{complimentScrisDeMine}"
+                               </p>
+                            )}
+                            <textarea 
+                              value={complimentText}
+                              onChange={(e) => setComplimentText(e.target.value)}
+                              placeholder={`${t('dashboard.writeNice')} ${partnerName}...`}
+                              style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: '#ffffff', color: '#000000', fontSize: '1rem' }}
+                            />
+                            <button 
+                              onClick={handleSendCompliment}
+                              disabled={!complimentText.trim()}
+                              style={{ width: '100%', background: 'var(--color-rose-dark)', border: 'none', padding: '12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold', color: '#ffffff', cursor: 'pointer', opacity: !complimentText.trim() ? 0.5 : 1, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                            >
+                              {t('dashboard.complimentSend')}
+                            </button>
+                          </div>
+                        </SwipeableWidget>
+                      </div>
+                    );
+                    break;
+                  case 'mood':
+                    content = (
+                      <div className={`${styles.bentoTile}`} style={{ background: 'var(--bg-card)', padding: 0 }}>
+                        <SwipeableWidget>
+                          <div style={{ padding: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: 'var(--color-rose-dark)' }}>{t('dashboard.howPartnerFeels') ? t('dashboard.howPartnerFeels').replace('{{name}}', partnerName) : `Cum se simte ${partnerName}`}:</h3>
+                            {latestTargetMood ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <span style={{ fontSize: '3rem' }}>{latestTargetMood.emoji}</span>
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{latestTargetMood.label}</div>
+                                  {latestTargetMood.note && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '5px' }}>"{latestTargetMood.note}"</div>}
+                                </div>
+                              </div>
+                            ) : (
+                              <p style={{ color: 'var(--text-muted)' }}>{t('dashboard.noPartnerMood') ? t('dashboard.noPartnerMood').replace('{{name}}', partnerName) : `${partnerName} nu a adăugat nicio stare recentă.`}</p>
+                            )}
+                          </div>
+                          <div style={{ padding: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: 'var(--color-rose)' }}>{t('dashboard.yourMood') || 'Starea Ta'}:</h3>
+                            {latestMyMood ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <span style={{ fontSize: '3rem' }}>{latestMyMood.emoji}</span>
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{latestMyMood.label}</div>
+                                  {latestMyMood.note && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '5px' }}>"{latestMyMood.note}"</div>}
+                                </div>
+                              </div>
+                            ) : (
+                              <p style={{ color: 'var(--text-muted)' }}>{t('dashboard.noMyMood') || 'Nu ai adăugat nicio stare recentă.'}</p>
+                            )}
+                            <button 
+                              onClick={() => navigate('/mood')}
+                              style={{ width: '100%', marginTop: '15px', padding: '8px', borderRadius: '8px', background: 'var(--color-rose)', color: 'var(--text-on-rose)', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                            >
+                              {t('dashboard.updateMood') || 'Actualizează'}
+                            </button>
+                          </div>
+                        </SwipeableWidget>
                       </div>
                     );
                     break;
@@ -325,12 +415,21 @@ export default function DashboardPage({ role }) {
                           <span className={styles.tileIcon}>📅</span>
                           <span className={styles.tileTitle}>{t('dashboard.upcoming')}</span>
                         </div>
-                        {nextEvent ? (
-                          <div className={styles.nextEventPreview}>
-                            <h4 className={styles.nextEventName}>{nextEvent.name}</h4>
-                            <span className={styles.nextEventDays}>{calculateDaysLeft(nextEvent.nextDate)} {t('dashboard.daysLeft')}</span>
-                          </div>
-                        ) : (
+                        {nextEvent ? (() => {
+                          const days = calculateDaysLeft(nextEvent.nextDate);
+                          return (
+                            <div className={styles.nextEventPreview}>
+                              <h4 className={styles.nextEventName}>{nextEvent.name}</h4>
+                              <span className={styles.nextEventDays}>
+                                {days === 0 
+                                  ? (t('dashboard.today') || 'Azi') 
+                                  : days === 1 
+                                    ? (t('dashboard.oneDayLeft') || '1 zi rămasă') 
+                                    : `${days} ${t('dashboard.daysLeft') || 'zile rămase'}`}
+                              </span>
+                            </div>
+                          );
+                        })() : (
                           <p className={styles.noEventsText}>{t('dashboard.noEvents')}</p>
                         )}
                         <div className={styles.openCalendarBtn}>{t('dashboard.openCalendar')}</div>
@@ -378,8 +477,8 @@ export default function DashboardPage({ role }) {
                         style={{ 
                           width: '100%', padding: '16px', borderRadius: '16px', 
                           background: role === 'his' 
-                            ? 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)' 
-                            : 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', 
+                            ? 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-dark) 100%)' 
+                            : 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)', 
                           color: '#fff', fontWeight: '900', fontSize: '1.2rem', 
                           border: 'none', boxShadow: 'var(--shadow-md)', cursor: 'pointer',
                           textTransform: 'uppercase', letterSpacing: '1px'
@@ -395,7 +494,7 @@ export default function DashboardPage({ role }) {
                         <SwipeableWidget>
                           <div style={{ padding: 'var(--space-4)' }}>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                              {targetProfile?.gender === 'F' ? t('dashboard.partnerStateLabel') : t('dashboard.partnerStateLabel')}, {partnerName}:
+                              {t('dashboard.partnerStatus') ? t('dashboard.partnerStatus').replace('{{name}}', partnerName) : `Status ${partnerName}`}
                             </p>
                             <div style={{ marginBottom: '10px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
@@ -417,7 +516,7 @@ export default function DashboardPage({ role }) {
                             </div>
                           </div>
                           <div style={{ padding: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>{t('dashboard.yourState') || 'Starea Ta'}</h3>
+                            <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>{t('dashboard.yourStatus') || 'Statusul tău'}</h3>
                             <div style={{ marginBottom: '20px' }}>
                               <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
                                 <span>{t('dashboard.yourStress')} {localStress}% 🤯</span>
@@ -456,7 +555,7 @@ export default function DashboardPage({ role }) {
                 }
 
                 let extraStyle = {};
-                if (['compliment', 'calendar', 'status', 'canvas', 'barista', 'scratch', 'buzzer'].includes(id)) {
+                if (['compliment', 'mood', 'calendar', 'status', 'canvas', 'barista', 'scratch', 'buzzer'].includes(id)) {
                   extraStyle = { gridColumn: '1 / -1' };
                 }
 
@@ -470,31 +569,6 @@ export default function DashboardPage({ role }) {
           </SortableContext>
         </DndContext>
       </div>
-      
-      {/* CUSTOM COMPLIMENT INPUT */}
-      {isWritingCompliment && (
-        <div className="animate-fade-in" style={{ margin: 'var(--space-4) var(--space-5)', background: 'var(--bg-card)', padding: 'var(--space-4)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem' }}>{t('dashboard.sendComplimentPrompt')}</h3>
-          {complimentScrisDeMine && (
-             <p style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px'}}>
-               {t('dashboard.lastSent')} "{complimentScrisDeMine}"
-             </p>
-          )}
-          <textarea 
-            value={complimentText}
-            onChange={(e) => setComplimentText(e.target.value)}
-            placeholder={`${t('dashboard.writeNice')} ${partnerName}...`}
-            style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: '#ffffff', color: '#000000', fontSize: '1rem' }}
-          />
-          <button 
-            onClick={handleSendCompliment}
-            disabled={!complimentText.trim()}
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-color)', color: role === 'her' ? '#000000' : '#ffffff', fontWeight: 'bold', border: 'none', opacity: !complimentText.trim() ? 0.5 : 1 }}
-          >
-            {t('dashboard.complimentSend')}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

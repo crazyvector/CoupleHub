@@ -65,7 +65,7 @@ export function useAuth() {
     }
   };
 
-  const registerWithEmail = async (email, password, name, gender) => {
+  const registerWithEmail = async (email, password, name, gender, anniversaryDate) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
@@ -81,6 +81,7 @@ export function useAuth() {
         pairKey,
         coupleId: null,
         role: 'his', // Standard initial
+        anniversaryDate: anniversaryDate || null,
         status: 'waiting',
         createdAt: Date.now()
       });
@@ -171,28 +172,9 @@ export function useAuth() {
       const partnerDoc = snap.docs[0];
       const partnerData = partnerDoc.data();
       
-      // Dacă partenerul are deja un cuplu (Rejoin/Reconnect)
+      // Dacă partenerul are deja un cuplu
       if (partnerData.coupleId) {
-        const existingCoupleId = partnerData.coupleId;
-        const myRole = partnerData.role === 'his' ? 'her' : 'his';
-        
-        // Salvăm datele noastre fără să rescriem pairKey
-        await setDoc(doc(db, 'users', user.uid), {
-          name: myName,
-          gender: myGender,
-          coupleId: existingCoupleId,
-          role: myRole,
-          status: 'paired',
-          createdAt: Date.now()
-        }, { merge: true });
-        
-        // Asigurăm că profilul nostru există în colecția couples
-        await setDoc(doc(db, 'couples', existingCoupleId, 'profiles', myRole), {
-          name: myName,
-          gender: myGender,
-        }, { merge: true });
-        
-        return { success: true };
+        return { success: false, error: 'Această cheie este deja asociată unui cuplu activ!' };
       }
       
       const newCoupleId = partnerDoc.id + '_' + user.uid;
@@ -237,6 +219,54 @@ export function useAuth() {
     await signOut(auth);
   };
 
+  const breakUp = async () => {
+    if (!user || !userData || !userData.coupleId) return;
+    
+    try {
+      const coupleId = userData.coupleId;
+      
+      // Delete subcollections for this couple
+      const subcollections = [
+        'home_planner_items', 'finance_transactions', 'finance_goals', 
+        'events', 'notifications', 'memories', 'couponsList', 'used_coupons',
+        'custom_coupons', 'daily_quotes', 'drawings', 'messages',
+        'movie_preferences', 'todos', 'study_tasks', 'profiles', 'finances', 'scratch_cards'
+      ];
+      
+      for (const subcol of subcollections) {
+        const subcolRef = collection(db, 'couples', coupleId, subcol);
+        const subcolSnap = await getDocs(subcolRef);
+        for (const docSnap of subcolSnap.docs) {
+          await deleteDoc(docSnap.ref);
+        }
+      }
+      
+      // Delete the couple document itself
+      await deleteDoc(doc(db, 'couples', coupleId));
+
+      // Reset both users
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('coupleId', '==', coupleId));
+      const snap = await getDocs(q);
+      
+      for (const docSnap of snap.docs) {
+        const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
+        await updateDoc(docSnap.ref, {
+          status: 'new',
+          coupleId: null,
+          pairKey: newKey,
+          role: null
+        });
+      }
+      
+      await logout();
+    } catch(err) {
+      console.error("Error breaking up", err);
+      // We still want to log them out even if some deletes fail
+      await logout();
+    }
+  };
+
   const resetProfile = async () => {
     if (!user) return;
     await setDoc(doc(db, 'users', user.uid), { status: 'new' });
@@ -257,6 +287,7 @@ export function useAuth() {
     createProfile,
     linkPartner,
     logout,
+    breakUp,
     resetProfile,
     // Compatibilitate pt restul app-ului
     isHer: userData?.role === 'her',

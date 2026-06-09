@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCustomCoupons, useNotifications, useProfiles } from '../hooks/useDatabase';
 import styles from './CupoanePage.module.css';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useMonetization } from '../hooks/useMonetization';
 
 // ============================================================
 // Confetti Burst component (canvas-based)
@@ -363,6 +364,7 @@ export default function CupoanePage() {
   const { addNotification } = useNotifications();
   const { profile } = useProfiles(role);
   const { t } = useLanguage();
+  const { isPro } = useMonetization();
   
   const [activeTab, setActiveTab] = useState('received'); // 'received' sau 'created'
   const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -412,6 +414,11 @@ export default function CupoanePage() {
   };
 
   const handleCreateCoupon = async (data) => {
+    if (!isPro && createdCoupons.length >= 3) {
+      alert("Ai atins limita de 3 cupoane active! Treci la Premium pentru cupoane nelimitate sau șterge din cele existente.");
+      return;
+    }
+
     setIsRedeeming(true);
     try {
       await addCoupon({
@@ -437,7 +444,7 @@ export default function CupoanePage() {
       const targetRole = role === 'her' ? 'his' : 'her';
       const msg = `"${suggestionText.trim()}"`;
       
-      await addNotification(t('coupons.newSuggestionTitle'), `${t('coupons.hey')}${myName}${t('coupons.wouldLikeCouponFor')}${msg}`, targetRole);
+      await addNotification(t('coupons.newSuggestionTitle'), `${t('coupons.hey')}${myName}${t('coupons.wouldLikeCouponFor')}${msg}`, role, targetRole);
       await addNotification(t('coupons.newSuggestionTitle'), `${myName}${t('coupons.proposedCoupon')}${msg}`, role, 'admin');
       
       showToast(t('coupons.suggestSuccess'));
@@ -451,6 +458,11 @@ export default function CupoanePage() {
   };
 
   const handleLoadDefaults = async () => {
+    if (!isPro) {
+      alert("Ai nevoie de Premium pentru a încărca toate cupoanele implicite, deoarece limita gratuită este de 3 cupoane active.");
+      return;
+    }
+
     setIsRedeeming(true);
     const defaults = [
       { title: t('coupons.defaultMassage'), description: t('coupons.defaultMassageDesc'), emoji: '💆‍♀️', color: '#B5EAD7' },

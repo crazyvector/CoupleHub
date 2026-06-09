@@ -522,3 +522,8 @@
   color: var(--text-secondary);
   font-weight: bold;
 }
+
+.actionBadge.dislikeBadge {
+  background: rgba(0, 0, 0, 0.7);
+}
+

@@ -957,3 +957,60 @@
   margin-left: 0.5rem;
   vertical-align: middle;
 }
+
+/* === THEME HER OVERRIDES (Light Pink Aesthetic) === */
+.themeHer.page { background: var(--bg-primary); color: var(--text-primary); }
+.themeHer .loadingScreen { background: var(--bg-primary); color: var(--text-primary); }
+.themeHer .ambientBg { opacity: 0; } /* Hide stars */
+.themeHer .title { background: none; -webkit-text-fill-color: var(--text-primary); color: var(--text-primary); }
+.themeHer .subtitle { color: var(--text-secondary); }
+
+/* Tabs */
+.themeHer .tabBar { background: rgba(0, 0, 0, 0.05); }
+.themeHer .tab { color: var(--text-muted); }
+.themeHer .tabActive { background: var(--color-rose-pale); color: var(--color-rose-dark); box-shadow: var(--shadow-sm); }
+
+/* Sections */
+.themeHer .bonsaiSection, .themeHer .timerSection, .themeHer .musicSection, .themeHer .tasksSection, .themeHer .presenceSection {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.themeHer .stageLabel, .themeHer .timerModeLabel, .themeHer .musicTitle, .themeHer .taskColumnHeader h3, .themeHer .presenceTitle {
+  color: var(--color-rose-dark);
+}
+
+.themeHer .sessionsCount, .themeHer .musicSubtitle, .themeHer .presenceSubtitle { color: var(--text-muted); }
+.themeHer .bonusTag { background: var(--color-rose); color: white; }
+
+/* Timer */
+.themeHer .timerValue { color: var(--text-primary); }
+.themeHer .timerProgress { stroke: var(--color-rose); }
+.themeHer .timerCircle { stroke: var(--color-rose-pale); }
+.themeHer .playBtn { background: var(--color-rose); color: white; box-shadow: var(--shadow-sm); }
+
+/* Music */
+.themeHer .musicToggle, .themeHer .addTaskBtn { border-color: var(--color-rose); background: var(--color-rose-pale); color: var(--color-rose-dark); }
+.themeHer .themeActive { background: var(--color-rose); color: white; }
+.themeHer .vinylCenter { background: var(--color-rose-dark); }
+
+/* Tasks */
+.themeHer .taskInput { background: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color); }
+.themeHer .taskInput::placeholder { color: var(--text-muted); }
+.themeHer .taskInput:focus { border-color: var(--color-rose-dark); background: #fff; }
+.themeHer .saveTaskBtn { background: var(--color-rose); color: white; }
+.themeHer .taskItem { background: var(--bg-primary); border-color: var(--border-color); }
+.themeHer .taskItem:hover { border-color: var(--color-rose); }
+.themeHer .taskText { color: var(--text-primary); }
+.themeHer .subjectTag { background: var(--color-rose-pale); color: var(--color-rose-dark); border: none; }
+.themeHer .taskCheck { border-color: var(--color-rose); }
+.themeHer .taskItem.completed .taskCheck { background: var(--color-rose); border-color: var(--color-rose); color: white; }
+.themeHer .taskItem.completed .taskText { color: var(--text-muted); }
+.themeHer .deleteTaskBtn { color: var(--text-muted); }
+.themeHer .deleteTaskBtn:hover { color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+
+/* Presence */
+.themeHer .partnerStatus.online { color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+.themeHer .partnerStatus.offline { color: var(--text-muted); background: rgba(0,0,0,0.05); }
+.themeHer .partnerStatus.unknown { color: var(--text-muted); background: rgba(0,0,0,0.05); }
