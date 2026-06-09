@@ -4,26 +4,53 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#7DD6B4"
-    android:gravity="center"
-    android:padding="8dp">
+    android:background="@drawable/widget_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_header_bg"
+        android:padding="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📚"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:layout_marginEnd="6dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Study Room"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/appwidget_status"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Oprit"
-        android:textColor="#FFFFFF"
+        android:textColor="#3D2C2C"
+        android:paddingTop="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textSize="14sp"
         android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_marginBottom="4dp" />
+        android:gravity="center" />
 
     <TextView
         android:id="@+id/appwidget_time"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="--:--"
-        android:textColor="#FFFFFF"
+        android:textColor="#3D2C2C"
+        android:paddingBottom="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:textSize="24sp" />
+        android:gravity="center" />
 </LinearLayout>

@@ -4,22 +4,38 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#A88EFF"
-    android:padding="8dp">
+    android:background="@drawable/widget_bg">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📅 Evenimente"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_marginBottom="4dp" />
+        android:background="@drawable/widget_header_bg"
+        android:padding="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📅"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:layout_marginEnd="6dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Evenimente"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/appwidget_text"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp" />
+        android:textColor="#3D2C2C"
+        android:padding="12dp"
+        android:textSize="13sp"
+        android:lineSpacingExtra="4dp" />
 </LinearLayout>
