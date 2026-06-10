@@ -18,8 +18,12 @@ function LiveTimer({ startDate }) {
   const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const anniversaryDate = startDate ? new Date(startDate) : new Date('2025-03-26T00:00:00');
+    if (!startDate) {
+      setTime({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
     
+    const anniversaryDate = new Date(startDate);
     const updateTime = () => {
       const diff = Math.max(0, new Date() - anniversaryDate);
       
