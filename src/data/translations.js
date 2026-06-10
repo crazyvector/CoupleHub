@@ -49,7 +49,8 @@ export const translations = {
       "createAcc": "Creează cont",
       "errorEmail": "Introdu adresa de email",
       "successReset": "Link de resetare trimis pe email!",
-      "logoutConfirm": "Vrei să te deconectezi?"
+      "logoutConfirm": "Vrei să te deconectezi?",
+      "logoutBtn": "Deconectare"
     },
     "calendar": {
       "months": [
@@ -1178,7 +1179,8 @@ export const translations = {
       "createAcc": "Create Account",
       "errorEmail": "Enter your email address",
       "successReset": "Password reset link sent to your email!",
-      "logoutConfirm": "Do you want to log out?"
+      "logoutConfirm": "Do you want to log out?",
+      "logoutBtn": "Log Out"
     },
     "calendar": {
       "months": [
