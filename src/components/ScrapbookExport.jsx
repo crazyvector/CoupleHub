@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t }, ref) => {
+export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t, hideTitle }, ref) => {
   return (
     <div 
       id={id}
@@ -20,12 +20,14 @@ export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t 
         boxSizing: 'border-box'
       }}
     >
-      <div style={{ textAlign: 'center', marginBottom: '60px', borderBottom: '2px dashed #FFB5C8', paddingBottom: '30px' }}>
-        <h1 style={{ fontSize: '3.5rem', margin: '0 0 15px', color: '#FFB5C8', fontFamily: "'Dancing Script', 'Georgia', cursive" }}>{t('memories.pdfTitle') }</h1>
-        <h2 style={{ fontSize: '1.8rem', margin: 0, color: '#777', fontStyle: 'italic' }}>
-          {coupleNames.myName} & {coupleNames.partnerName}
-        </h2>
-      </div>
+      {!hideTitle && (
+        <div style={{ textAlign: 'center', marginBottom: '60px', borderBottom: '2px dashed #FFB5C8', paddingBottom: '30px' }}>
+          <h1 style={{ fontSize: '3.5rem', margin: '0 0 15px', color: '#FFB5C8', fontFamily: "'Dancing Script', 'Georgia', cursive" }}>{t('memories.pdfTitle') }</h1>
+          <h2 style={{ fontSize: '1.8rem', margin: 0, color: '#777', fontStyle: 'italic' }}>
+            {coupleNames.myName} & {coupleNames.partnerName}
+          </h2>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '50px' }}>
         {memories.map((m, idx) => (

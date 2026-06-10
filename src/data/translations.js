@@ -648,8 +648,9 @@ export const translations = {
       "mainNavigation": "Navigare principală"
     },
     "profile": {
-      "tabPersonalInfo": "Informații",
+      "tabPersonalInfo": "Informații Personale",
       "tabSettings": "Setări",
+      "tabCouple": "Detalii Cuplu",
       "tabPro": "PRO",
       "tabSupport": "Suport",
       "contactEmail": "📧 Trimite-ne un Email",
@@ -1777,6 +1778,7 @@ export const translations = {
     "profile": {
       "tabPersonalInfo": "Personal Info",
       "tabSettings": "Settings",
+      "tabCouple": "Couple Details",
       "tabPro": "PRO",
       "tabSupport": "Support",
       "contactEmail": "📧 Send us an Email",

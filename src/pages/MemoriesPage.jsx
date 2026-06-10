@@ -366,6 +366,8 @@ export default function MemoriesPage({ role }) {
   const [isExporting, setIsExporting] = useState(false);
   const [renderScrapbook, setRenderScrapbook] = useState(false);
   const [isMockExport, setIsMockExport] = useState(false);
+  const [exportChunk, setExportChunk] = useState([]);
+  const [hideScrapbookTitle, setHideScrapbookTitle] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
 
   const [showRewardModal, setShowRewardModal] = useState(false);
@@ -410,21 +412,37 @@ export default function MemoriesPage({ role }) {
   };
 
   const handleExportPDF = async () => {
-    if (!isPro) {
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const data = await getMapExportData();
-      if (data.month === currentMonth && data.count >= 1) {
-        alert(t('memories.exportLimitReached') || "Ai epuizat exportul gratuit! Vei primi un nou export gratuit luna viitoare. Treci la Premium pentru exporturi nelimitate!");
-        return;
+    try {
+      if (!isPro) {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const data = await getMapExportData();
+        if (data.month === currentMonth && data.count >= 1) {
+          alert(t('memories.exportLimitReached') || "Ai epuizat exportul gratuit! Vei primi un nou export gratuit luna viitoare. Treci la Premium pentru exporturi nelimitate!");
+          return;
+        }
       }
+    } catch (e) {
+      console.error(e);
     }
 
     setIsExporting(true);
     setRenderScrapbook(true);
 
-    // Wait a brief moment to ensure React has fully mounted the ScrapbookExport component and its images are parsed
-    setTimeout(async () => {
-      try {
+    try {
+      const pdfWidth = 210; // A4 width in mm
+      let pdf;
+
+      const CHUNK_SIZE = 4; // 4 memories per page to avoid OOM
+      const totalChunks = Math.ceil(memories.length / CHUNK_SIZE);
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = memories.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        setExportChunk(chunk);
+        setHideScrapbookTitle(i > 0);
+        
+        // Wait for React to render the DOM elements completely
+        await new Promise(res => setTimeout(res, 800));
+
         const element = document.getElementById('scrapbook-export-container');
         if (!element) throw new Error("Nu s-a gasit elementul pentru export");
 
@@ -435,46 +453,56 @@ export default function MemoriesPage({ role }) {
           logging: false 
         });
         
-        const imgData = canvas.toDataURL('image/png');
-        
-        const pdfWidth = 210; // A4 width in mm
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         
-        const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-        if (Capacitor.isNativePlatform()) {
-          const pdfOutput = pdf.output('datauristring');
-          const base64Data = pdfOutput.split(',')[1];
-          const fileName = `CoupleHub_Memories_${Date.now()}.pdf`;
-          
-          try {
-            await Filesystem.writeFile({
-              path: fileName,
-              data: base64Data,
-              directory: Directory.Documents
-            });
-            alert(`${t('memories.pdfSuccess')}${fileName}`);
-          } catch (e) {
-            console.error("Filesystem save error:", e);
-            alert(`${t('memories.pdfSaveError')}${e.message}`);
-          }
+        if (i === 0) {
+          pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
         } else {
-          pdf.save('CoupleHub_Memories.pdf');
+          pdf.addPage([pdfWidth, pdfHeight], 'p');
         }
-
-        if (!isPro) {
-          await incrementMapExport();
-          alert(t('memories.lastExport') || "Acesta a fost ultimul tău export gratuit!");
-        }
-      } catch (error) {
-        console.error("PDF generation failed", error);
-        alert(t('memories.pdfError') || "Eroare la generarea PDF-ului.");
-      } finally {
-        setIsExporting(false);
-        setRenderScrapbook(false);
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Manual garbage collection hint
+        canvas.width = 0;
+        canvas.height = 0;
       }
-    }, 500); 
+
+      if (!pdf) throw new Error("PDF nu a fost generat.");
+
+      if (Capacitor.isNativePlatform()) {
+        const pdfOutput = pdf.output('datauristring');
+        const base64Data = pdfOutput.split(',')[1];
+        const fileName = `CoupleHub_Memories_${Date.now()}.pdf`;
+        
+        try {
+          await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Documents
+          });
+          alert(`${t('memories.pdfSuccess')}${fileName}`);
+        } catch (e) {
+          console.error("Filesystem save error:", e);
+          alert(`${t('memories.pdfSaveError')}${e.message}`);
+        }
+      } else {
+        pdf.save('CoupleHub_Memories.pdf');
+      }
+
+      if (!isPro) {
+        await incrementMapExport();
+        alert(t('memories.lastExport') || "Acesta a fost ultimul tău export gratuit!");
+      }
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      alert(t('memories.pdfError') || "Eroare la generarea PDF-ului.");
+    } finally {
+      setIsExporting(false);
+      setRenderScrapbook(false);
+      setExportChunk([]);
+    }
   };
 
   const mockMemoriesData = [
@@ -506,13 +534,25 @@ export default function MemoriesPage({ role }) {
     }
   ];
 
-  const handleMockExportPDF = () => {
+  const handleMockExportPDF = async () => {
     setIsMockExport(true);
     setIsExporting(true);
     setRenderScrapbook(true);
 
-    setTimeout(async () => {
-      try {
+    try {
+      const pdfWidth = 210; 
+      let pdf;
+
+      const CHUNK_SIZE = 4;
+      const totalChunks = Math.ceil(mockMemoriesData.length / CHUNK_SIZE);
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = mockMemoriesData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        setExportChunk(chunk);
+        setHideScrapbookTitle(i > 0);
+        
+        await new Promise(res => setTimeout(res, 800));
+
         const element = document.getElementById('scrapbook-export-container');
         if (!element) throw new Error("Nu s-a gasit elementul pentru export");
 
@@ -523,38 +563,47 @@ export default function MemoriesPage({ role }) {
           logging: false 
         });
         
-        const imgData = canvas.toDataURL('image/png');
-        
-        const pdfWidth = 210; // A4 width in mm
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         
-        const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-        if (Capacitor.isNativePlatform()) {
-          const pdfOutput = pdf.output('datauristring');
-          const base64Data = pdfOutput.split(',')[1];
-          const fileName = `CoupleHub_Mock_Memories_${Date.now()}.pdf`;
-          
-          await Filesystem.writeFile({
-            path: fileName,
-            data: base64Data,
-            directory: Directory.Documents
-          });
-          alert(`${t('memories.pdfSuccess')}${fileName}`);
+        if (i === 0) {
+          pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
         } else {
-          pdf.save('CoupleHub_Mock_Memories.pdf');
+          pdf.addPage([pdfWidth, pdfHeight], 'p');
         }
-
-      } catch (error) {
-        console.error("PDF generation failed", error);
-        alert(t('memories.pdfError') || "Eroare la generarea PDF-ului.");
-      } finally {
-        setIsExporting(false);
-        setRenderScrapbook(false);
-        setIsMockExport(false);
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        canvas.width = 0;
+        canvas.height = 0;
       }
-    }, 500);
+
+      if (!pdf) throw new Error("PDF nu a fost generat.");
+
+      if (Capacitor.isNativePlatform()) {
+        const pdfOutput = pdf.output('datauristring');
+        const base64Data = pdfOutput.split(',')[1];
+        const fileName = `CoupleHub_Mock_Memories_${Date.now()}.pdf`;
+        
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Documents
+        });
+        alert(`${t('memories.pdfSuccess')}${fileName}`);
+      } else {
+        pdf.save('CoupleHub_Mock_Memories.pdf');
+      }
+
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      alert(t('memories.pdfError') || "Eroare la generarea PDF-ului.");
+    } finally {
+      setIsExporting(false);
+      setRenderScrapbook(false);
+      setIsMockExport(false);
+      setExportChunk([]);
+    }
   };
 
   if (loading) return <div className={styles.page}>{t('memories.loadingMemories')}</div>;
@@ -639,8 +688,9 @@ export default function MemoriesPage({ role }) {
       {renderScrapbook && (
         <ScrapbookExport 
           id="scrapbook-export-container"
-          memories={isMockExport ? mockMemoriesData : memories.slice(0, 12)} 
+          memories={exportChunk} 
           t={t}
+          hideTitle={hideScrapbookTitle}
           coupleNames={{
             myName,
             partnerName,
