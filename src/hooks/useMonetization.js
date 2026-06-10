@@ -94,6 +94,18 @@ export function useMonetization() {
     initAdMob();
   }, []);
 
+  const prepareRewardedAd = async () => {
+    if (!Capacitor.isNativePlatform()) return;
+    try {
+      await AdMob.prepareRewardVideoAd({
+        adId: 'ca-app-pub-8580245815605338/1215103221', // Real Rewarded ID
+        isTesting: true
+      });
+    } catch (e) {
+      console.error("Failed to prepare rewarded ad", e);
+    }
+  };
+
   // Listeners pentru Rewarded Ads
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -107,7 +119,8 @@ export function useMonetization() {
       });
 
       await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-        prepareRewardedAd(); // re-încarcă următoarea reclamă
+        // Preîncarcă următoarea reclamă independent de state-ul React
+        prepareRewardedAd();
       });
     };
     setupListeners();
@@ -117,19 +130,7 @@ export function useMonetization() {
     };
   }, []);
 
-  const prepareRewardedAd = async () => {
-    if (!isAdMobReady || isRCPro || isLifetimePro || !Capacitor.isNativePlatform()) return;
-    try {
-      await AdMob.prepareRewardVideoAd({
-        adId: 'ca-app-pub-8580245815605338/1215103221', // Real Rewarded ID
-        isTesting: false
-      });
-    } catch (e) {
-      console.error("Failed to prepare rewarded ad", e);
-    }
-  };
-
-  // Preîncarcă reclama când AdMob este gata
+  // Preîncarcă prima reclamă când AdMob este gata
   useEffect(() => {
     if (isAdMobReady) {
       prepareRewardedAd();
@@ -191,6 +192,26 @@ export function useMonetization() {
     return { success: false, message: "Cod promoțional invalid sau expirat." };
   };
 
+  const getMapExportData = async () => {
+    try {
+      const data = localStorage.getItem('mapExportData');
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error(e);
+    }
+    return { month: '', count: 0 };
+  };
+
+  const incrementMapExport = async () => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const data = await getMapExportData();
+    if (data.month === currentMonth) {
+      localStorage.setItem('mapExportData', JSON.stringify({ month: currentMonth, count: data.count + 1 }));
+    } else {
+      localStorage.setItem('mapExportData', JSON.stringify({ month: currentMonth, count: 1 }));
+    }
+  };
+
   const isPro = isRCPro || isLifetimePro;
 
   const showBanner = async () => {
@@ -201,7 +222,7 @@ export function useMonetization() {
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.TOP_CENTER,
         margin: 0,
-        isTesting: false
+        isTesting: true
       };
       await AdMob.showBanner(options);
     } catch (e) {
@@ -228,6 +249,8 @@ export function useMonetization() {
     redeemPromoCode,
     isLifetimePro,
     prepareRewardedAd,
-    showRewardedAd
+    showRewardedAd,
+    getMapExportData,
+    incrementMapExport
   };
 }

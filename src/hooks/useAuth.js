@@ -254,38 +254,29 @@ export function useAuth() {
       const coupleId = userData.coupleId;
       
       if (coupleId) {
-        // Reset both users if possible
-        try {
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('coupleId', '==', coupleId));
-          const snap = await getDocs(q);
-          
-          const resetPromises = snap.docs.map(docSnap => {
-            const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
-            return updateDoc(docSnap.ref, {
-              status: 'new',
-              coupleId: null,
-              oldCoupleId: coupleId,
-              pairKey: newKey,
-              role: null
-            });
-          });
-          await Promise.all(resetPromises);
-        } catch (e) {
-          console.warn("Could not reset both users via query:", e);
-          
-          // Fallback: reset current user at least
+        // Find all users linked to this coupleId
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('coupleId', '==', coupleId));
+        const snap = await getDocs(q);
+        
+        // Reset every user found
+        const resetPromises = snap.docs.map(docSnap => {
           const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
-          await updateDoc(doc(db, 'users', user.uid), {
+          return updateDoc(docSnap.ref, {
             status: 'new',
             coupleId: null,
             oldCoupleId: coupleId,
             pairKey: newKey,
             role: null
           });
-        }
+        });
+        
+        await Promise.all(resetPromises);
+        
+        // Optionally, you can also mark the couple document as archived/broken up here
+        // await setDoc(doc(db, 'couples', coupleId), { active: false }, { merge: true });
       } else {
-        // Just reset current user if they have no coupleId but want to break up (edge case)
+        // Fallback for edge cases where coupleId is missing
         const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
         await updateDoc(doc(db, 'users', user.uid), {
           status: 'new',
@@ -295,10 +286,23 @@ export function useAuth() {
         });
       }
       
+      // Logout after breaking up
       await logout();
-      window.location.href = '/login'; // Force reload/redirect to ensure UI reset
+      window.location.href = '/login';
     } catch(err) {
-      console.error("Error breaking up", err);
+      console.error("Error breaking up:", err);
+      // Fallback: reset only current user if permission fails for partner
+      try {
+        const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
+        await updateDoc(doc(db, 'users', user.uid), {
+          status: 'new',
+          coupleId: null,
+          pairKey: newKey,
+          role: null
+        });
+      } catch (e) {
+        console.error("Critical error during fallback breakUp:", e);
+      }
       await logout();
       window.location.href = '/login';
     }

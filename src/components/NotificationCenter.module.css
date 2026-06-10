@@ -1,6 +1,6 @@
 .container {
   position: fixed;
-  top: env(safe-area-inset-top, 16px);
+  top: calc(env(safe-area-inset-top, 16px) + var(--app-banner-offset, 0px));
   right: var(--space-4);
   z-index: 1000;
 }

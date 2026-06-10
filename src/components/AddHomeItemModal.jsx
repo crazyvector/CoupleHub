@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import styles from './AddHomeItemModal.module.css';
 
-const ROOMS = [
+const getRooms = (t) => [
   { id: 'bucatarie', label: t('homePlanner.kitchen'), icon: '🍳' },
   { id: 'living', label: t('homePlanner.living'), icon: '🛋️' },
   { id: 'dormitor', label: t('homePlanner.bedroom'), icon: '🛏️' },
@@ -14,10 +14,21 @@ const ROOMS = [
   { id: 'idei_cautate', label: t('homePlanner.freeSearches'), icon: '🔍' }
 ];
 
-const PREDEFINED_TAGS = [t('homePlanner.tags.furniture'), t('homePlanner.tags.technology'), t('homePlanner.tags.finishes'), t('homePlanner.tags.decorations'), t('homePlanner.tags.accessories'), t('homePlanner.tags.lighting'), t('homePlanner.tags.inspiration')];
+const getPredefinedTags = (t) => [
+  t('homePlanner.tags.furniture'), 
+  t('homePlanner.tags.technology'), 
+  t('homePlanner.tags.finishes'), 
+  t('homePlanner.tags.decorations'), 
+  t('homePlanner.tags.accessories'), 
+  t('homePlanner.tags.lighting'), 
+  t('homePlanner.tags.inspiration')
+];
 
 export default function AddHomeItemModal({ onClose, onSave, role, initialData = {} }) {
   const { t } = useLanguage();
+  
+  const ROOMS = getRooms(t);
+  const PREDEFINED_TAGS = getPredefinedTags(t);
 
   const [title, setTitle] = useState(initialData.title || '');
   const [link, setLink] = useState(initialData.link || '');

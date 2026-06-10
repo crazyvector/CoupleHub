@@ -1,8 +1,10 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
 import { useGlobalAuth } from './contexts/AuthContext.jsx';
 import { useLanguage } from './contexts/LanguageContext';
+import { usePromoPopup } from './hooks/usePromoPopup';
+import ProPromoModal from './components/ProPromoModal';
 import { useMonetization } from './hooks/useMonetization';
 import { useEvents, useTodos, useNotifications, useProfiles } from './hooks/useDatabase';
 import BottomNav from './components/layout/BottomNav';
@@ -385,24 +387,54 @@ function AppUrlListener() {
   return null;
 }
 
+function BannerManager({ isPro, showBanner, hideBanner }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Hide banner on specific pages like chat
+    const hideOnPages = ['/chat'];
+    const shouldHide = hideOnPages.includes(location.pathname) || isPro || !Capacitor.isNativePlatform();
+
+    if (!shouldHide) {
+      showBanner();
+      document.body.classList.add('has-banner-ad');
+      document.documentElement.style.setProperty('--app-banner-offset', '60px');
+    } else {
+      hideBanner();
+      document.body.classList.remove('has-banner-ad');
+      document.documentElement.style.setProperty('--app-banner-offset', '0px');
+    }
+
+    return () => {
+      // Don't auto-hide on unmount, we handle it via dependency array
+    };
+  }, [location.pathname, isPro, showBanner, hideBanner]);
+
+  return null;
+}
+
+function PromoManager({ isPro }) {
+  const { showPromo, setShowPromo } = usePromoPopup(isPro);
+
+  if (!showPromo) return null;
+
+  return <ProPromoModal onClose={() => setShowPromo(false)} />;
+}
+
 // Aplicația principală (autentificată ca 'her' sau 'his')
 function MainApp({ role, gender, getDiaryPassphrase }) {
   const passphrase = getDiaryPassphrase();
-  const { showBanner, hideBanner } = useMonetization();
+  const { showBanner, hideBanner, isPro } = useMonetization();
 
   useEffect(() => {
     document.body.className = `theme-${gender === 'F' ? 'her' : 'his'}`;
     return () => { document.body.className = ''; };
   }, [gender]);
 
-  // Afișează banner-ul reclamelor pentru userii non-Pro
-  useEffect(() => {
-    showBanner();
-    return () => hideBanner();
-  }, [showBanner, hideBanner]);
-
   return (
     <BrowserRouter>
+      <BannerManager isPro={isPro} showBanner={showBanner} hideBanner={hideBanner} />
+      <PromoManager isPro={isPro} />
       <AppUrlListener />
       <GlobalBadgeManager role={role} />
       <div className="app-background" aria-hidden="true" />

@@ -67,7 +67,7 @@ export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t 
                 <img 
                   src={m.imagePath} 
                   alt={m.title} 
-                  crossOrigin="anonymous"
+                  crossOrigin={m.imagePath?.startsWith('data:') ? undefined : "anonymous"}
                   style={{ width: '100%', height: 'auto', borderRadius: '2px', objectFit: 'cover' }} 
                 />
               </div>

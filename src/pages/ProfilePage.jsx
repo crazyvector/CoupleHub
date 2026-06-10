@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { useGlobalAuth } from '../contexts/AuthContext';
 import { useProfiles, useAppVersion } from '../hooks/useDatabase';
@@ -34,6 +35,22 @@ export default function ProfilePage({ role }) {
   const [passwordData, setPasswordData] = useState({ oldPass: '', newPass: '', confirmPass: '' });
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [showBreakupConfirm, setShowBreakupConfirm] = useState(false);
+  const [isBreakingUp, setIsBreakingUp] = useState(false);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'main'); // main, personal, settings, pro, contact
+
+  // Update URL and state when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'main' ? {} : { tab });
+  };
+
+  useEffect(() => {
+    if (searchParams.get('tab')) {
+      setActiveTab(searchParams.get('tab'));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (profile) {
@@ -223,7 +240,58 @@ export default function ProfilePage({ role }) {
         <p style={{ fontSize: '0.8rem', textAlign: 'center', marginTop: '5px' }}>{completion}% {t('profile.completed')}</p>
       </header>
 
-      <div className={`${styles.card} animate-scale-in`}>
+      {activeTab === 'main' && (
+        <div className={styles.settingsList} style={{ marginBottom: '20px' }}>
+          <div className={styles.settingsItem} onClick={() => handleTabChange('personal')} style={{ cursor: 'pointer' }}>
+             <div className={styles.settingsIcon} style={{ background: '#3498db' }}>👤</div>
+             <div className={styles.settingsInfo}>
+               <span className={styles.settingsLabel}>{t('profile.tabPersonalInfo')}</span>
+             </div>
+             <div style={{ color: '#bbb', fontSize: '1.2rem' }}>›</div>
+          </div>
+          <div className={styles.settingsItem} onClick={() => handleTabChange('couple')} style={{ cursor: 'pointer' }}>
+             <div className={styles.settingsIcon} style={{ background: '#e84393' }}>💕</div>
+             <div className={styles.settingsInfo}>
+               <span className={styles.settingsLabel}>{t('profile.tabCouple') || 'Detalii Cuplu'}</span>
+             </div>
+             <div style={{ color: '#bbb', fontSize: '1.2rem' }}>›</div>
+          </div>
+          <div className={styles.settingsItem} onClick={() => handleTabChange('settings')} style={{ cursor: 'pointer' }}>
+             <div className={styles.settingsIcon} style={{ background: '#9b59b6' }}>⚙️</div>
+             <div className={styles.settingsInfo}>
+               <span className={styles.settingsLabel}>{t('profile.tabSettings')}</span>
+             </div>
+             <div style={{ color: '#bbb', fontSize: '1.2rem' }}>›</div>
+          </div>
+          <div className={styles.settingsItem} onClick={() => handleTabChange('pro')} style={{ cursor: 'pointer' }}>
+             <div className={styles.settingsIcon} style={{ background: '#f1c40f' }}>💎</div>
+             <div className={styles.settingsInfo}>
+               <span className={styles.settingsLabel}>{t('profile.tabPro')}</span>
+             </div>
+             <div style={{ color: '#bbb', fontSize: '1.2rem' }}>›</div>
+          </div>
+          <div className={styles.settingsItem} onClick={() => handleTabChange('contact')} style={{ cursor: 'pointer' }}>
+             <div className={styles.settingsIcon} style={{ background: '#e74c3c' }}>📞</div>
+             <div className={styles.settingsInfo}>
+               <span className={styles.settingsLabel}>{t('profile.tabSupport')}</span>
+             </div>
+             <div style={{ color: '#bbb', fontSize: '1.2rem' }}>›</div>
+          </div>
+        </div>
+      )}
+
+      {activeTab !== 'main' && (
+        <button 
+          onClick={() => handleTabChange('main')} 
+          style={{ background: 'transparent', border: 'none', color: 'var(--color-rose-dark)', fontSize: '1.1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px', cursor: 'pointer' }}
+        >
+          ← {t('common.back') || 'Înapoi'}
+        </button>
+      )}
+
+      {activeTab === 'personal' && (
+      <div className={`${styles.card} animate-scale-in`} style={{ marginBottom: '20px' }}>
+        <h3 style={{ marginBottom: '20px', textAlign: 'center' }}>{t('profile.tabPersonalInfo')}</h3>
         <div className={styles.avatarSection}>
           <div className={styles.avatarWrapper}>
             {isUploading ? (
@@ -299,34 +367,6 @@ export default function ProfilePage({ role }) {
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="anniversaryDate">{t('profile.anniversaryLabel')}</label>
-            <input 
-              type="date" 
-              id="anniversaryDate" 
-              name="anniversaryDate" 
-              value={formData.anniversaryDate} 
-              onChange={handleInputChange} 
-              className={styles.input} 
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="language">{t('profile.lang')}</label>
-            <select
-              id="language"
-              name="language"
-              value={formData.language}
-              onChange={handleInputChange}
-              className={styles.input}
-            >
-              <option value="ro">{t('profile.roLang')}</option>
-              <option value="en">{t('profile.enLang')}</option>
-            </select>
-          </div>
-
-
-
-          <div className={styles.field}>
             <label htmlFor="bio">{t('profile.bioLabel')}</label>
             <textarea 
               id="bio" 
@@ -343,51 +383,74 @@ export default function ProfilePage({ role }) {
           </button>
         </form>
       </div>
+      )}
 
-      <div className={`${styles.card} animate-scale-in`} style={{ marginTop: '20px' }}>
-        <h3>{t('profile.yourAccount')}</h3>
+      {activeTab === 'settings' && (
+      <div className={`${styles.card} animate-scale-in`} style={{ marginBottom: '20px' }}>
+        <h3 style={{ marginBottom: '20px' }}>{t('profile.yourAccount')}</h3>
         
-        {userData?.pairKey && (
-          <div style={{ background: 'var(--surface-color)', padding: '15px', borderRadius: '12px', border: '1px dashed var(--color-rose)', textAlign: 'center', marginBottom: '15px' }}>
-            <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('login.yourKey')}</p>
-            <h2 style={{ margin: 0, letterSpacing: '4px', color: 'var(--color-rose)' }}>{userData.pairKey}</h2>
+        <div className={styles.settingsList}>
+          <div className={styles.settingsItem}>
+            <div className={styles.settingsIcon} style={{ background: '#3498db' }}>🌍</div>
+            <div className={styles.settingsInfo}>
+              <span className={styles.settingsLabel}>{t('profile.lang')}</span>
+              <select
+                id="language"
+                name="language"
+                value={formData.language}
+                onChange={handleInputChange}
+                className={styles.settingsSelect}
+              >
+                <option value="ro">{t('profile.roLang')}</option>
+                <option value="en">{t('profile.enLang')}</option>
+              </select>
+            </div>
           </div>
-        )}
+          
+          <div className={styles.settingsItem} style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 0 }}>
+             <div className={styles.settingsIcon} style={{ background: '#9b59b6' }}>🔒</div>
+             <div className={styles.settingsInfo}>
+               <span className={styles.settingsLabel}>{t('profile.changePass')}</span>
+             </div>
+          </div>
+          <form onSubmit={handleChangePassword} style={{ padding: '0 16px 16px 16px', marginTop: '10px' }}>
+            <input
+              type="password"
+              placeholder={t('profile.currentPass')}
+              value={passwordData.oldPass}
+              onChange={(e) => setPasswordData({...passwordData, oldPass: e.target.value})}
+              className={styles.input}
+              style={{ marginBottom: '10px' }}
+              required
+            />
+            <input
+              type="password"
+              placeholder={t('profile.newPassRules')}
+              value={passwordData.newPass}
+              onChange={(e) => setPasswordData({...passwordData, newPass: e.target.value})}
+              className={styles.input}
+              style={{ marginBottom: '10px' }}
+              required
+            />
+            <input
+              type="password"
+              placeholder={t('profile.confirmPass')}
+              value={passwordData.confirmPass}
+              onChange={(e) => setPasswordData({...passwordData, confirmPass: e.target.value})}
+              className={styles.input}
+              style={{ marginBottom: '15px' }}
+              required
+            />
+            <button type="submit" disabled={isChangingPass} className={styles.saveBtn} style={{ background: 'var(--color-rose-dark)', width: '100%', fontSize: '0.95rem' }}>
+              {isChangingPass ? <span className={styles.loadingSpinner} /> : t('profile.saveNewPass')}
+            </button>
+          </form>
+        </div>
+      </div>
+      )}
 
-        <form onSubmit={handleChangePassword} style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,181,200,0.1)', borderRadius: '12px' }}>
-          <h4 style={{ margin: '0 0 15px 0', color: 'var(--color-rose-dark)' }}>{t('profile.changePass')}</h4>
-          <input
-            type="password"
-            placeholder={t('profile.currentPass')}
-            value={passwordData.oldPass}
-            onChange={(e) => setPasswordData({...passwordData, oldPass: e.target.value})}
-            className={styles.input}
-            style={{ marginBottom: '10px' }}
-            required
-          />
-          <input
-            type="password"
-            placeholder={t('profile.newPassRules')}
-            value={passwordData.newPass}
-            onChange={(e) => setPasswordData({...passwordData, newPass: e.target.value})}
-            className={styles.input}
-            style={{ marginBottom: '10px' }}
-            required
-          />
-          <input
-            type="password"
-            placeholder={t('profile.confirmPass')}
-            value={passwordData.confirmPass}
-            onChange={(e) => setPasswordData({...passwordData, confirmPass: e.target.value})}
-            className={styles.input}
-            style={{ marginBottom: '15px' }}
-            required
-          />
-          <button type="submit" disabled={isChangingPass} className={styles.saveBtn} style={{ background: 'var(--color-rose-dark)' }}>
-            {isChangingPass ? <span className={styles.loadingSpinner} /> : t('profile.saveNewPass')}
-          </button>
-        </form>
-
+      {activeTab === 'pro' && (
+      <div className={`${styles.card} animate-scale-in`} style={{ marginBottom: '20px' }}>
         <div className={styles.proSectionContainer}>
           {isPro ? (
             <div style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)', padding: '15px', borderRadius: '12px', color: 'white', textAlign: 'center' }}>
@@ -443,29 +506,69 @@ export default function ProfilePage({ role }) {
           )}
         </div>
       </div>
+      )}
 
-      <div className={styles.logoutSection}>
-        {/* Removed logout description as requested */}
-        <button 
-          className={styles.logoutBtn} 
-          onClick={() => {
-            if(window.confirm(t('profile.logoutConfirm'))) {
-              logout();
-            }
-          }}
-          style={{ background: '#e74c3c', color: 'white', fontWeight: 'bold' }}
-        >
-          {t('profile.logoutBtn')}
-        </button>
-        <button 
-          className={styles.logoutBtn} 
-          disabled={loading}
-          onClick={() => setShowBreakupConfirm(true)}
-          style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', marginTop: '10px', opacity: loading ? 0.5 : 1 }}
-        >
-          {loading ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire')}
-        </button>
+      {activeTab === 'contact' && (
+      <div className={`${styles.card} animate-scale-in`} style={{ marginBottom: '20px' }}>
+        <h3 style={{ textAlign: 'center' }}>{t('profile.supportTitle')}</h3>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+          {t('profile.supportDesc')}
+        </p>
+
+        <a href="mailto:contact@couplehub.io" className={styles.contactBtn}>
+          {t('profile.contactEmail')}
+        </a>
+        <a href="https://couplehub-marketing.web.app" target="_blank" rel="noreferrer" className={styles.contactBtn} style={{ background: 'var(--color-purple)' }}>
+          {t('profile.contactWebsite')}
+        </a>
       </div>
+      )}
+
+      {activeTab === 'couple' && (
+      <div className={`${styles.card} animate-scale-in`} style={{ marginBottom: '20px' }}>
+        <h3 style={{ marginBottom: '20px', textAlign: 'center' }}>{t('profile.tabCouple') || 'Detalii Cuplu'}</h3>
+        
+        <div className={styles.settingsList} style={{ marginBottom: '20px' }}>
+          {userData?.pairKey && (
+            <div className={styles.settingsItem} style={{ borderBottom: 'none', paddingBottom: 0 }}>
+              <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>🔑</div>
+              <div className={styles.settingsInfo}>
+                <span className={styles.settingsLabel}>{t('login.yourKey')}</span>
+                <span className={styles.settingsValue} style={{ letterSpacing: '2px', fontWeight: 'bold' }}>{userData.pairKey}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <form className={styles.form} onSubmit={handleSave}>
+          <div className={styles.field}>
+            <label htmlFor="anniversaryDate">{t('profile.anniversaryLabel')}</label>
+            <input 
+              type="date" 
+              id="anniversaryDate" 
+              name="anniversaryDate" 
+              value={formData.anniversaryDate} 
+              onChange={handleInputChange} 
+              className={styles.input} 
+            />
+          </div>
+          <button type="submit" className={styles.saveBtn} disabled={isSaving}>
+            {isSaving ? <span className={styles.loadingSpinner} /> : `${t('profile.save')} 💕`}
+          </button>
+        </form>
+
+        <div className={styles.logoutSection} style={{ marginTop: '40px' }}>
+          <button 
+            className={styles.logoutBtn} 
+            disabled={isBreakingUp}
+            onClick={() => setShowBreakupConfirm(true)}
+            style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', fontWeight: 'bold', width: '100%', opacity: isBreakingUp ? 0.5 : 1 }}
+          >
+            {isBreakingUp ? (t('common.processing') || 'Se procesează...') : (t('profile.breakUpBtn') || 'Despărțire')}
+          </button>
+        </div>
+      </div>
+      )}
 
       {/* Breakup Confirmation Modal */}
       {showBreakupConfirm && (
@@ -482,24 +585,38 @@ export default function ProfilePage({ role }) {
               </button>
               <button 
                 onClick={async () => {
-                  setShowBreakupConfirm(false);
                   try {
-                    setLoading(true);
+                    setIsBreakingUp(true);
                     await breakUp();
                   } catch (e) {
                     console.error(e);
                   } finally {
-                    setLoading(false);
+                    setIsBreakingUp(false);
+                    setShowBreakupConfirm(false);
                   }
                 }}
                 style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: '#e74c3c', color: 'white', fontWeight: 'bold' }}
               >
-                {t('common.confirm') || 'Confirmă'}
+                {isBreakingUp ? '...' : (t('common.confirm') || 'Confirmă')}
               </button>
             </div>
           </div>
         </div>
       )}
+      {/* Global Logout Button */}
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <button 
+          onClick={() => {
+            if(window.confirm(t('profile.logoutConfirm'))) {
+              logout();
+            }
+          }}
+          style={{ background: 'transparent', color: '#e74c3c', border: 'none', fontWeight: 'bold', textDecoration: 'underline', fontSize: '1rem', cursor: 'pointer', padding: '10px' }}
+        >
+          {t('profile.logoutBtn')}
+        </button>
+      </div>
+
       {/* Version Checker */}
       <div style={{ textAlign: 'center', marginTop: '20px', paddingBottom: '30px', color: 'var(--text-muted)' }}>
         <p style={{ fontSize: '0.8rem', margin: 0 }}>{t('profile.appVersion')}: <strong>{localVersion}</strong></p>

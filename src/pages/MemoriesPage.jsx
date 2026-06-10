@@ -430,7 +430,7 @@ export default function MemoriesPage({ role }) {
 
         const canvas = await html2canvas(element, { 
           useCORS: true, 
-          scale: 2, 
+          scale: Capacitor.isNativePlatform() ? 1 : 2, 
           windowWidth: 800, 
           logging: false 
         });
@@ -518,7 +518,7 @@ export default function MemoriesPage({ role }) {
 
         const canvas = await html2canvas(element, { 
           useCORS: true, 
-          scale: 2, 
+          scale: Capacitor.isNativePlatform() ? 1 : 2, 
           windowWidth: 800, 
           logging: false 
         });
@@ -639,7 +639,7 @@ export default function MemoriesPage({ role }) {
       {renderScrapbook && (
         <ScrapbookExport 
           id="scrapbook-export-container"
-          memories={isMockExport ? mockMemoriesData : memories} 
+          memories={isMockExport ? mockMemoriesData : memories.slice(0, 12)} 
           t={t}
           coupleNames={{
             myName,

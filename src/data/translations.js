@@ -5,7 +5,10 @@ export const translations = {
       "processing": "Se procesează...",
       "loading": "Se încarcă...",
       "partner": "Partener",
-      "understood": "Am înțeles"
+      "understood": "Am înțeles",
+      "back": "Înapoi",
+      "cancel": "Anulare",
+      "confirm": "Confirmă"
     },
     "login": {
       "welcome": "Bine ai venit!",
@@ -645,6 +648,14 @@ export const translations = {
       "mainNavigation": "Navigare principală"
     },
     "profile": {
+      "tabPersonalInfo": "Informații",
+      "tabSettings": "Setări",
+      "tabPro": "PRO",
+      "tabSupport": "Suport",
+      "contactEmail": "📧 Trimite-ne un Email",
+      "contactWebsite": "🌐 Vizitează Website-ul",
+      "supportTitle": "Contact & Suport",
+      "supportDesc": "Ai o problemă, o sugestie sau vrei să ne contactezi? Suntem aici!",
       "breakUpBtn": "Despărțire",
       "breakUpConfirm": "Ești sigur că vrei să pui capăt? 🥺💔",
       "title": "Profilul Tău",
@@ -1116,12 +1127,15 @@ export const translations = {
     }
   },
   "en": {
-    "common": {
+"common": {
       "or": "OR",
       "processing": "Processing...",
       "loading": "Loading...",
       "partner": "Partner",
-      "understood": "Understood"
+      "understood": "Got it",
+      "back": "Back",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
     },
     "login": {
       "welcome": "Welcome!",
@@ -1761,6 +1775,14 @@ export const translations = {
       "mainNavigation": "Main navigation"
     },
     "profile": {
+      "tabPersonalInfo": "Personal Info",
+      "tabSettings": "Settings",
+      "tabPro": "PRO",
+      "tabSupport": "Support",
+      "contactEmail": "📧 Send us an Email",
+      "contactWebsite": "🌐 Visit Website",
+      "supportTitle": "Contact & Support",
+      "supportDesc": "Have an issue, suggestion, or just want to reach out? We're here!",
       "breakUpBtn": "Break Up",
       "breakUpConfirm": "Are you sure you want to end it? 🥺💔",
       "title": "Your Profile",

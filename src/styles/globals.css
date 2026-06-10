@@ -176,6 +176,9 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  padding-top: var(--app-banner-offset, 0px);
   min-height: 100%;
   min-height: 100dvh;
   width: 100%;
