@@ -444,7 +444,7 @@ function MainApp({ role, gender, getDiaryPassphrase }) {
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/login" element={<LoginPage useAuthHook={useGlobalAuth} />} />
             <Route path="/admin" element={<AdminPage />} />
             
             <Route path="/" element={<DashboardPage role={role} />} />
