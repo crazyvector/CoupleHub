@@ -107,7 +107,7 @@ export default function LoginPage({ useAuthHook }) {
     setLoading(false);
   };
 
-  const isWaiting = user && userData?.status === 'waiting';
+  const isWaiting = user && (userData?.status === 'waiting' || userData?.status === 'new');
 
   return (
     <div className={styles.container}>
