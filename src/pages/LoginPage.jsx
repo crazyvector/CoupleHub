@@ -155,7 +155,7 @@ export default function LoginPage({ useAuthHook }) {
                 />
                 <button 
                   type="button" 
-                  onClick={() => setMode('forgot')}
+                  onClick={() => { setMode('forgot'); setEmail(''); setError(''); setMsg(''); }}
                   style={{ background: 'none', border: 'none', color: 'var(--color-rose)', fontSize: '0.8rem', textAlign: 'right', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   {t('login.forgotPass')}
