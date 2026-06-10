@@ -234,7 +234,7 @@ export default function ProfilePage({ role }) {
       <header className={styles.header}>
         <h1 className={styles.title}>{t('profile.title')}</h1>
         <p className={styles.subtitle}>{t('profile.subtitle')}</p>
-        <div style={{ marginTop: '10px', background: '#eee', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
+        <div style={{ marginTop: '10px', background: 'var(--border-color)', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
           <div style={{ width: `${completion}%`, background: 'var(--color-rose-dark)', height: '100%', transition: 'width 0.3s' }} />
         </div>
         <p style={{ fontSize: '0.8rem', textAlign: 'center', marginTop: '5px' }}>{completion}% {t('profile.completed')}</p>
@@ -579,7 +579,7 @@ export default function ProfilePage({ role }) {
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
               <button 
                 onClick={() => setShowBreakupConfirm(false)}
-                style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: '#f0f0f0', color: '#333', fontWeight: 'bold' }}
+                style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: 'var(--border-color)', color: 'var(--text-primary)', fontWeight: 'bold' }}
               >
                 {t('common.cancel') || 'Anulare'}
               </button>
@@ -622,7 +622,7 @@ export default function ProfilePage({ role }) {
         <p style={{ fontSize: '0.8rem', margin: 0 }}>{t('profile.appVersion')}: <strong>{localVersion}</strong></p>
         
         {latestVersion && latestVersion !== localVersion && (
-          <div style={{ marginTop: '15px', background: '#FFF0F5', padding: '15px', borderRadius: '12px', border: '1px solid #FFB5C8' }}>
+          <div style={{ marginTop: '15px', background: 'var(--color-rose-pale)', padding: '15px', borderRadius: '12px', border: '1px solid var(--color-rose)' }}>
             <p style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.9rem', margin: '0 0 10px 0' }}>
               ⚠️ {t('profile.newVersionAvailable')} ({latestVersion})!
             </p>

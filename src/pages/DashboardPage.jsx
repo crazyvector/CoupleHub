@@ -356,12 +356,12 @@ export default function DashboardPage({ role }) {
                               value={complimentText}
                               onChange={(e) => setComplimentText(e.target.value)}
                               placeholder={`${t('dashboard.writeNice')} ${partnerName}...`}
-                              style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: '#ffffff', color: '#000000', fontSize: '1rem' }}
+                              style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '12px', border: '2px solid var(--border-color)', marginBottom: '10px', resize: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '1rem' }}
                             />
                             <button 
                               onClick={handleSendCompliment}
                               disabled={!complimentText.trim()}
-                              style={{ width: '100%', background: 'var(--color-rose-dark)', border: 'none', padding: '12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold', color: '#ffffff', cursor: 'pointer', opacity: !complimentText.trim() ? 0.5 : 1, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                              style={{ width: '100%', background: 'var(--color-rose-dark)', border: 'none', padding: '12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-on-rose)', cursor: 'pointer', opacity: !complimentText.trim() ? 0.5 : 1, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
                             >
                               {t('dashboard.complimentSend')}
                             </button>
@@ -505,7 +505,7 @@ export default function DashboardPage({ role }) {
                                 <span>{t('dashboard.partnerStress')} 🤯</span>
                                 <span>{targetProfile?.stressLevel || 0}%</span>
                               </div>
-                              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                              <div style={{ width: '100%', background: 'var(--border-color)', borderRadius: '4px', height: '8px' }}>
                                 <div style={{ width: `${targetProfile?.stressLevel || 0}%`, background: 'var(--color-purple)', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
                               </div>
                             </div>
@@ -514,7 +514,7 @@ export default function DashboardPage({ role }) {
                                 <span>{t('dashboard.anger')} 😡</span>
                                 <span>{targetProfile?.angerLevel || 0}%</span>
                               </div>
-                              <div style={{ width: '100%', background: '#eee', borderRadius: '4px', height: '8px' }}>
+                              <div style={{ width: '100%', background: 'var(--border-color)', borderRadius: '4px', height: '8px' }}>
                                 <div style={{ width: `${targetProfile?.angerLevel || 0}%`, background: '#e74c3c', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease' }} />
                               </div>
                             </div>
