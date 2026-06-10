@@ -181,12 +181,12 @@ export function useEvents() {
 // ==========================================
 // Util: Chat Theme
 // ==========================================
-export function useChatTheme() {
+export function useChatTheme(role) {
   const auth = useGlobalAuth();
   const coupleId = auth?.coupleId;
 
   const [chatTheme, setChatTheme] = useState({
-    backgroundColor: '#ffffff',
+    backgroundColor: role === 'his' ? '#1a1a2e' : '#ffffff',
     backgroundImage: null,
     isGradient: false
   });
@@ -197,11 +197,17 @@ export function useChatTheme() {
     const unsubscribe = onSnapshot(doc(db, 'couples', coupleId, SYSTEM_COL, 'chatTheme'), (d) => {
       if (d.exists()) {
         setChatTheme(d.data());
+      } else {
+        setChatTheme({
+          backgroundColor: role === 'his' ? '#1a1a2e' : '#ffffff',
+          backgroundImage: null,
+          isGradient: false
+        });
       }
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [coupleId]);
+  }, [coupleId, role]);
 
   const updateChatTheme = async (themeData) => {
     if (!coupleId) return;

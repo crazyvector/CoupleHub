@@ -57,3 +57,5 @@ echo "🎉 APROAPE GATA! Mai ai de făcut 2 pași manuali foarte rapizi:"
 echo "1. Trage fișierul 'app-debug.apk' din folderul deschis în pagina de Google Drive (dă-i Replace/Overwrite)."
 echo "2. Mergi în Firebase -> Firestore Database -> system -> app_version și schimbă version la \"$NEW_VERSION\"."
 echo "Succes!"
+
+echo "To generate lifetime codes use : node scripts/generatePromoCode.js"

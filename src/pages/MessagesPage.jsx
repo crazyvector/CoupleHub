@@ -15,7 +15,7 @@ const DEFAULT_AVATAR_HER = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&
 export default function MessagesPage({ role }) {
   const navigate = useNavigate();
   const { messages, partnerTyping, sendMessage, sendSticker, setTyping, markAsRead, setReaction, loading: chatLoading } = useChat(role);
-  const { chatTheme, updateChatTheme, loading: themeLoading } = useChatTheme();
+  const { chatTheme, updateChatTheme, loading: themeLoading } = useChatTheme(role);
   const { t } = useLanguage();
   
   const partnerRole = role === 'his' ? 'her' : 'his';
@@ -197,12 +197,12 @@ export default function MessagesPage({ role }) {
                 <div 
                   className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
                   style={msg.type === 'sticker' ? { background: 'transparent', padding: 0, boxShadow: 'none' } : {}}
-                  onTouchStart={() => handleTouchStart(msg.id)}
-                  onTouchEnd={handleTouchEnd}
-                  onTouchMove={handleTouchEnd}
-                  onMouseDown={() => handleTouchStart(msg.id)}
-                  onMouseUp={handleTouchEnd}
-                  onMouseLeave={handleTouchEnd}
+                  onTouchStart={() => !isMine && handleTouchStart(msg.id)}
+                  onTouchEnd={() => !isMine && handleTouchEnd()}
+                  onTouchMove={() => !isMine && handleTouchEnd()}
+                  onMouseDown={() => !isMine && handleTouchStart(msg.id)}
+                  onMouseUp={() => !isMine && handleTouchEnd()}
+                  onMouseLeave={() => !isMine && handleTouchEnd()}
                 >
                   {msg.type === 'sticker' ? (
                     <img src={msg.stickerUrl} alt="Sticker" className={styles.messageSticker} />
