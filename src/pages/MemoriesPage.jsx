@@ -454,7 +454,7 @@ export default function MemoriesPage({ role }) {
         const canvas = await html2canvas(element, { 
           useCORS: true, 
           scale: Capacitor.isNativePlatform() ? 1 : 2, 
-          windowWidth: 800, 
+          windowWidth: 1200, 
           logging: false 
         });
         
@@ -564,7 +564,7 @@ export default function MemoriesPage({ role }) {
         const canvas = await html2canvas(element, { 
           useCORS: true, 
           scale: Capacitor.isNativePlatform() ? 1 : 2, 
-          windowWidth: 800, 
+          windowWidth: 1200, 
           logging: false 
         });
         

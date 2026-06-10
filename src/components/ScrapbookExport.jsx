@@ -9,11 +9,11 @@ export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t,
         position: 'absolute',
         top: '-10000px', // Hide from screen
         left: 0,
-        width: '800px', // Fixed width for high-quality PDF
+        width: '1200px', // Fixed width for high-quality PDF
         backgroundColor: '#fdfbf7', // Warm paper color
         backgroundImage: 'radial-gradient(#e0d6d6 1px, transparent 1px)',
         backgroundSize: '20px 20px',
-        padding: '60px',
+        padding: '80px',
         fontFamily: "'Playfair Display', 'Georgia', serif",
         color: '#444',
         zIndex: -100,
