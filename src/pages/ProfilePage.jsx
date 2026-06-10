@@ -391,13 +391,6 @@ export default function ProfilePage({ role }) {
         
         <div className={styles.settingsList}>
           <div className={styles.settingsItem}>
-            <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>📧</div>
-            <div className={styles.settingsInfo}>
-              <span className={styles.settingsLabel}>Email</span>
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{user?.email}</span>
-            </div>
-          </div>
-          <div className={styles.settingsItem}>
             <div className={styles.settingsIcon} style={{ background: '#3498db' }}>🌍</div>
             <div className={styles.settingsInfo}>
               <span className={styles.settingsLabel}>{t('profile.lang')}</span>
@@ -411,6 +404,14 @@ export default function ProfilePage({ role }) {
                 <option value="ro">{t('profile.roLang')}</option>
                 <option value="en">{t('profile.enLang')}</option>
               </select>
+            </div>
+          </div>
+          
+          <div className={styles.settingsItem}>
+            <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>📧</div>
+            <div className={styles.settingsInfo}>
+              <span className={styles.settingsLabel}>Email</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{user?.email}</span>
             </div>
           </div>
           
