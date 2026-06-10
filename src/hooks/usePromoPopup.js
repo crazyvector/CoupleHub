@@ -12,15 +12,16 @@ export function usePromoPopup(isPro) {
     // Așteptăm puțin pentru a nu bloca renderul inițial (mai puțin intruziv)
     const checkPromo = () => {
       try {
-        const lastShownDate = localStorage.getItem('lastPromoShownDate');
-        const today = new Date().toDateString();
+        const lastShownTime = parseInt(localStorage.getItem('lastPromoShownTime') || '0', 10);
+        const now = Date.now();
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-        if (lastShownDate !== today) {
-          // Șansă random să apară (ex: 25% la fiecare schimbare de rută sau reload)
-          // Dar maxim o dată pe zi. Dacă nimerim cei 25%, se afișează și setăm data.
-          if (Math.random() < 0.25) {
+        // Dacă au trecut mai mult de 7 zile de la ultima afișare
+        if (now - lastShownTime > SEVEN_DAYS) {
+          // Șansă random să apară (ex: 10% la fiecare schimbare de rută)
+          if (Math.random() < 0.10) {
             setShowPromo(true);
-            localStorage.setItem('lastPromoShownDate', today);
+            localStorage.setItem('lastPromoShownTime', now.toString());
           }
         }
       } catch (e) {

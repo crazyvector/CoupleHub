@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './ProPromoModal.module.css';
 
 export default function ProPromoModal({ onClose }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className={styles.overlay}>
@@ -14,17 +16,17 @@ export default function ProPromoModal({ onClose }) {
           💎
         </div>
         
-        <h2 className={styles.title}>Treci la PRO!</h2>
+        <h2 className={styles.title}>{t('proPromo.title')}</h2>
         
         <p className={styles.description}>
-          Susține dezvoltatorul și deblochează experiența completă CoupleHub:
+          {t('proPromo.desc')}
         </p>
         
         <ul className={styles.featuresList}>
-          <li>🚫 Fără reclame nicăieri în aplicație</li>
-          <li>♾️ Swipe-uri infinite la filme, idei de date & rețete</li>
-          <li>💌 Cupoane și amintiri nelimitate</li>
-          <li>🎨 Teme de chat personalizabile cu fundal</li>
+          <li>{t('proPromo.feat1')}</li>
+          <li>{t('proPromo.feat2')}</li>
+          <li>{t('proPromo.feat3')}</li>
+          <li>{t('proPromo.feat4')}</li>
         </ul>
         
         <div className={styles.actionButtons}>
@@ -35,13 +37,13 @@ export default function ProPromoModal({ onClose }) {
               navigate('/profile?tab=pro'); // Presupunem că direcționăm către profil
             }}
           >
-            Vezi Oferta PRO
+            {t('proPromo.viewOffer')}
           </button>
           <button 
             className={styles.skipBtn}
             onClick={onClose}
           >
-            Poate mai târziu
+            {t('proPromo.later')}
           </button>
         </div>
       </div>

@@ -345,6 +345,16 @@ export const translations = {
       "updateBtn": "Actualizează",
       "laterBtn": "Mai târziu"
     },
+    "proPromo": {
+      "title": "Treci la PRO!",
+      "desc": "Susține dezvoltatorul și deblochează experiența completă CoupleHub:",
+      "feat1": "🚫 Fără reclame nicăieri în aplicație",
+      "feat2": "♾️ Swipe-uri infinite la filme, idei de date & rețete",
+      "feat3": "💌 Cupoane și amintiri nelimitate",
+      "feat4": "🎨 Teme de chat personalizabile cu fundal",
+      "viewOffer": "Vezi Oferta PRO",
+      "later": "Poate mai târziu"
+    },
     "movies": {
       "recommendationsTitle": "Recomandări",
       "library": "Librărie",
@@ -1474,6 +1484,16 @@ export const translations = {
       "desc": "A new version is available. Update now!",
       "updateBtn": "Update",
       "laterBtn": "Later"
+    },
+    "proPromo": {
+      "title": "Upgrade to PRO!",
+      "desc": "Support the developer and unlock the full CoupleHub experience:",
+      "feat1": "🚫 No ads anywhere in the app",
+      "feat2": "♾️ Infinite swipes for movies, date ideas & recipes",
+      "feat3": "💌 Unlimited coupons and memories",
+      "feat4": "🎨 Custom chat themes with background",
+      "viewOffer": "View PRO Offer",
+      "later": "Maybe later"
     },
     "movies": {
       "recommendationsTitle": "Recommendations",
