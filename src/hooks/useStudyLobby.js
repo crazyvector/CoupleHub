@@ -114,7 +114,7 @@ export function useStudyLobby(role) {
     if (!role) return;
 
     const updatePresence = async (online) => {
-      const presRef = doc(db, STUDY_LOBBY_DOC, 'presence');
+      const presRef = doc(db, 'couples', coupleId, STUDY_LOBBY_COL, 'presence');
       await setDoc(presRef, {
         [role]: {
           online,
@@ -132,7 +132,7 @@ export function useStudyLobby(role) {
       clearInterval(interval);
       updatePresence(false);
     };
-  }, [role]);
+  }, [role, coupleId]);
 
   // Timer tick using wall-clock time for accuracy
   useEffect(() => {
@@ -186,7 +186,7 @@ export function useStudyLobby(role) {
       const minutesStudied = Math.round(workDuration / 60);
       const xpGain = Math.round(minutesStudied * (partnerOnline ? 1.5 : 1));
 
-      const lobbyRef = doc(db, STUDY_LOBBY_DOC, 'shared');
+      const lobbyRef = doc(db, 'couples', coupleId, STUDY_LOBBY_COL, 'shared');
       const newXP = (lobbyData.bonsaiXP || 0) + xpGain;
       const newStage = getBonsaiStage(newXP);
 
