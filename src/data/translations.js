@@ -1149,7 +1149,8 @@ export const translations = {
       "noCoupleError": "Eroare: Nu ești într-un cuplu.",
       "promoSuccess": "Felicitări! Ai deblocat Premium Lifetime! 🎉",
       "dbError": "Eroare la conectarea cu baza de date.",
-      "invalidPromo": "Cod promoțional invalid sau expirat."
+      "promoAlreadyUsed": "Acest cod a fost deja folosit.",
+      "invalidPromo": "Cod promoțional invalid."
     },
     "genres": {
       "action": "Acțiune",
@@ -2329,7 +2330,8 @@ export const translations = {
       "noCoupleError": "Error: You are not in a couple.",
       "promoSuccess": "Congratulations! You unlocked Premium Lifetime! 🎉",
       "dbError": "Database connection error.",
-      "invalidPromo": "Invalid or expired promo code."
+      "promoAlreadyUsed": "This code has already been used.",
+      "invalidPromo": "Invalid promo code."
     },
     "genres": {
       "action": "Action",

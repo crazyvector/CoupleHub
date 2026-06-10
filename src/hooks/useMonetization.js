@@ -3,10 +3,12 @@ import { AdMob, BannerAdSize, BannerAdPosition, RewardAdPluginEvents } from '@ca
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { useGlobalAuth } from '../contexts/AuthContext';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { useLanguage } from '../contexts/LanguageContext';
 import { db } from '../firebase';
 
 export function useMonetization() {
+  const { t } = useLanguage();
   const { userData, coupleId } = useGlobalAuth();
   const [isRCPro, setIsRCPro] = useState(false);
   const [isLifetimePro, setIsLifetimePro] = useState(false);
@@ -175,21 +177,46 @@ export function useMonetization() {
   };
 
   const redeemPromoCode = async (code) => {
-    if (!coupleId) return { success: false, message: "Eroare: Nu ești într-un cuplu." };
-    if (code === 'ANDREIPRO1') {
-      try {
-        await setDoc(doc(db, 'couples', coupleId, 'system', 'subscription'), {
+    if (!coupleId) return { success: false, message: t('monetization.noCoupleError') || "Eroare: Nu ești într-un cuplu." };
+    
+    try {
+      const dbInstance = db;
+      const message = await runTransaction(dbInstance, async (transaction) => {
+        const codeRef = doc(dbInstance, 'promoCodes', code.trim().toUpperCase());
+        const codeDoc = await transaction.get(codeRef);
+        
+        if (!codeDoc.exists()) {
+          throw new Error(t('monetization.invalidPromo') || "Cod promoțional invalid.");
+        }
+        
+        const data = codeDoc.data();
+        if (data.isUsed) {
+          throw new Error(t('monetization.promoAlreadyUsed') || "Acest cod a fost deja folosit.");
+        }
+        
+        // Mark code as used
+        transaction.update(codeRef, {
+          isUsed: true,
+          usedBy: coupleId,
+          usedAt: new Date().toISOString()
+        });
+        
+        // Grant lifetime PRO
+        const subRef = doc(dbInstance, 'couples', coupleId, 'system', 'subscription');
+        transaction.set(subRef, {
           isLifetimePro: true,
           redeemedAt: new Date().toISOString(),
-          codeUsed: code
+          codeUsed: code.trim().toUpperCase()
         }, { merge: true });
-        return { success: true, message: "Felicitări! Ai deblocat Premium Lifetime! 🎉" };
-      } catch (err) {
-        console.error("Eroare la activare promo code:", err);
-        return { success: false, message: "Eroare la conectarea cu baza de date." };
-      }
+        
+        return t('monetization.promoSuccess') || "Felicitări! Ai deblocat Premium Lifetime! 🎉";
+      });
+      
+      return { success: true, message };
+    } catch (err) {
+      console.error("Eroare la activare promo code:", err);
+      return { success: false, message: err.message || (t('monetization.dbError') || "Eroare la conectarea cu baza de date.") };
     }
-    return { success: false, message: "Cod promoțional invalid sau expirat." };
   };
 
   const getMapExportData = async () => {

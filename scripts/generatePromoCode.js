@@ -17,8 +17,8 @@ const db = getFirestore(app);
 async function generatePromo() {
   try {
     const code = Math.random().toString(36).substring(2, 12).toUpperCase();
-    await setDoc(doc(db, 'promo_codes', code), {
-      active: true,
+    await setDoc(doc(db, 'promoCodes', code), {
+      isUsed: false,
       usedBy: null,
       createdAt: new Date().toISOString()
     });
