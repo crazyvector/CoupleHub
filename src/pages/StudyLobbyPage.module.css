@@ -959,17 +959,17 @@
 }
 
 /* === THEME HER OVERRIDES (Light Pink Aesthetic) === */
-.themeHer.page { 
-  background: linear-gradient(160deg, #fff1f2 0%, #ffe4e6 40%, #fecdd3 100%); 
-  color: #881337; 
+.themeHer { 
+  background: linear-gradient(160deg, #fff1f2 0%, #ffe4e6 40%, #fecdd3 100%) !important; 
+  color: #881337 !important; 
 }
 .themeHer .loadingScreen { 
-  background: linear-gradient(160deg, #fff1f2 0%, #ffe4e6 40%, #fecdd3 100%); 
-  color: #881337; 
+  background: linear-gradient(160deg, #fff1f2 0%, #ffe4e6 40%, #fecdd3 100%) !important; 
+  color: #881337 !important; 
 }
-.themeHer .ambientBg { opacity: 0; } /* Hide stars */
-.themeHer .title { background: none; -webkit-text-fill-color: #9f1239; color: #9f1239; }
-.themeHer .subtitle { color: #be123c; }
+.themeHer .ambientBg { opacity: 0 !important; } /* Hide stars */
+.themeHer .title { background: none !important; -webkit-text-fill-color: #9f1239 !important; color: #9f1239 !important; }
+.themeHer .subtitle { color: #be123c !important; }
 
 /* Tabs */
 .themeHer .tabBar { background: rgba(255, 255, 255, 0.4); }
@@ -978,14 +978,14 @@
 
 /* Sections */
 .themeHer .bonsaiSection, .themeHer .timerSection, .themeHer .musicSection, .themeHer .tasksSection, .themeHer .presenceSection, .themeHer .taskColumn {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 20px rgba(225, 29, 72, 0.08);
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(225, 29, 72, 0.08) !important;
 }
 
 .themeHer .stageLabel, .themeHer .timerModeLabel, .themeHer .musicTitle, .themeHer .taskColumnHeader h3, .themeHer .presenceTitle {
-  color: #9f1239;
+  color: #9f1239 !important;
 }
 
 .themeHer .sessionsCount, .themeHer .musicSubtitle, .themeHer .presenceSubtitle { color: #be123c; opacity: 0.8; }

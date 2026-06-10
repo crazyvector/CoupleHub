@@ -67,7 +67,7 @@ export default function LoginPage({ useAuthHook }) {
     e.preventDefault();
     if (!email || !password || !name) return;
     if (!anniversaryDate) {
-      setError(lang === 'en' ? 'Please select your anniversary date!' : 'Te rugăm să introduci data aniversării voastre!');
+      setError(t('login.errorAnniversary') || 'Please select your anniversary date!');
       return;
     }
     setLoading(true);
@@ -217,7 +217,7 @@ export default function LoginPage({ useAuthHook }) {
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '5px' }}>
                   <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '5px', fontWeight: 'bold' }}>
-                    {lang === 'en' ? 'Anniversary Date' : 'Data Aniversării'}
+                    {t('login.anniversaryLabel') || 'Anniversary Date'}
                   </label>
                   <input
                     type="date"

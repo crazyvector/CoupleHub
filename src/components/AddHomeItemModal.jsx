@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './AddHomeItemModal.module.css';
 
 const ROOMS = [
-  { id: 'bucatarie', label: 'Bucătărie', icon: '🍳' },
-  { id: 'living', label: 'Living', icon: '🛋️' },
-  { id: 'dormitor', label: 'Dormitor', icon: '🛏️' },
-  { id: 'baie', label: 'Baie', icon: '🛁' },
-  { id: 'balcon', label: 'Balcon', icon: '🪴' },
-  { id: 'hol', label: 'Hol', icon: '🚪' },
-  { id: 'pod', label: 'Pod / Mansardă', icon: '🪜' },
-  { id: 'birou', label: 'Birou', icon: '💻' },
-  { id: 'idei_cautate', label: 'Căutări Libere', icon: '🔍' }
+  { id: 'bucatarie', label: t('homePlanner.kitchen'), icon: '🍳' },
+  { id: 'living', label: t('homePlanner.living'), icon: '🛋️' },
+  { id: 'dormitor', label: t('homePlanner.bedroom'), icon: '🛏️' },
+  { id: 'baie', label: t('homePlanner.bathroom'), icon: '🛁' },
+  { id: 'balcon', label: t('homePlanner.balcony'), icon: '🪴' },
+  { id: 'hol', label: t('homePlanner.hallway'), icon: '🚪' },
+  { id: 'pod', label: t('homePlanner.attic'), icon: '🪜' },
+  { id: 'birou', label: t('homePlanner.office'), icon: '💻' },
+  { id: 'idei_cautate', label: t('homePlanner.freeSearches'), icon: '🔍' }
 ];
 
-const PREDEFINED_TAGS = ['mobilă', 'tehnologie', 'finisaje', 'decorațiuni', 'accesorii', 'iluminat', 'inspirație'];
+const PREDEFINED_TAGS = [t('homePlanner.tags.furniture'), t('homePlanner.tags.technology'), t('homePlanner.tags.finishes'), t('homePlanner.tags.decorations'), t('homePlanner.tags.accessories'), t('homePlanner.tags.lighting'), t('homePlanner.tags.inspiration')];
 
 export default function AddHomeItemModal({ onClose, onSave, role, initialData = {} }) {
+  const { t } = useLanguage();
+
   const [title, setTitle] = useState(initialData.title || '');
   const [link, setLink] = useState(initialData.link || '');
   const [imageFile, setImageFile] = useState(null);
@@ -87,7 +90,7 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
 
   const handleSave = async () => {
     if (!title.trim()) {
-      alert("Te rog introdu măcar un titlu!");
+      alert(t('homePlanner.pleaseAddTitle'));
       return;
     }
     
@@ -99,7 +102,7 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
         finalImageUrl = await resizeImage(imageFile, 800, 0.6);
       } catch (err) {
         console.error("Eroare la procesarea imaginii:", err);
-        alert("Imaginea nu s-a putut procesa. Se va salva ideea fără imagine.");
+        alert(t('homePlanner.imageProcessError'));
         finalImageUrl = '';
       }
     }
@@ -116,7 +119,7 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
       });
     } catch (e) {
       console.error("Save error:", e);
-      alert("A apărut o eroare la salvare!");
+      alert(t('homePlanner.saveError'));
     } finally {
       setIsUploading(false);
     }
@@ -126,27 +129,27 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <button className={styles.closeBtn} onClick={onClose}>✕</button>
-        <h2 className={styles.title}>Adaugă Idee Nouă</h2>
+        <h2 className={styles.title}>{t('homePlanner.addNewIdea')}</h2>
         
         <div className={styles.formGroup}>
-          <label>Nume / Produs *</label>
+          <label>{t('homePlanner.nameLabel')}</label>
           <input 
             type="text" 
-            placeholder="Ex: Canapea colțar IKEA" 
+            placeholder={t('homePlanner.namePlaceholder')} 
             value={title} 
             onChange={e => setTitle(e.target.value)} 
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label>Cameră</label>
+          <label>{t('homePlanner.roomLabel')}</label>
           <select value={room} onChange={e => setRoom(e.target.value)}>
             {ROOMS.map(r => <option key={r.id} value={r.id}>{r.icon} {r.label}</option>)}
           </select>
         </div>
 
         <div className={styles.formGroup}>
-          <label>Link (URL produs/idee)</label>
+          <label>{t('homePlanner.linkLabel')}</label>
           <input 
             type="url" 
             placeholder="https://..." 
@@ -156,7 +159,7 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
         </div>
 
         <div className={styles.formGroup}>
-          <label>Imagine (Opțional)</label>
+          <label>{t('homePlanner.imageLabel')}</label>
           <input 
             type="file" 
             accept="image/*"
@@ -167,17 +170,17 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
         </div>
 
         <div className={styles.formGroup}>
-          <label>Preț estimativ (Opțional)</label>
+          <label>{t('homePlanner.priceLabel')}</label>
           <input 
             type="text" 
-            placeholder="Ex: 2500 RON" 
+            placeholder={t('homePlanner.pricePlaceholder')} 
             value={price} 
             onChange={e => setPrice(e.target.value)} 
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label>Etichete (Tags)</label>
+          <label>{t('homePlanner.tagsLabel')}</label>
           <div className={styles.tagsContainer}>
             {PREDEFINED_TAGS.map(t => (
               <span 
@@ -201,7 +204,7 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
           <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
             <input 
               type="text" 
-              placeholder="Tag nou..." 
+              placeholder={t('homePlanner.newTagPlaceholder')} 
               value={customTag} 
               onChange={e => setCustomTag(e.target.value)} 
               onKeyPress={e => e.key === 'Enter' && handleAddCustomTag()}
@@ -211,7 +214,7 @@ export default function AddHomeItemModal({ onClose, onSave, role, initialData = 
         </div>
 
         <button className={styles.saveBtn} onClick={handleSave} disabled={isUploading}>
-          {isUploading ? 'Se încarcă...' : 'Salvează Ideea'}
+          {isUploading ? t('common.loading') : t('homePlanner.saveIdea')}
         </button>
       </div>
     </div>

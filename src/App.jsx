@@ -89,8 +89,8 @@ function UpdatePrompt() {
       <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
         <span style={{ fontSize: '2rem' }}>✨</span>
         <div>
-          <h3 style={{ margin: 0, color: 'var(--text-primary, #333)' }}>{t('update.title') || 'Actualizare nouă!'}</h3>
-          <p style={{ margin: '5px 0 0', fontSize: '0.9rem', color: 'var(--text-secondary, #666)' }}>{t('update.desc') || 'Avem o versiune nouă. Actualizează acum!'}</p>
+          <h3 style={{ margin: 0, color: 'var(--text-primary, #333)' }}>{t('update.title') }</h3>
+          <p style={{ margin: '5px 0 0', fontSize: '0.9rem', color: 'var(--text-secondary, #666)' }}>{t('update.desc') }</p>
         </div>
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
@@ -98,13 +98,13 @@ function UpdatePrompt() {
           style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'var(--accent-primary, #ff416c)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
           onClick={() => updateServiceWorker(true)}
         >
-          {t('update.updateBtn') || 'Actualizează'}
+          {t('update.updateBtn') }
         </button>
         <button 
           style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'transparent', color: 'var(--text-primary, #333)', border: '1px solid var(--border-color, #ccc)', fontWeight: 'bold', cursor: 'pointer' }}
           onClick={() => setNeedRefresh(false)}
         >
-          {t('update.laterBtn') || 'Mai târziu'}
+          {t('update.laterBtn') }
         </button>
       </div>
     </div>
@@ -288,7 +288,7 @@ function ChatNotificationManager({ role }) {
           try {
             const perm = await LocalNotifications.requestPermissions();
             if (perm.display === 'granted') {
-              const partnerName = partnerProfile?.name || (role === 'his' ? 'Ana' : 'Andrei');
+              const partnerName = partnerProfile?.name || (role === 'his' ? t('common.partner') : t('common.partner'));
               await LocalNotifications.schedule({
                 notifications: [{
                   title: t('notifications.chatNewMessageTitle').replace('{name}', partnerName),

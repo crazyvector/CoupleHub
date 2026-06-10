@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './ItemDetailsModal.module.css';
 
 export default function ItemDetailsModal({ item, onClose, role, onAddComment, onSetLike, onDelete, onEdit }) {
+  const { t } = useLanguage();
+
   const [commentText, setCommentText] = useState('');
   const partnerRole = role === 'his' ? 'her' : 'his';
 
@@ -36,7 +39,7 @@ export default function ItemDetailsModal({ item, onClose, role, onAddComment, on
           
           {item.link && (
             <a href={item.link} target="_blank" rel="noreferrer" className={styles.linkBtn}>
-              🔗 Deschide Link Produs
+              {t('homePlanner.openProductLink')}
             </a>
           )}
 
@@ -47,10 +50,10 @@ export default function ItemDetailsModal({ item, onClose, role, onAddComment, on
           </div>
 
           <div className={styles.approvalSection}>
-            <p className={styles.approvalTitle}>Părerea voastră:</p>
+            <p className={styles.approvalTitle}>{t('homePlanner.yourOpinion')}</p>
             <div className={styles.statusRow}>
-              <span>Tu: {hasMyLike ? '✅ Aprobat' : hasMyDislike ? '❌ Respins' : '⏳ Așteaptă decizia'}</span>
-              <span>Partenerul: {partnerLike === true ? '✅ Aprobat' : partnerLike === false ? '❌ Respins' : '⏳ Așteaptă decizia'}</span>
+              <span>{t('homePlanner.you')} {hasMyLike ? t('homePlanner.approved') : hasMyDislike ? t('homePlanner.rejected') : t('homePlanner.waitingDecision')}</span>
+              <span>{t('homePlanner.partner')} {partnerLike === true ? t('homePlanner.approved') : partnerLike === false ? t('homePlanner.rejected') : t('homePlanner.waitingDecision')}</span>
             </div>
 
             <div className={styles.actionButtons}>
@@ -58,31 +61,31 @@ export default function ItemDetailsModal({ item, onClose, role, onAddComment, on
                 className={`${styles.actionBtn} ${hasMyDislike ? styles.activeDislike : ''}`}
                 onClick={() => onSetLike(item.id, role, false)}
               >
-                👎 Nu-mi place
+                {t('homePlanner.dislike')}
               </button>
               <button 
                 className={`${styles.actionBtn} ${hasMyLike ? styles.activeLike : ''}`}
                 onClick={() => onSetLike(item.id, role, true)}
               >
-                ❤️ Perfect!
+                {t('homePlanner.perfect')}
               </button>
             </div>
             
             {role === item.addedBy && (
               <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
-                <button className={styles.editBtn} onClick={() => { onClose(); onEdit(item); }}>✏️ Editează</button>
+                <button className={styles.editBtn} onClick={() => { onClose(); onEdit(item); }}>{t('homePlanner.edit')}</button>
                 <button className={styles.deleteBtn} onClick={() => {
-                  if(window.confirm("Sigur vrei să ștergi acest element?")) {
+                  if(window.confirm(t('homePlanner.confirmDelete'))) {
                     onDelete(item.id);
                     onClose();
                   }
-                }}>🗑️ Șterge Ideea</button>
+                }}>{t('homePlanner.deleteIdea')}</button>
               </div>
             )}
           </div>
 
           <div className={styles.chatSection}>
-            <h3 className={styles.chatTitle}>Discuții ({item.comments?.length || 0})</h3>
+            <h3 className={styles.chatTitle}>{t('homePlanner.discussions')} ({item.comments?.length || 0})</h3>
             <div className={styles.chatBox}>
               {item.comments?.length > 0 ? (
                 item.comments.map((c, idx) => (
@@ -92,14 +95,14 @@ export default function ItemDetailsModal({ item, onClose, role, onAddComment, on
                   </div>
                 ))
               ) : (
-                <p className={styles.noComments}>Niciun comentariu. Începe discuția!</p>
+                <p className={styles.noComments}>{t('homePlanner.noComments')}</p>
               )}
             </div>
 
             <div className={styles.chatInputArea}>
               <input 
                 type="text" 
-                placeholder="Scrie un comentariu..." 
+                placeholder={t('homePlanner.writeComment')} 
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && handleSendComment()}

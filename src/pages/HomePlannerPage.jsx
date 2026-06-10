@@ -3,6 +3,7 @@ import styles from './HomePlannerPage.module.css';
 import SwipeCard from '../components/SwipeCard';
 import AddHomeItemModal from '../components/AddHomeItemModal';
 import ItemDetailsModal from '../components/ItemDetailsModal';
+import RewardModal from '../components/RewardModal';
 import { useHomeItems } from '../hooks/useHomePlanner';
 import { fetchInteriorIdeas } from '../utils/unsplash';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -30,7 +31,7 @@ const MOCK_IDEAS = [
 export default function HomePlannerPage({ role }) {
   const { items, addItem, deleteItem, updateItem, setItemLike, addComment, loading } = useHomeItems();
   const { addNotification } = useNotifications(role);
-  const { isPro } = useMonetization();
+  const { isPro, showRewardedAd } = useMonetization();
   
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'swipe', 'matches'
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -42,6 +43,9 @@ export default function HomePlannerPage({ role }) {
   const [swipeRoomPrompt, setSwipeRoomPrompt] = useState(null); // cand dai swipe right
   const [fullScreenSwipeItem, setFullScreenSwipeItem] = useState(null); // cand dai click pe swipe card
   const [matchNotification, setMatchNotification] = useState(null); // in-app toast
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [rewardLoading, setRewardLoading] = useState(false);
+  const [rewardType, setRewardType] = useState(null);
 
   // Swipe State
   const [swipeCategory, setSwipeCategory] = useState(null);
@@ -174,22 +178,20 @@ export default function HomePlannerPage({ role }) {
     setSwipeLoading(false);
   };
 
-  const getNextMonthName = () => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    return d.toLocaleString(lang === 'en' ? 'en-US' : 'ro-RO', { month: 'long' });
-  };
-
   const checkSwipeLimit = () => {
     if (isPro) return true;
     
     const currentMonth = new Date().toISOString().slice(0, 7);
     const swipeKey = `homePlanner_swipes_${currentMonth}_${role}`;
-    const swipes = parseInt(localStorage.getItem(swipeKey) || '0', 10);
+    const extraKey = `extra_swipes_${currentMonth}_${role}`;
     
-    if (swipes >= 15) {
-      const monthName = getNextMonthName();
-      alert(t('homePlanner.swipeLimit') || `Ai atins limita de 15 swipe-uri gratuite pe luna aceasta. Se va reseta pe 1 ${monthName}. Treci la Premium pentru swipe-uri nelimitate!`);
+    const swipes = parseInt(localStorage.getItem(swipeKey) || '0', 10);
+    const extraSwipes = parseInt(localStorage.getItem(extraKey) || '0', 10);
+    const totalAllowed = 15 + extraSwipes;
+    
+    if (swipes >= totalAllowed) {
+      setRewardType('swipe');
+      setShowRewardModal(true);
       return false;
     }
     
@@ -209,9 +211,15 @@ export default function HomePlannerPage({ role }) {
     if (existingMatch) {
       await handleSetItemLike(existingMatch.id, role, true);
     } else {
-      if (!isPro && items.filter(i => i.addedBy === role).length >= 100) {
-        alert("Ai atins limita maxima de idei salvate gratuite! Treci la Premium pentru stocare nelimitată.");
-        return;
+      if (!isPro) {
+        const extraKey = `extra_ideas_${role}`;
+        const extraIdeas = parseInt(localStorage.getItem(extraKey) || '0', 10);
+        const limit = 5 + extraIdeas;
+        if (items.filter(i => i.addedBy === role).length >= limit) {
+          setRewardType('idea');
+          setShowRewardModal(true);
+          return;
+        }
       }
       const roomAssigned = swipeCategory ? swipeCategory.roomId : 'living';
 
@@ -227,6 +235,24 @@ export default function HomePlannerPage({ role }) {
     }
 
     setCards(prev => prev.filter(c => c.id !== item.id));
+  };
+
+  const handleWatchAd = async () => {
+    setRewardLoading(true);
+    await showRewardedAd(() => {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      if (rewardType === 'swipe') {
+        const extraKey = `extra_swipes_${currentMonth}_${role}`;
+        const extraSwipes = parseInt(localStorage.getItem(extraKey) || '0', 10);
+        localStorage.setItem(extraKey, (extraSwipes + 5).toString());
+      } else if (rewardType === 'idea') {
+        const extraKey = `extra_ideas_${role}`;
+        const extraIdeas = parseInt(localStorage.getItem(extraKey) || '0', 10);
+        localStorage.setItem(extraKey, (extraIdeas + 1).toString());
+      }
+      setShowRewardModal(false);
+    });
+    setRewardLoading(false);
   };
 
   // ------- RENDERING -------
@@ -651,9 +677,15 @@ export default function HomePlannerPage({ role }) {
       {/* Floating Action Button (Doar pe Dashboard) */}
       {activeTab === 'dashboard' && (
         <button className={styles.fab} onClick={() => {
-          if (!isPro && items.length >= 5) {
-            alert("Ai atins limita de 5 idei gratuite! Treci la Premium pentru stocare nelimitată.");
-            return;
+          if (!isPro) {
+            const extraKey = `extra_ideas_${role}`;
+            const extraIdeas = parseInt(localStorage.getItem(extraKey) || '0', 10);
+            const limit = 5 + extraIdeas;
+            if (items.filter(i => i.addedBy === role).length >= limit) {
+              setRewardType('idea');
+              setShowRewardModal(true);
+              return;
+            }
           }
           setShowAddModal(true);
         }}>
@@ -737,6 +769,16 @@ export default function HomePlannerPage({ role }) {
         </div>
       )}
 
+      <RewardModal 
+        isOpen={showRewardModal} 
+        onClose={() => setShowRewardModal(false)}
+        onWatchAd={handleWatchAd}
+        onGoPro={() => window.location.href='/profile'}
+        loading={rewardLoading}
+        title={t('reward.title')}
+        description={t('reward.desc')}
+        rewardText={rewardType === 'swipe' ? '+5 Swipe-uri 🎁' : '+1 Idee Salvată 🎁'}
+      />
     </div>
   );
 }

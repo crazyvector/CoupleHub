@@ -21,7 +21,7 @@ export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t 
       }}
     >
       <div style={{ textAlign: 'center', marginBottom: '60px', borderBottom: '2px dashed #FFB5C8', paddingBottom: '30px' }}>
-        <h1 style={{ fontSize: '3.5rem', margin: '0 0 15px', color: '#FFB5C8', fontFamily: "'Dancing Script', 'Georgia', cursive" }}>{t('memories.pdfTitle') || 'Cartea Noastră de Amintiri'}</h1>
+        <h1 style={{ fontSize: '3.5rem', margin: '0 0 15px', color: '#FFB5C8', fontFamily: "'Dancing Script', 'Georgia', cursive" }}>{t('memories.pdfTitle') }</h1>
         <h2 style={{ fontSize: '1.8rem', margin: 0, color: '#777', fontStyle: 'italic' }}>
           {coupleNames.myName} & {coupleNames.partnerName}
         </h2>
@@ -98,13 +98,13 @@ export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t 
                 {m.emoji} {m.title}
               </h3>
               <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: '#555', margin: 0 }}>
-                {m.description || t('memories.pdfDefaultDesc') || "O amintire de neuitat..."}
+                {m.description || t('memories.pdfDefaultDesc') }
               </p>
               
               {/* Reactions */}
               {m.reactions && m.reactions.length > 0 && (
                 <div style={{ marginTop: '20px', padding: '10px', background: '#f9f9f9', borderRadius: '8px', textAlign: 'left' }}>
-                  <strong style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#FFB5C8' }}>{t('memories.pdfComments') || 'Comentarii:'}</strong>
+                  <strong style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#FFB5C8' }}>{t('memories.pdfComments') }</strong>
                   {m.reactions.map((r, i) => (
                     <div key={i} style={{ fontSize: '0.9rem', color: '#666', marginBottom: '4px' }}>
                       <strong>{r.sender === 'his' ? coupleNames.hisName : coupleNames.herName}: </strong>
@@ -119,7 +119,7 @@ export const ScrapbookExport = React.forwardRef(({ id, memories, coupleNames, t 
       </div>
       
       <div style={{ textAlign: 'center', marginTop: '60px', color: '#aaa', fontSize: '0.9rem' }}>
-        {t('memories.pdfFooter') || 'Generat cu iubire prin CoupleHub 💕'}
+        {t('memories.pdfFooter') }
       </div>
     </div>
   );

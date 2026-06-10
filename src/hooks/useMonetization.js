@@ -121,7 +121,7 @@ export function useMonetization() {
     if (!isAdMobReady || isRCPro || isLifetimePro || !Capacitor.isNativePlatform()) return;
     try {
       await AdMob.prepareRewardVideoAd({
-        adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded ID
+        adId: 'ca-app-pub-8580245815605338/1215103221', // Real Rewarded ID
         isTesting: false
       });
     } catch (e) {

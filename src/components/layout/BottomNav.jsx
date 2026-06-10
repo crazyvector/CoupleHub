@@ -42,7 +42,7 @@ export default function BottomNav({ role }) {
   }
 
   return (
-    <nav ref={navRef} className={styles.nav} aria-label="Navigare principală">
+    <nav ref={navRef} className={styles.nav} aria-label={t('nav.mainNavigation')}>
       {navItems.map(({ to, icon, label, id }) => {
         const isActive = to === '/'
           ? location.pathname === '/'

@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import styles from './SwipeCard.module.css';
 
 export default function SwipeCard({ item, onSwipeRight, onSwipeLeft, onClick }) {
+  const { t } = useLanguage();
+
   const cardRef = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);

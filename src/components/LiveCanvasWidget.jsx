@@ -48,7 +48,7 @@ export default function LiveCanvasWidget() {
     const dataUrl = canvasRef.current.toDataURL('image/png');
     const targetRole = role === 'her' ? 'his' : 'her';
     await sendDrawing(dataUrl, role, targetRole);
-    await addNotification(t('dashboard.drawSomething') || 'Desen nou!', 'Ai primit un desen nou pe ecranul principal!', role);
+    await addNotification(t('dashboard.drawSomething') , 'Ai primit un desen nou pe ecranul principal!', role);
     clearCanvas();
     setIsSending(false);
     alert("Desen trimis cu succes! ✈️");
@@ -88,8 +88,8 @@ export default function LiveCanvasWidget() {
   const handleSaveToMemories = async () => {
     if (!pendingDrawing) return;
     await addMemory({
-      title: t('memories.newPhoto') || 'Poză nouă',
-      description: 'Desen drăguț primit pe Dashboard! 🎨',
+      title: t('memories.newPhoto') ,
+      description: t('dashboard.drawingReceivedDesc'),
       imagePath: pendingDrawing.image,
       category: 'love',
       date: new Date().toISOString()
@@ -110,7 +110,7 @@ export default function LiveCanvasWidget() {
           <h3 className={styles.canvasTitle}>{t('dashboard.receivedDrawing')}</h3>
         </div>
         <div style={{ padding: '10px', background: 'white', borderRadius: '12px', marginBottom: '10px' }}>
-          <img src={pendingDrawing.image} alt="Desen primit" style={{ width: '100%', borderRadius: '8px' }} />
+          <img src={pendingDrawing.image} alt={t('dashboard.drawingAlt')} style={{ width: '100%', borderRadius: '8px' }} />
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={handleDiscard} style={{ flex: 1, padding: '10px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' }}>

@@ -179,6 +179,39 @@ export function useEvents() {
 }
 
 // ==========================================
+// Util: Chat Theme
+// ==========================================
+export function useChatTheme() {
+  const auth = useGlobalAuth();
+  const coupleId = auth?.coupleId;
+
+  const [chatTheme, setChatTheme] = useState({
+    backgroundColor: '#ffffff',
+    backgroundImage: null,
+    isGradient: false
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!coupleId) return;
+    const unsubscribe = onSnapshot(doc(db, 'couples', coupleId, SYSTEM_COL, 'chatTheme'), (d) => {
+      if (d.exists()) {
+        setChatTheme(d.data());
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [coupleId]);
+
+  const updateChatTheme = async (themeData) => {
+    if (!coupleId) return;
+    await setDoc(doc(db, 'couples', coupleId, SYSTEM_COL, 'chatTheme'), themeData, { merge: true });
+  };
+
+  return { chatTheme, updateChatTheme, loading };
+}
+
+// ==========================================
 // Util: System State (Coupons, Scratch)
 // ==========================================
 export function useSystemState() {

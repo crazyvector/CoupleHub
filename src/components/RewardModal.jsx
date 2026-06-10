@@ -42,11 +42,11 @@ export default function RewardModal({
             {loading ? t('common.loading') : (rewardText || t('reward.watchAd'))}
           </button>
           
-          <div style={styles.orText}>{t('common.or') || 'SAU'}</div>
+          <div style={styles.orText}>{t('common.or') }</div>
 
           <button style={styles.proBtn} onClick={onGoPro}>
             <FaCrown size={18} color="#f1c40f" />
-            {t('reward.goPro') || 'Treci la Premium (Nelimitat)'}
+            {t('reward.goPro') }
           </button>
         </div>
       </div>

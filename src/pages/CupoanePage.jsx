@@ -4,6 +4,7 @@ import { useCustomCoupons, useNotifications, useProfiles } from '../hooks/useDat
 import styles from './CupoanePage.module.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMonetization } from '../hooks/useMonetization';
+import RewardModal from '../components/RewardModal';
 
 // ============================================================
 // Confetti Burst component (canvas-based)
@@ -364,7 +365,7 @@ export default function CupoanePage() {
   const { addNotification } = useNotifications();
   const { profile } = useProfiles(role);
   const { t } = useLanguage();
-  const { isPro } = useMonetization();
+  const { isPro, showRewardedAd } = useMonetization();
   
   const [activeTab, setActiveTab] = useState('received'); // 'received' sau 'created'
   const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -373,6 +374,9 @@ export default function CupoanePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [confetti, setConfetti] = useState({ active: false, x: 0, y: 0 });
   const [toast, setToast] = useState(null);
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [rewardLoading, setRewardLoading] = useState(false);
+  const [pendingCouponData, setPendingCouponData] = useState(null);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -414,9 +418,16 @@ export default function CupoanePage() {
   };
 
   const handleCreateCoupon = async (data) => {
-    if (!isPro && createdCoupons.length >= 3) {
-      alert("Ai atins limita de 3 cupoane active! Treci la Premium pentru cupoane nelimitate sau șterge din cele existente.");
-      return;
+    if (!isPro) {
+      const extraKey = `extra_coupons_${role}`;
+      const extraCoupons = parseInt(localStorage.getItem(extraKey) || '0', 10);
+      const limit = 3 + extraCoupons;
+      
+      if (createdCoupons.length >= limit) {
+        setPendingCouponData(data); // save data to create after ad
+        setShowRewardModal(true);
+        return;
+      }
     }
 
     setIsRedeeming(true);
@@ -433,6 +444,23 @@ export default function CupoanePage() {
       showToast(t('coupons.createError'), 'error');
     }
     setIsRedeeming(false);
+  };
+
+  const handleWatchAd = async () => {
+    setRewardLoading(true);
+    await showRewardedAd(async () => {
+      const extraKey = `extra_coupons_${role}`;
+      const extraCoupons = parseInt(localStorage.getItem(extraKey) || '0', 10);
+      localStorage.setItem(extraKey, (extraCoupons + 1).toString());
+      setShowRewardModal(false);
+      
+      // Dacă avea un cupon pregătit, îl adăugăm automat
+      if (pendingCouponData) {
+        await handleCreateCoupon(pendingCouponData);
+        setPendingCouponData(null);
+      }
+    });
+    setRewardLoading(false);
   };
 
   const handleConfirmSuggestion = async (suggestionText) => {
@@ -529,6 +557,20 @@ export default function CupoanePage() {
           isLoading={isRedeeming}
         />
       )}
+      
+      <RewardModal 
+        isOpen={showRewardModal} 
+        onClose={() => {
+          setShowRewardModal(false);
+          setPendingCouponData(null);
+        }}
+        onWatchAd={handleWatchAd}
+        onGoPro={() => window.location.href='/profile'}
+        loading={rewardLoading}
+        title={t('reward.title')}
+        description={t('reward.desc')}
+        rewardText={'+1 Cupon Activ 🎁'}
+      />
 
       <header className={styles.header}>
         <div className={styles.headerText}>

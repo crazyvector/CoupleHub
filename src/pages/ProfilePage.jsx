@@ -478,7 +478,7 @@ export default function ProfilePage({ role }) {
                 onClick={() => setShowBreakupConfirm(false)}
                 style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: '#f0f0f0', color: '#333', fontWeight: 'bold' }}
               >
-                Anulare
+                {t('common.cancel') || 'Anulare'}
               </button>
               <button 
                 onClick={async () => {
@@ -494,7 +494,7 @@ export default function ProfilePage({ role }) {
                 }}
                 style={{ flex: 1, padding: '12px', borderRadius: '25px', border: 'none', background: '#e74c3c', color: 'white', fontWeight: 'bold' }}
               >
-                Confirmă
+                {t('common.confirm') || 'Confirmă'}
               </button>
             </div>
           </div>

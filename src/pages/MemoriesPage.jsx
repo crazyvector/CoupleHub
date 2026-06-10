@@ -11,6 +11,7 @@ import 'leaflet/dist/leaflet.css';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ScrapbookExport } from '../components/ScrapbookExport';
+import RewardModal from '../components/RewardModal';
 
 // ============================================================
 // Harta Leaflet - Configurare
@@ -351,7 +352,7 @@ export default function MemoriesPage({ role }) {
   const targetRole = role === 'her' ? 'his' : 'her';
   const { profile: targetProfile } = useProfiles(targetRole);
   const { t, lang } = useLanguage();
-  const { isPro } = useMonetization();
+  const { isPro, getMapExportData, incrementMapExport, showRewardedAd } = useMonetization();
 
   const myName = myProfile?.name || (role === 'her' ? 'Ana' : 'Andrei');
   const partnerName = targetProfile?.name || (targetRole === 'her' ? 'Ana' : 'Andrei');
@@ -365,7 +366,10 @@ export default function MemoriesPage({ role }) {
   const [isExporting, setIsExporting] = useState(false);
   const [renderScrapbook, setRenderScrapbook] = useState(false);
   const [isMockExport, setIsMockExport] = useState(false);
-  const { getMapExportData, incrementMapExport } = useMonetization();
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [rewardLoading, setRewardLoading] = useState(false);
 
   const getNextMonthName = () => {
     const d = new Date();
@@ -377,15 +381,32 @@ export default function MemoriesPage({ role }) {
     if (isPro) return true;
     
     const currentMonth = new Date().toISOString().slice(0, 7);
+    const extraKey = `extra_memories_${currentMonth}`;
+    const extraMemories = parseInt(localStorage.getItem(extraKey) || '0', 10);
+    const limit = 10 + extraMemories;
+
     const memoriesThisMonth = memories.filter(m => m.timestamp && m.timestamp.slice(0, 7) === currentMonth).length;
     
-    if (memoriesThisMonth >= 10) {
-      const monthName = getNextMonthName();
-      const msgTemplate = t('memories.ideaLimitReached') || "Ai atins limita de 10 amintiri gratuite pe luna aceasta. Se va reseta pe 1 {month}. Treci la Premium pentru amintiri nelimitate!";
-      alert(msgTemplate.replace('{month}', monthName));
+    if (memoriesThisMonth >= limit) {
+      setShowRewardModal(true);
       return false;
     }
     return true;
+  };
+
+  const handleWatchAd = async () => {
+    setRewardLoading(true);
+    await showRewardedAd(() => {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const extraKey = `extra_memories_${currentMonth}`;
+      const extraMemories = parseInt(localStorage.getItem(extraKey) || '0', 10);
+      localStorage.setItem(extraKey, (extraMemories + 1).toString());
+      setShowRewardModal(false);
+      
+      // Auto-open add menu if they were trying to add
+      setTimeout(() => setShowAddMenu(true), 300);
+    });
+    setRewardLoading(false);
   };
 
   const handleExportPDF = async () => {
@@ -676,6 +697,17 @@ export default function MemoriesPage({ role }) {
           />
         </div>
       </div>
+
+      <RewardModal 
+        isOpen={showRewardModal} 
+        onClose={() => setShowRewardModal(false)}
+        onWatchAd={handleWatchAd}
+        onGoPro={() => window.location.href='/profile'}
+        loading={rewardLoading}
+        title={t('reward.title')}
+        description={t('reward.desc')}
+        rewardText={'+1 Amintire 🎁'}
+      />
     </div>
   );
 }

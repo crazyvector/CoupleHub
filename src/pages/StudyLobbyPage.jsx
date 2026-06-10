@@ -197,8 +197,10 @@ export default function StudyLobbyPage({ role }) {
     </div>;
   }
 
+  const isGirl = myProfile?.gender === 'F' || (!myProfile && role === 'her');
+
   return (
-    <div className={`${styles.page} ${role === 'her' ? styles.themeHer : ''}`}>
+    <div className={`${styles.page} ${isGirl ? styles.themeHer : ''}`}>
       {/* Ambient Background */}
       <div className={styles.ambientBg}>
         <div className={styles.star} style={{ top: '10%', left: '15%', animationDelay: '0s' }}></div>

@@ -80,7 +80,7 @@ export function useAuth() {
         gender,
         pairKey,
         coupleId: null,
-        role: 'his', // Standard initial
+        role: gender === 'F' ? 'her' : 'his',
         anniversaryDate: anniversaryDate || null,
         status: 'waiting',
         createdAt: Date.now()
@@ -132,7 +132,7 @@ export function useAuth() {
 
   // Pasul 2: Conectarea la un partener
   const linkPartner = async (rawPartnerKey, myName, myGender = 'M') => {
-    if (!user) return { success: false, error: 'Neautentificat' };
+    if (!user) return { success: false, error: 'Not authenticated' };
     
     const partnerKey = rawPartnerKey.trim().toUpperCase();
 
@@ -167,7 +167,7 @@ export function useAuth() {
       const snap = await getDocs(q);
       
       if (snap.empty) {
-        return { success: false, error: 'Cheia nu a fost găsită.' };
+        return { success: false, error: 'Key not found' };
       }
       
       const partnerDoc = snap.docs[0];
@@ -175,7 +175,7 @@ export function useAuth() {
       
       // Dacă partenerul are deja un cuplu
       if (partnerData.coupleId) {
-        return { success: false, error: 'Această cheie este deja asociată unui cuplu activ!' };
+        return { success: false, error: 'This key is already associated with an active couple!' };
       }
 
       // Fetch my own data to check for memory restoration
@@ -193,12 +193,25 @@ export function useAuth() {
         newCoupleId = partnerDoc.id + '_' + user.uid;
       }
       
+      let partnerGender = partnerData.gender || 'M';
+      let myRole = myGender === 'F' ? 'her' : 'his';
+      let partnerRole = partnerGender === 'F' ? 'her' : 'his';
+
+      // Conflict resolution for same-sex couples or identical default roles
+      if (myRole === partnerRole) {
+        if (myRole === 'his') {
+          myRole = 'her'; // Fallback to avoid collision
+        } else {
+          myRole = 'his';
+        }
+      }
+
       // Salvăm datele noastre (caz nou) - fără să rescriem pairKey
       await setDoc(doc(db, 'users', user.uid), {
         name: myName,
         gender: myGender,
         coupleId: newCoupleId,
-        role: 'her', // Partenerul secundar devine automat 'her' la împerechere generică
+        role: myRole, 
         status: 'paired',
         createdAt: Date.now()
       }, { merge: true });
@@ -207,26 +220,26 @@ export function useAuth() {
       await updateDoc(doc(db, 'users', partnerDoc.id), {
         coupleId: newCoupleId,
         status: 'paired',
-        role: 'his' // Primul partener devine 'his' automat
+        role: partnerRole 
       });
       
       // Cream profilele initiale in colectia couples
-      await setDoc(doc(db, 'couples', newCoupleId, 'profiles', 'her'), {
+      await setDoc(doc(db, 'couples', newCoupleId, 'profiles', myRole), {
         name: myName,
         gender: myGender,
         isConfigured: false
       }, { merge: true });
       
-      await setDoc(doc(db, 'couples', newCoupleId, 'profiles', 'his'), {
+      await setDoc(doc(db, 'couples', newCoupleId, 'profiles', partnerRole), {
         name: partnerData.name,
-        gender: partnerData.gender || 'M', // Fallback in caz ca partenerul nu avea setat
+        gender: partnerGender,
         isConfigured: false
       }, { merge: true });
       
       return { success: true };
     } catch(err) {
        console.error(err);
-       return { success: false, error: 'Eroare la conectare' };
+       return { success: false, error: 'Login error' };
     }
   };
 
@@ -235,39 +248,59 @@ export function useAuth() {
   };
 
   const breakUp = async () => {
-    if (!user || !userData || !userData.coupleId) return;
+    if (!user || !userData) return;
     
     try {
       const coupleId = userData.coupleId;
       
-      // IMPORTANT: We NO LONGER delete any data or subcollections.
-      // This allows for "memory restoration" if they reconcile.
-
-      // Reset both users
-      try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('coupleId', '==', coupleId));
-        const snap = await getDocs(q);
-        
-        const resetPromises = snap.docs.map(docSnap => {
+      if (coupleId) {
+        // Reset both users if possible
+        try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('coupleId', '==', coupleId));
+          const snap = await getDocs(q);
+          
+          const resetPromises = snap.docs.map(docSnap => {
+            const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
+            return updateDoc(docSnap.ref, {
+              status: 'new',
+              coupleId: null,
+              oldCoupleId: coupleId,
+              pairKey: newKey,
+              role: null
+            });
+          });
+          await Promise.all(resetPromises);
+        } catch (e) {
+          console.warn("Could not reset both users via query:", e);
+          
+          // Fallback: reset current user at least
           const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
-          return updateDoc(docSnap.ref, {
+          await updateDoc(doc(db, 'users', user.uid), {
             status: 'new',
             coupleId: null,
-            oldCoupleId: coupleId, // Save for potential reconciliation!
+            oldCoupleId: coupleId,
             pairKey: newKey,
             role: null
           });
+        }
+      } else {
+        // Just reset current user if they have no coupleId but want to break up (edge case)
+        const newKey = Math.random().toString(36).substring(2, 8).toUpperCase();
+        await updateDoc(doc(db, 'users', user.uid), {
+          status: 'new',
+          coupleId: null,
+          pairKey: newKey,
+          role: null
         });
-        await Promise.all(resetPromises);
-      } catch (e) {
-        console.warn("Could not reset users:", e);
       }
       
       await logout();
+      window.location.href = '/login'; // Force reload/redirect to ensure UI reset
     } catch(err) {
       console.error("Error breaking up", err);
       await logout();
+      window.location.href = '/login';
     }
   };
 

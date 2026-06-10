@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useChat, useProfiles } from '../hooks/useDatabase';
+import { useChat, useProfiles, useChatTheme } from '../hooks/useDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
 import styles from './MessagesPage.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 import { stickerPacks } from '../utils/stickers';
+import ChatSettingsModal from '../components/ChatSettingsModal';
 
 const REACTIONS = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
 
@@ -13,7 +14,8 @@ const DEFAULT_AVATAR_HER = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&
 
 export default function MessagesPage({ role }) {
   const navigate = useNavigate();
-  const { messages, partnerTyping, sendMessage, sendSticker, setTyping, markAsRead, setReaction, loading } = useChat(role);
+  const { messages, partnerTyping, sendMessage, sendSticker, setTyping, markAsRead, setReaction, loading: chatLoading } = useChat(role);
+  const { chatTheme, updateChatTheme, loading: themeLoading } = useChatTheme();
   const { t } = useLanguage();
   
   const partnerRole = role === 'his' ? 'her' : 'his';
@@ -25,6 +27,7 @@ export default function MessagesPage({ role }) {
   const [showPartnerProfile, setShowPartnerProfile] = useState(false);
   const [isStickerDrawerOpen, setIsStickerDrawerOpen] = useState(false);
   const [activeStickerTab, setActiveStickerTab] = useState(stickerPacks[0].id);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const chatEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -91,7 +94,48 @@ export default function MessagesPage({ role }) {
 
   const partnerName = partnerProfile?.name || (role === 'his' ? 'Ana' : 'Andrei');
 
-  if (loading) {
+  const resizeImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (file) => {
+    try {
+      const base64Url = await resizeImage(file, 800, 0.6); // Compress for background
+      await updateChatTheme({ backgroundImage: base64Url, backgroundColor: 'transparent', isGradient: false });
+    } catch (err) {
+      console.error("Failed to upload image", err);
+    }
+  };
+
+  if (chatLoading || themeLoading) {
     return (
       <div className={styles.page} style={{ alignItems: 'center', justifyContent: 'center' }}>
         <p>{t('messages.loading')}</p>
@@ -104,8 +148,12 @@ export default function MessagesPage({ role }) {
   const lastMyMessageId = myMessages.length > 0 ? myMessages[myMessages.length - 1].id : null;
   const lastMyMessageIsRead = myMessages.length > 0 ? myMessages[myMessages.length - 1].read : false;
 
+  const themeStyle = chatTheme.backgroundImage
+    ? { backgroundImage: `url(${chatTheme.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
+    : { background: chatTheme.backgroundColor };
+
   return (
-    <div className={`${styles.page} animate-fade-in`}>
+    <div className={`${styles.page} animate-fade-in`} style={themeStyle}>
       <header className={styles.header}>
         <button onClick={() => navigate(-1)} style={{background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', flexShrink: 0, padding: 0}} aria-label={t('messages.back')}>
           ←
@@ -118,6 +166,12 @@ export default function MessagesPage({ role }) {
           />
           {partnerProfile?.nickname || partnerName}
         </h1>
+        <button 
+          onClick={() => setIsSettingsOpen(true)} 
+          style={{background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', flexShrink: 0, padding: 0}}
+        >
+          🎨
+        </button>
       </header>
 
       <div className={styles.chatContainer}>
@@ -188,7 +242,7 @@ export default function MessagesPage({ role }) {
                 <div className={styles.dot}></div>
               </div>
             </div>
-            <p className={styles.typingText} style={{ marginLeft: '30px' }}>{partnerName} {t('messages.typing')}</p>
+            <p className={styles.typingText} style={{ marginLeft: '30px', color: chatTheme.backgroundImage || chatTheme.backgroundColor !== 'var(--bg-app)' ? '#fff' : 'inherit', textShadow: chatTheme.backgroundImage ? '0 1px 3px rgba(0,0,0,0.8)' : 'none' }}>{partnerName} {t('chat.isTyping')}</p>
           </div>
         )}
 
@@ -318,6 +372,14 @@ export default function MessagesPage({ role }) {
           </div>
         </div>
       )}
+
+      <ChatSettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentTheme={chatTheme}
+        onThemeSelect={updateChatTheme}
+        onImageUpload={handleImageUpload}
+      />
     </div>
   );
 }
