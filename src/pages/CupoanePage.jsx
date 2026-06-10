@@ -487,7 +487,7 @@ export default function CupoanePage() {
 
   const handleLoadDefaults = async () => {
     if (!isPro) {
-      alert("Ai nevoie de Premium pentru a încărca toate cupoanele implicite, deoarece limita gratuită este de 3 cupoane active.");
+      alert(t('coupons.premiumRequiredToLoadDefaults') || "Ai nevoie de Premium pentru a încărca toate cupoanele implicite, deoarece limita gratuită este de 3 cupoane active.");
       return;
     }
 
