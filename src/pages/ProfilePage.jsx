@@ -12,7 +12,7 @@ import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function ProfilePage({ role }) {
-  const { logout, breakUp, gender, userData, changeUserPassword } = useGlobalAuth();
+  const { user, logout, breakUp, gender, userData, changeUserPassword } = useGlobalAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
   const { latestVersion, downloadUrl, localVersion } = useAppVersion();
   const { isPro, offerings, purchasePackage, redeemPromoCode, isLifetimePro } = useMonetization();
@@ -390,6 +390,13 @@ export default function ProfilePage({ role }) {
         <h3 style={{ marginBottom: '20px' }}>{t('profile.yourAccount')}</h3>
         
         <div className={styles.settingsList}>
+          <div className={styles.settingsItem}>
+            <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>📧</div>
+            <div className={styles.settingsInfo}>
+              <span className={styles.settingsLabel}>Email</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{user?.email}</span>
+            </div>
+          </div>
           <div className={styles.settingsItem}>
             <div className={styles.settingsIcon} style={{ background: '#3498db' }}>🌍</div>
             <div className={styles.settingsInfo}>
