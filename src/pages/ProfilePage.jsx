@@ -545,7 +545,7 @@ export default function ProfilePage({ role }) {
               <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>🔑</div>
               <div className={styles.settingsInfo}>
                 <span className={styles.settingsLabel}>{t('login.yourKey')}</span>
-                <span className={styles.settingsValue} style={{ letterSpacing: '2px', fontWeight: 'bold' }}>{userData.pairKey}</span>
+                <span className={styles.settingsValue} style={{ letterSpacing: '2px', fontWeight: 'bold', background: 'rgba(255, 215, 0, 0.1)', border: '1px solid gold', padding: '4px 12px', borderRadius: '8px', color: 'var(--text-primary)', display: 'inline-block', marginTop: '4px' }}>{userData.pairKey}</span>
               </div>
             </div>
           )}
