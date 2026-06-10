@@ -529,6 +529,9 @@ export default function ProfilePage({ role }) {
         <a href="https://couplehub-marketing.web.app" target="_blank" rel="noreferrer" className={styles.contactBtn} style={{ background: 'var(--color-purple)' }}>
           {t('profile.contactWebsite')}
         </a>
+        <a href="https://couplehub-17d57.web.app" target="_blank" rel="noreferrer" className={styles.contactBtn} style={{ background: 'var(--color-sky)', color: '#0B0E14' }}>
+          {t('profile.contactWebApp') || 'Aplicația Web'}
+        </a>
       </div>
       )}
 
