@@ -412,6 +412,11 @@ export default function MemoriesPage({ role }) {
   };
 
   const handleExportPDF = async () => {
+    if (!memories || memories.length === 0) {
+      alert(t('memories.noMemoriesToExport') || "Nu ai nicio amintire de exportat!");
+      return;
+    }
+
     try {
       if (!isPro) {
         const currentMonth = new Date().toISOString().slice(0, 7);

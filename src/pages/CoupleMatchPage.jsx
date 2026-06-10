@@ -4,16 +4,21 @@ import styles from './CoupleMatchPage.module.css';
 import { MOVIE_GENRES, getCoupleMatch, getImageUrl } from '../utils/tmdb';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useGlobalAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function CoupleMatchPage({ role }) {
   const navigate = useNavigate();
+  const { coupleId } = useGlobalAuth();
+  const { t } = useLanguage();
+  
   const [myGenres, setMyGenres] = useState([]);
   const [partnerGenres, setPartnerGenres] = useState([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
 
   const partnerRole = role === 'his' ? 'her' : 'his';
-  const matchDocRef = doc(db, 'system', 'couple_movie_match');
+  const matchDocRef = doc(db, 'couples', coupleId, 'system', 'movie_match');
 
   // Ascultăm după selecțiile din Firebase (live sync)
   useEffect(() => {
@@ -33,7 +38,7 @@ export default function CoupleMatchPage({ role }) {
       newGenres = newGenres.filter(id => id !== genreId);
     } else {
       if (newGenres.length >= 3) {
-        alert("Poți alege maxim 3 genuri!");
+        alert(t('movies.match.errorLimit') || "Poți alege maxim 3 genuri!");
         return;
       }
       newGenres.push(genreId);
@@ -50,7 +55,7 @@ export default function CoupleMatchPage({ role }) {
 
   const handleFindMatch = async () => {
     if (myGenres.length === 0 && partnerGenres.length === 0) {
-      alert("Alegeți măcar un gen!");
+      alert(t('movies.match.errorEmpty') || "Alegeți măcar un gen!");
       return;
     }
     setLoading(true);
@@ -73,18 +78,18 @@ export default function CoupleMatchPage({ role }) {
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate('/movies')}>←</button>
         <div>
-          <h1 className={styles.title}>Couple Match 💞</h1>
+          <h1 className={styles.title}>{t('movies.match.title') || 'Couple Match 💞'}</h1>
         </div>
       </div>
-      <p className={styles.subtitle}>Ce aveți chef să vedeți în seara asta?</p>
+      <p className={styles.subtitle}>{t('movies.match.subtitle') || 'Ce aveți chef să vedeți în seara asta?'}</p>
 
       <div className={styles.rolesContainer}>
         {/* Eu */}
         <div className={`${styles.roleCard} ${styles.isMe}`}>
           <div className={styles.roleTitle}>
-            <span>{role === 'his' ? '🧔‍♂️' : '👩‍🦰'} Alegerile mele</span>
+            <span>{role === 'his' ? '🧔‍♂️' : '👩‍🦰'} {t('movies.match.myChoices') || 'Alegerile mele'}</span>
             <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
-              (Alege max 3)
+              {t('movies.match.maxChoices') || '(Alege max 3)'}
             </span>
           </div>
           <div className={styles.genresGrid}>
@@ -96,7 +101,7 @@ export default function CoupleMatchPage({ role }) {
                   className={`${styles.genreTag} ${isSelected ? styles.selected : ''}`}
                   onClick={() => toggleMyGenre(g.id)}
                 >
-                  {g.name}
+                  {t(`movies.genres.${g.id}`) || g.name}
                 </div>
               );
             })}
@@ -106,15 +111,15 @@ export default function CoupleMatchPage({ role }) {
         {/* Partenerul */}
         <div className={styles.roleCard}>
           <div className={styles.roleTitle}>
-            <span>{partnerRole === 'his' ? '🧔‍♂️' : '👩‍🦰'} Alegerile {partnerRole === 'his' ? 'lui' : 'ei'}</span>
+            <span>{partnerRole === 'his' ? '🧔‍♂️' : '👩‍🦰'} {partnerRole === 'his' ? (t('movies.match.partnerChoicesM') || 'Alegerile lui') : (t('movies.match.partnerChoicesF') || 'Alegerile ei')}</span>
           </div>
           {partnerGenres.length === 0 ? (
-            <div className={styles.partnerPending}>Așteptăm să aleagă...</div>
+            <div className={styles.partnerPending}>{t('movies.match.pendingPartner') || 'Așteptăm să aleagă...'}</div>
           ) : (
             <div className={styles.genresGrid}>
               {MOVIE_GENRES.filter(g => partnerGenres.includes(g.id)).map(g => (
                 <div key={g.id} className={`${styles.genreTag} ${styles.selected}`} style={{ cursor: 'default' }}>
-                  {g.name}
+                  {t(`movies.genres.${g.id}`) || g.name}
                 </div>
               ))}
             </div>
@@ -127,14 +132,14 @@ export default function CoupleMatchPage({ role }) {
         onClick={handleFindMatch}
         disabled={loading || myGenres.length === 0 || partnerGenres.length === 0}
       >
-        {loading ? 'Căutăm...' : (myGenres.length === 0 || partnerGenres.length === 0) ? 'Așteptăm selecțiile...' : '🍿 Găsește Filmul Perfect'}
+        {loading ? (t('movies.match.finding') || 'Căutăm...') : (myGenres.length === 0 || partnerGenres.length === 0) ? (t('movies.match.waiting') || 'Așteptăm selecțiile...') : (t('movies.match.findBtn') || '🍿 Găsește Filmul Perfect')}
       </button>
 
       {results.length > 0 && (
         <div className={styles.resultsSection}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 className={styles.title} style={{ fontSize: '1.4rem' }}>Recomandări pentru voi</h2>
-            <button onClick={clearSelection} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', textDecoration: 'underline' }}>Resetează</button>
+            <h2 className={styles.title} style={{ fontSize: '1.4rem' }}>{t('movies.match.results') || 'Recomandări pentru voi'}</h2>
+            <button onClick={clearSelection} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', textDecoration: 'underline' }}>{t('movies.match.reset') || 'Resetează'}</button>
           </div>
           <div className={styles.resultsGrid} style={{ marginTop: 15 }}>
             {results.map(movie => (
