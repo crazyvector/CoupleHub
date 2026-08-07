@@ -50,18 +50,13 @@ const drawWheel = (canvas, rotation, items, centerEmoji = '🎭', defaultColor =
     ctx.textAlign = 'right';
     ctx.fillStyle = '#fff';
     
-    let fontSize = Math.max(10, Math.min(22, Math.floor((R * 2 * Math.PI) / ITEM_COUNT) - 4));
-    ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
-    let textWidth = ctx.measureText(item.label).width;
-    while (textWidth > R - 40 && fontSize > 8) {
-      fontSize -= 1;
-      ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
-      textWidth = ctx.measureText(item.label).width;
-    }
+    // Draw the number instead of the full label
+    let fontSize = Math.max(16, Math.min(32, Math.floor((R * 2 * Math.PI) / ITEM_COUNT)));
+    ctx.font = `900 ${fontSize}px Nunito, sans-serif`;
 
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 4;
-    ctx.fillText(item.label, R - 15, fontSize / 3);
+    ctx.fillText((i + 1).toString(), R - 20, fontSize / 3);
     ctx.restore();
   });
 
@@ -196,22 +191,46 @@ function SpinWheel({ items, title, subtitle, onAddItem, onDeleteItem, centerEmoj
         )}
       </button>
 
+      {/* Rezultat Modal Fullscreen */}
       {showResult && result && (
-        <div className={`${styles.resultCard} animate-bounce-in`}>
-          <div className={styles.resultEmoji}>🎉</div>
-          <p className={styles.resultLabel}>{t('truthDare.yourChallengeIs')}</p>
-          <div
-            className={styles.resultItem}
-            style={{ background: `${result.color}30`, borderColor: `${result.color}80` }}
-          >
-            {result.label}
+        <div className={styles.revealOverlay}>
+          <div className={styles.revealContent}>
+            <div className={styles.revealEmoji}>🎉</div>
+            <div className={styles.revealNumberBadge} style={{ background: result.color }}>
+              {items.findIndex(i => i.id === result.id) + 1}
+            </div>
+            <h2 className={styles.revealTitle}>{t('truthDare.yourChallengeIs')}</h2>
+            <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '20px' }}>
+              {result.label}
+            </p>
+            <button
+              className={styles.revealActionBtn}
+              onClick={() => { setShowResult(false); setTimeout(spin, 200); }}
+            >
+              {t('truthDare.tryAgain')}
+            </button>
+            <button
+              className={styles.revealActionBtn}
+              style={{ background: 'transparent', color: 'var(--text-muted)', boxShadow: 'none', border: '1px solid #ddd', marginLeft: '10px' }}
+              onClick={() => setShowResult(false)}
+            >
+              Închide
+            </button>
           </div>
-          <button
-            className={styles.spinAgainBtn}
-            onClick={() => { setShowResult(false); setTimeout(spin, 200); }}
-          >
-            {t('truthDare.tryAgain')}
-          </button>
+        </div>
+      )}
+
+      {/* Legenda (Opțiunile din ruletă) */}
+      {items && items.length > 0 && (
+        <div className={styles.legendList}>
+          {items.map((item, idx) => (
+            <div key={item.id} className={styles.legendItem}>
+              <div className={styles.legendNumber} style={{ background: item.color || defaultColor }}>
+                {idx + 1}
+              </div>
+              <span className={styles.legendText}>{item.label}</span>
+            </div>
+          ))}
         </div>
       )}
 
