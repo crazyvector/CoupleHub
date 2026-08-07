@@ -22,8 +22,9 @@ export default function ProfilePage({ role }) {
     name: '',
     nickname: '',
     age: '',
-    favoriteColor: '#ffb5c8',
-    bio: ''
+    favoriteColor: role === 'his' ? '#7CA1FF' : '#ffb5c8',
+    bio: '',
+    language: 'en'
   });
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -58,10 +59,10 @@ export default function ProfilePage({ role }) {
         name: profile.name || (role === 'her' ? 'Ana' : 'Andrei'),
         nickname: profile.nickname || '',
         age: profile.age || '',
-        favoriteColor: profile.favoriteColor || '#ffb5c8',
+        favoriteColor: profile.favoriteColor || (role === 'his' ? '#7CA1FF' : '#ffb5c8'),
         bio: profile.bio || '',
         anniversaryDate: profile.anniversaryDate || '',
-        language: profile.language || 'ro'
+        language: profile.language || 'en'
       });
       setAvatarUrl(profile.avatarUrl || null);
     }

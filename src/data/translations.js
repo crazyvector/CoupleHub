@@ -914,7 +914,8 @@ export const translations = {
       "send": "Trimite starea mea",
       "sent": "✅ Trimis!",
       "sending": "📲 Se trimite...",
-      "historyTitle": "Istoric Stări",
+      "historyTitle": "Ultimele stări trimise",
+      "swipeToDelete": "Glisează stânga sau dreapta pentru a șterge",
       "diaryTitle": "Jurnal Privat",
       "diaryUnlockMsg": "Introdu parola contului tău pentru a debloca jurnalul tău intim.",
       "diaryWarning": "Atenție: Dacă uiți parola și folosești opțiunea de resetare pe email, vei pierde accesul la vechile intrări!",
@@ -1231,10 +1232,6 @@ export const translations = {
       "allRecommendations": "Toate Recomandările ✨",
       "onlyMyPreferences": "Doar preferințele mele",
       "loadingRecs": "Se încarcă recomandările..."
-    },
-    "mood": {
-      "historyTitle": "Ultimele stări trimise",
-      "swipeToDelete": "Glisează stânga sau dreapta pentru a șterge"
     },
     "itemDetails": {
       "noImage": "No Image"
@@ -2159,7 +2156,8 @@ export const translations = {
       "send": "Send my mood",
       "sent": "✅ Sent!",
       "sending": "📲 Sending...",
-      "historyTitle": "Mood History",
+      "historyTitle": "Latest moods sent",
+      "swipeToDelete": "Swipe left or right to delete",
       "diaryTitle": "Private Diary",
       "diaryUnlockMsg": "Enter your account password to unlock your private diary.",
       "diaryWarning": "Warning: If you forget your password and use the email reset option, you will lose access to old entries!",
@@ -2476,10 +2474,6 @@ export const translations = {
       "allRecommendations": "All Recommendations ✨",
       "onlyMyPreferences": "Only my preferences",
       "loadingRecs": "Loading recommendations..."
-    },
-    "mood": {
-      "historyTitle": "Latest moods sent",
-      "swipeToDelete": "Swipe left or right to delete"
     },
     "itemDetails": {
       "noImage": "No Image"
