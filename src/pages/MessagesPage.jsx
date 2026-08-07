@@ -24,6 +24,7 @@ export default function MessagesPage({ role }) {
 
   const [text, setText] = useState('');
   const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [replyToMsg, setReplyToMsg] = useState(null);
   const [showPartnerProfile, setShowPartnerProfile] = useState(false);
   const [isStickerDrawerOpen, setIsStickerDrawerOpen] = useState(false);
   const [activeStickerTab, setActiveStickerTab] = useState(stickerPacks[0].id);
@@ -50,8 +51,9 @@ export default function MessagesPage({ role }) {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    await sendMessage(text);
+    await sendMessage(text, replyToMsg?.id);
     setText('');
+    setReplyToMsg(null);
     setIsStickerDrawerOpen(false);
   };
 
@@ -72,14 +74,38 @@ export default function MessagesPage({ role }) {
     }
   };
 
-  // Long press logic
-  const handleTouchStart = (msgId) => {
+  // Long press & Swipe logic
+  const handleTouchStart = (e, msgId) => {
+    if (e.touches && e.touches.length > 0) {
+      e.currentTarget.dataset.touchStartX = e.touches[0].clientX;
+    } else if (e.clientX) {
+      e.currentTarget.dataset.touchStartX = e.clientX;
+    }
     longPressTimerRef.current = setTimeout(() => {
       setSelectedMessageId(msgId);
     }, 500); // 500ms for long press
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e, msg) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+    
+    const startX = parseFloat(e.currentTarget.dataset.touchStartX || '0');
+    let endX = startX;
+    
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      endX = e.changedTouches[0].clientX;
+    } else if (e.clientX) {
+      endX = e.clientX;
+    }
+
+    if (Math.abs(endX - startX) > 50) {
+      setReplyToMsg(msg);
+    }
+  };
+
+  const handleTouchMove = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
     }
@@ -197,13 +223,25 @@ export default function MessagesPage({ role }) {
                 <div 
                   className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
                   style={msg.type === 'sticker' ? { background: 'transparent', padding: 0, boxShadow: 'none' } : {}}
-                  onTouchStart={() => !isMine && handleTouchStart(msg.id)}
-                  onTouchEnd={() => !isMine && handleTouchEnd()}
-                  onTouchMove={() => !isMine && handleTouchEnd()}
-                  onMouseDown={() => !isMine && handleTouchStart(msg.id)}
-                  onMouseUp={() => !isMine && handleTouchEnd()}
-                  onMouseLeave={() => !isMine && handleTouchEnd()}
+                  onTouchStart={(e) => handleTouchStart(e, msg.id)}
+                  onTouchEnd={(e) => handleTouchEnd(e, msg)}
+                  onTouchMove={handleTouchMove}
+                  onMouseDown={(e) => handleTouchStart(e, msg.id)}
+                  onMouseUp={(e) => handleTouchEnd(e, msg)}
+                  onMouseLeave={(e) => handleTouchEnd(e, msg)}
+                  onDoubleClick={() => setReaction(msg.id, '❤️')}
                 >
+                  {msg.replyTo && (() => {
+                    const repliedMsg = messages.find(m => m.id === msg.replyTo);
+                    if (!repliedMsg) return null;
+                    const isRepliedMine = repliedMsg.sender === role;
+                    return (
+                      <div className={`${styles.replyContext} ${isMine ? styles.replyContextMine : ''}`}>
+                        <div className={styles.replyName}>{isRepliedMine ? (myProfile?.name || 'Eu') : partnerName}</div>
+                        <div className={styles.replyText}>{repliedMsg.text || 'Sticker'}</div>
+                      </div>
+                    );
+                  })()}
                   {msg.type === 'sticker' ? (
                     <img src={msg.stickerUrl} alt="Sticker" className={styles.messageSticker} />
                   ) : (
@@ -278,7 +316,16 @@ export default function MessagesPage({ role }) {
           </div>
         )}
 
-        <form className={styles.inputArea} onSubmit={handleSend}>
+        <form className={styles.inputArea} onSubmit={handleSend} style={{ position: 'relative' }}>
+          {replyToMsg && (
+            <div className={styles.replyInputBanner} style={{ position: 'absolute', bottom: '100%', left: 0, width: '100%', zIndex: 10, borderRadius: '0' }}>
+              <div className={styles.replyInputContent}>
+                <span className={styles.replyName}>{replyToMsg.sender === role ? (myProfile?.name || 'Eu') : partnerName}</span>
+                <span className={styles.replyText}>{replyToMsg.text || 'Sticker'}</span>
+              </div>
+              <button type="button" className={styles.cancelReplyBtn} onClick={() => setReplyToMsg(null)}>✕</button>
+            </div>
+          )}
           <button 
             type="button" 
             className={styles.stickerBtn} 

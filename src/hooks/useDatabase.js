@@ -1077,7 +1077,7 @@ export function useChat(role) {
   }, [role, coupleId]);
 
   // Trimite mesaj
-  const sendMessage = async (text) => {
+  const sendMessage = async (text, replyToId = null) => {
     if (!text.trim()) return;
     await addDoc(collection(db, 'couples', coupleId, MESSAGES_COL), {
       type: 'text',
@@ -1085,7 +1085,8 @@ export function useChat(role) {
       sender: role,
       timestamp: new Date().toISOString(),
       read: false,
-      reaction: null
+      reaction: null,
+      replyTo: replyToId
     });
   };
 

@@ -512,3 +512,64 @@
   padding: 0 !important;
   margin-top: 5px;
 }
+
+/* Reply Context in Bubble */
+.replyContext {
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid var(--color-rose);
+  padding: 5px 8px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+:global(.theme-his) .replyContext {
+  border-left-color: var(--color-blue);
+}
+
+.replyContextMine {
+  background: rgba(255, 255, 255, 0.2);
+  border-left-color: rgba(255, 255, 255, 0.6);
+}
+
+.replyName {
+  font-weight: bold;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+
+.replyText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Reply Input Banner */
+.replyInputBanner {
+  background: var(--bg-card);
+  padding: 10px 15px;
+  border-top: 1px solid var(--border-color);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.replyInputContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.cancelReplyBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+}
