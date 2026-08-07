@@ -1242,7 +1242,6 @@ export const translations = {
     "profileText": {
       "email": "Email",
       "secretKey": "Secret key"
-    },
     }
   },
   "en": {
@@ -2425,7 +2424,6 @@ export const translations = {
     },
     "unsplash": {
       "ideaFallback": "{category} Idea"
-    }
     },
     "alerts": {
       "errorTitle": "Oops! An error occurred 😢",

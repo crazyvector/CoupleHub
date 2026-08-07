@@ -12,7 +12,6 @@ import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function ProfilePage({ role }) {
-  const { t } = useLanguage();
   const { user, logout, breakUp, gender, userData, changeUserPassword } = useGlobalAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
   const { latestVersion, downloadUrl, localVersion } = useAppVersion();
