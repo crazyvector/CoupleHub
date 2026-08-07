@@ -22,15 +22,33 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Preferences } from '@capacitor/preferences';
 import { updateWidgets } from '../utils/widgetUpdater';
 
-// Collections
-const MOODS_COL = 'moods';
-const EVENTS_COL = 'events';
-const SYSTEM_COL = 'system';
-const MESSAGES_COL = 'messages';
-const NOTIFICATIONS_COL = 'notifications';
+// ==========================================
+// Constante Colecții
+// ==========================================
 const PROFILES_COL = 'profiles';
+const SYSTEM_COL = 'system';
+const EVENTS_COL = 'events';
 const MEMORIES_COL = 'memories';
-const CUSTOM_COUPONS_COL = 'custom_coupons';
+const MESSAGES_COL = 'messages';
+const CUSTOM_COUPONS_COL = 'customCoupons';
+const NOTIFICATIONS_COL = 'notifications';
+
+export const createNotificationDoc = async (db, coupleId, title, body, senderRole, customTargetRole = null) => {
+  if (!coupleId) return;
+  try {
+    const targetRole = customTargetRole || (senderRole === 'his' ? 'her' : 'his');
+    await addDoc(collection(db, 'couples', coupleId, NOTIFICATIONS_COL), {
+      title,
+      body,
+      sender: senderRole,
+      targetRole,
+      readBy: [],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error creating notification doc:", error);
+  }
+};
 
 // ==========================================
 // Hook: Moods (Specific per rol)
@@ -159,6 +177,10 @@ export function useEvents() {
       ...dataToSave,
       createdAt: new Date().toISOString()
     });
+    const role = auth?.role;
+    if (role) {
+      await createNotificationDoc(db, coupleId, 'Eveniment Nou', 'A fost adăugat un nou eveniment în calendar.', role);
+    }
   };
 
   const deleteEvent = async (id) => {
@@ -541,6 +563,10 @@ export function useMemories() {
       reactions: [],
       timestamp: new Date().toISOString()
     });
+    const role = auth?.role;
+    if (role) {
+      await createNotificationDoc(db, coupleId, 'Amintire nouă', 'A fost adăugată o nouă amintire.', role);
+    }
   };
 
   const updateMemory = async (id, data) => {
@@ -795,6 +821,10 @@ export function useCustomCoupons() {
       note: null,
       createdAt: new Date().toISOString()
     });
+    const role = auth?.role;
+    if (role) {
+      await createNotificationDoc(db, coupleId, 'Cupon Nou', 'Ai primit un cupon nou!', role);
+    }
   };
 
   const useCoupon = async (id, note) => {
@@ -837,6 +867,7 @@ export function useDrawings() {
       target: targetRole,
       createdAt: new Date().toISOString()
     });
+    await createNotificationDoc(db, coupleId, 'Desen Nou', 'Ai primit un desen nou!', authorRole, targetRole);
   };
 
   const deleteDrawing = async (id) => {
@@ -1088,6 +1119,7 @@ export function useChat(role) {
       reaction: null,
       replyTo: replyToId
     });
+    await createNotificationDoc(db, coupleId, 'Mesaj Nou', text.trim(), role);
   };
 
   // Trimite sticker
@@ -1101,6 +1133,7 @@ export function useChat(role) {
       read: false,
       reaction: null
     });
+    await createNotificationDoc(db, coupleId, 'Sticker Nou', 'Ai primit un sticker nou.', role);
   };
 
   // Setează isTyping
