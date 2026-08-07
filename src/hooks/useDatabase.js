@@ -497,7 +497,19 @@ export function useProfiles(role) {
   }, [role]);
 
   const updateProfile = async (data) => {
-    await setDoc(doc(db, 'couples', coupleId, PROFILES_COL, role), data, { merge: true });
+    const promises = [
+      setDoc(doc(db, 'couples', coupleId, PROFILES_COL, role), data, { merge: true })
+    ];
+    
+    // Sincronizare anniversaryDate către partener
+    if (data.anniversaryDate !== undefined) {
+      const partnerRole = role === 'his' ? 'her' : 'his';
+      promises.push(
+        setDoc(doc(db, 'couples', coupleId, PROFILES_COL, partnerRole), { anniversaryDate: data.anniversaryDate }, { merge: true })
+      );
+    }
+    
+    await Promise.all(promises);
   };
 
   return { profile, updateProfile, loading };

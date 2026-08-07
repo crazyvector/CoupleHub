@@ -24,6 +24,14 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ Web build & sync complet!"
 
+echo "⏳ Se publică aplicația web pe Firebase Hosting..."
+firebase deploy --only hosting
+if [ $? -ne 0 ]; then
+    echo "❌ Eroare la publicarea pe Firebase Hosting!"
+    exit 1
+fi
+echo "✅ Aplicația web a fost publicată cu succes!"
+
 # 3. Compilăm APK-ul de Android (Debug)
 echo "⏳ Se compilează APK-ul în Android Studio (Gradle)..."
 

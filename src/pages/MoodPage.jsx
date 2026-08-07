@@ -110,6 +110,8 @@ function MoodTracker({ role }) {
   const { moods: moodHistory, addMood, deleteMood, loading } = useMoods(role);
   const { addNotification } = useNotifications(role);
   const { profile } = useProfiles(role); // Profile of current user
+  const partnerRole = role === 'his' ? 'her' : 'his';
+  const { profile: partnerProfile } = useProfiles(partnerRole);
   
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedFeelings, setSelectedFeelings] = useState([]);
@@ -172,7 +174,7 @@ function MoodTracker({ role }) {
         <span className={`${styles.moodGreetingEmoji} animate-float`}>💝</span>
         <div>
           <h2 className={styles.moodTitle}>{t('mood.title')}</h2>
-          <p className={styles.moodSubtitle}>{role === 'her' ? t('mood.sheWillReceive') : t('mood.heWillReceive')}</p>
+          <p className={styles.moodSubtitle}>{(partnerProfile?.name || (role === 'her' ? 'Andrei' : 'Ana'))} {t('mood.subtitle')}</p>
         </div>
       </div>
 

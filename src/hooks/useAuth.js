@@ -56,12 +56,27 @@ export function useAuth() {
     };
   }, []);
 
+  const getErrorMessage = (err) => {
+    switch (err.code) {
+      case 'auth/invalid-email': return 'Invalid email address.';
+      case 'auth/user-disabled': return 'This account has been disabled.';
+      case 'auth/user-not-found':
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password': return 'Incorrect email or password.';
+      case 'auth/email-already-in-use': return 'An account with this email already exists.';
+      case 'auth/weak-password': return 'Password is too weak. It must be at least 6 characters.';
+      case 'auth/too-many-requests': return 'Too many attempts. Please try again later.';
+      case 'auth/network-request-failed': return 'Network error. Please check your internet connection.';
+      default: return 'An unexpected error occurred. Please try again.';
+    }
+  };
+
   const loginWithEmail = async (email, password) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: getErrorMessage(err) };
     }
   };
 
@@ -88,7 +103,7 @@ export function useAuth() {
       
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: getErrorMessage(err) };
     }
   };
 
@@ -97,7 +112,7 @@ export function useAuth() {
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: getErrorMessage(err) };
     }
   };
 
@@ -109,7 +124,7 @@ export function useAuth() {
       await updatePassword(auth.currentUser, newPassword);
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: getErrorMessage(err) };
     }
   };
 
@@ -138,10 +153,10 @@ export function useAuth() {
 
     try {
       // SECRET KEYS FOR MIGRATION (Andrei & Ana)
-      if (partnerKey === 'A9K3B7X2P5' || partnerKey === 'F4M8R1W6Y9' || partnerKey === 'ANDREI2024' || partnerKey === 'ANA2024') {
-        const assignedRole = (partnerKey === 'F4M8R1W6Y9' || partnerKey === 'ANDREI2024') ? 'her' : 'his';
-        const hardcodedGender = (partnerKey === 'F4M8R1W6Y9' || partnerKey === 'ANDREI2024') ? 'F' : 'M';
-        const adminCoupleId = 'v86tFk9x7jS5z2K2lO7R';
+      if (partnerKey === 'A9K3B7X2P5' || partnerKey === 'F4M8R1W6Y9') {
+        const assignedRole = partnerKey === 'F4M8R1W6Y9' ? 'her' : 'his';
+        const hardcodedGender = partnerKey === 'F4M8R1W6Y9' ? 'F' : 'M';
+        const adminCoupleId = 'default_couple_hub';
         await setDoc(doc(db, 'users', user.uid), {
           name: myName,
           gender: hardcodedGender,
