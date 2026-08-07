@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "couplehub-17d57"
+    "default": "couplehub-17d57",
+    "production": "couplehub-17d57",
+    "test": "couplehub-test"
   }
 }

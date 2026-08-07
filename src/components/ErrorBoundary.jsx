@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -22,7 +23,7 @@ export class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-primary)' }}>
-          <h2>Oops! S-a produs o eroare 😢</h2>
+          <h2>{t('alerts.errorTitle') || "Oops! S-a produs o eroare 😢"}</h2>
           <p>{this.state.error?.message}</p>
           <button 
             onClick={() => window.location.reload()}

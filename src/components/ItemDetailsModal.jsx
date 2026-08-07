@@ -26,7 +26,7 @@ export default function ItemDetailsModal({ item, onClose, role, onAddComment, on
         {item.imageUrl ? (
           <img src={item.imageUrl} alt={item.title} className={styles.headerImage} />
         ) : (
-          <div className={styles.noImageHeader}>No Image</div>
+          <div className={styles.noImageHeader}>{t("itemDetails.noImage")}</div>
         )}
 
         <div className={styles.content}>

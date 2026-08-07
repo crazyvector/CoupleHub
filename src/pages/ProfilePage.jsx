@@ -12,6 +12,7 @@ import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function ProfilePage({ role }) {
+  const { t } = useLanguage();
   const { user, logout, breakUp, gender, userData, changeUserPassword } = useGlobalAuth();
   const { profile, updateProfile, loading } = useProfiles(role);
   const { latestVersion, downloadUrl, localVersion } = useAppVersion();
@@ -118,10 +119,10 @@ export default function ProfilePage({ role }) {
       
       setAvatarUrl(base64Url);
       await updateProfile({ avatarUrl: base64Url });
-      alert("Imaginea a fost salvată cu succes direct în baza de date! 💕");
+      alert(t('alerts.imageSavedDb'));
     } catch (error) {
       console.error("Eroare la upload:", error);
-      alert("A apărut o eroare la salvarea imaginii.");
+      alert(t('alerts.imageSaveError'));
     }
     setIsUploading(false);
   };
@@ -131,21 +132,21 @@ export default function ProfilePage({ role }) {
     setIsSaving(true);
     await updateProfile({ ...formData, avatarUrl, isConfigured: true });
     setIsSaving(false);
-    alert('Profil actualizat cu succes! 💕');
+    alert(t('alerts.profileUpdated'));
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!passwordData.oldPass) {
-      alert("Introdu parola curentă!");
+      alert(t('alerts.enterCurrentPass'));
       return;
     }
     if (passwordData.newPass !== passwordData.confirmPass) {
-      alert("Parolele noi nu coincid!");
+      alert(t('alerts.passNotMatch'));
       return;
     }
     if (passwordData.newPass.length < 6) {
-      alert("Noua parolă trebuie să aibă minim 6 caractere.");
+      alert(t('alerts.passMinLength'));
       return;
     }
     setIsChangingPass(true);
@@ -153,7 +154,7 @@ export default function ProfilePage({ role }) {
     // 1. Schimbăm parola in Firebase Auth (verifică și parola veche)
     const res = await changeUserPassword(passwordData.oldPass, passwordData.newPass);
     if (!res.success) {
-      alert("Eroare la schimbarea parolei. Verifică parola veche și încearcă din nou.\n" + res.error);
+      alert(t('alerts.passChangeError') + "\n" + res.error);
       setIsChangingPass(false);
       return;
     }
@@ -186,16 +187,16 @@ export default function ProfilePage({ role }) {
         await Promise.all(updates);
 
         if (reEncryptionErrors > 0) {
-          alert(`Parola a fost schimbată, dar ${reEncryptionErrors} intrări din jurnal nu au putut fi decriptate cu parola veche (posibil corupte sau adăugate cu altă parolă). Ele nu au fost modificate.`);
+          alert(t('alerts.passChangeLogWarning'));
         } else {
-          alert("Parola a fost schimbată și jurnalul a fost re-criptat cu succes! 💕");
+          alert(t('alerts.passChangeLogSuccess'));
         }
       } else {
-        alert("Parola a fost schimbată cu succes!");
+        alert(t('alerts.passChangeSuccess'));
       }
     } catch (err) {
       console.error("Eroare la re-criptarea jurnalului:", err);
-      alert("Parola a fost schimbată, dar a apărut o eroare la actualizarea jurnalului.");
+      alert(t('alerts.passChangeLogError'));
     }
 
     setPasswordData({ oldPass: '', newPass: '', confirmPass: '' });
@@ -410,7 +411,7 @@ export default function ProfilePage({ role }) {
           <div className={styles.settingsItem}>
             <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>📧</div>
             <div className={styles.settingsInfo}>
-              <span className={styles.settingsLabel}>Email</span>
+              <span className={styles.settingsLabel}>{t("profileText.email")}</span>
               <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{user?.email}</span>
             </div>
           </div>
@@ -544,7 +545,7 @@ export default function ProfilePage({ role }) {
             <div className={styles.settingsItem} style={{ borderBottom: 'none', paddingBottom: 0 }}>
               <div className={styles.settingsIcon} style={{ background: 'var(--color-rose)' }}>🔑</div>
               <div className={styles.settingsInfo}>
-                <span className={styles.settingsLabel}>Secret key</span>
+                <span className={styles.settingsLabel}>{t("profileText.secretKey")}</span>
                 <span className={styles.settingsValue} style={{ letterSpacing: '2px', fontWeight: 'bold', background: 'rgba(255, 215, 0, 0.1)', border: '1px solid gold', padding: '4px 12px', borderRadius: '8px', color: 'var(--text-primary)', display: 'inline-block', marginTop: '4px' }}>{userData.pairKey}</span>
               </div>
             </div>

@@ -54,64 +54,8 @@ function PageLoader() {
 
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Badge } from '@capawesome/capacitor-badge';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 
-function UpdatePrompt() {
-  const { t } = useLanguage();
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(r) {
-      console.log('SW Registered: ' + r);
-    },
-    onRegisterError(error) {
-      console.log('SW registration error', error);
-    },
-  });
 
-  if (!needRefresh) return null;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      bottom: '90px',
-      left: '20px',
-      right: '20px',
-      background: 'var(--bg-card, #fff)',
-      padding: '20px',
-      borderRadius: '15px',
-      boxShadow: '0 5px 20px rgba(0,0,0,0.15)',
-      zIndex: 9999,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px',
-      border: '2px solid var(--accent-primary, #ff416c)'
-    }}>
-      <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-        <span style={{ fontSize: '2rem' }}>✨</span>
-        <div>
-          <h3 style={{ margin: 0, color: 'var(--text-primary, #333)' }}>{t('update.title') }</h3>
-          <p style={{ margin: '5px 0 0', fontSize: '0.9rem', color: 'var(--text-secondary, #666)' }}>{t('update.desc') }</p>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button 
-          style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'var(--accent-primary, #ff416c)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
-          onClick={() => updateServiceWorker(true)}
-        >
-          {t('update.updateBtn') }
-        </button>
-        <button 
-          style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'transparent', color: 'var(--text-primary, #333)', border: '1px solid var(--border-color, #ccc)', fontWeight: 'bold', cursor: 'pointer' }}
-          onClick={() => setNeedRefresh(false)}
-        >
-          {t('update.laterBtn') }
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // Manager pentru notificări locale (Calendar + To-Do) și In-App (Clopoțel)
 function AppNotificationManager({ role }) {
@@ -439,7 +383,7 @@ function MainApp({ role, gender, getDiaryPassphrase }) {
       <GlobalBadgeManager role={role} />
       <div className="app-background" aria-hidden="true" />
       <NotificationCenter role={role} />
-      <UpdatePrompt />
+
       
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>

@@ -51,7 +51,7 @@ export default function LiveCanvasWidget() {
     await addNotification(t('dashboard.drawSomething') , 'Ai primit un desen nou pe ecranul principal!', role);
     clearCanvas();
     setIsSending(false);
-    alert("Desen trimis cu succes! ✈️");
+    alert(t('alerts.drawingSent'));
   };
 
   const getPos = (e) => {
@@ -95,7 +95,7 @@ export default function LiveCanvasWidget() {
       date: new Date().toISOString()
     });
     await deleteDrawing(pendingDrawing.id);
-    alert("Desenul a fost salvat în Amintiri! ❤️");
+    alert(t('alerts.drawingSaved'));
   };
 
   const handleDiscard = async () => {

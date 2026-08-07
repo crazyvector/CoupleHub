@@ -268,8 +268,8 @@ function MoodTracker({ role }) {
       {/* Istoric ultimele stări din Firebase */}
       {!loading && moodHistory.length > 0 && (
         <div className={styles.historySection}>
-          <h3 className={styles.historyTitle}>Ultimele stări trimise</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px' }}>Glisează stânga sau dreapta pentru a șterge</p>
+          <h3 className={styles.historyTitle}>{t('mood.historyTitle')}</h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px' }}>{t('mood.swipeToDelete')}</p>
           <div className={styles.historyList}>
             {moodHistory.slice(0, 7).map((entry, i) => {
               const moodDef = roleMoods.find(m => m.id === entry.mood) || roleMoods[0];

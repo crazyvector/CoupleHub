@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -7,6 +8,7 @@ import { useGlobalAuth } from '../contexts/AuthContext';
 const MAX_STORAGE_BYTES = 1073741824; // 1GB
 
 export function useStorage() {
+  const { t } = useLanguage();
   const { coupleId } = useGlobalAuth();
   const storage = getStorage();
   const [isUploading, setIsUploading] = useState(false);
@@ -18,7 +20,7 @@ export function useStorage() {
     const currentUsage = snap.exists() ? (snap.data().storageBytes || 0) : 0;
     
     if (currentUsage + fileSize > MAX_STORAGE_BYTES) {
-      alert("Ați atins limita de 1GB de stocare gratuită! Ștergeți din amintiri sau treceți la PRO.");
+      alert(t('alerts.storageLimit'));
       return false;
     }
     return true;

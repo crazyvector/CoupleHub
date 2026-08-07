@@ -48,7 +48,7 @@ export default function ChatSettingsModal({ isOpen, onClose, currentTheme, onThe
 
   const handleImageChange = (e) => {
     if (!isPro) {
-      alert(t('chat.proImageUpload') || "Funcția de fundal personalizat este disponibilă doar pentru conturile Premium! 👑");
+      alert(t('alerts.proRequired'));
       window.location.href = '/profile';
       return;
     }

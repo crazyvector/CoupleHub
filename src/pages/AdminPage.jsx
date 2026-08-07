@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useSystemState, useMoods, useEvents, useCustomCoupons } from '../hooks/useDatabase';
 import config from '../config';
 
 export default function AdminPage({ onLogout }) {
+  const { t } = useLanguage();
   const { systemState, resetCoupons, setScratchRevealed, resetBaristaCounts, setCustomScratchCard } = useSystemState();
   const { moods } = useMoods();
   const { events } = useEvents();
@@ -17,21 +19,21 @@ export default function AdminPage({ onLogout }) {
   const handleResetCoupons = async () => {
     if (window.confirm('Ești sigur că vrei să resetezi toate cupoanele folosite astăzi?')) {
       await resetCoupons();
-      alert('Cupoanele au fost resetate!');
+      alert(t('alerts.couponsReset'));
     }
   };
 
   const handleResetScratch = async () => {
     if (window.confirm('Ești sigur că vrei să acoperi la loc lozurile răzuite?')) {
       await setScratchRevealed(null, false);
-      alert('Lozurile au fost resetate pentru amândoi!');
+      alert(t('alerts.scratchesReset'));
     }
   };
 
   const handleResetBarista = async () => {
     if (window.confirm('Ești sigur că vrei să resetezi cererile Barista de azi pentru ambii utilizatori?')) {
       await resetBaristaCounts();
-      alert('Cererile Barista au fost resetate!');
+      alert(t('alerts.baristaReset'));
     }
   };
 
@@ -39,7 +41,7 @@ export default function AdminPage({ onLogout }) {
     e.preventDefault();
     if (!customCard.message.trim()) return;
     await setCustomScratchCard(customCard);
-    alert('Lozul personalizat a fost setat cu succes!');
+    alert(t('alerts.scratchSet'));
     setCustomCard({ emoji: '🎁', message: '' });
   };
 
@@ -72,7 +74,7 @@ export default function AdminPage({ onLogout }) {
           target: 'his'
         });
       }
-      alert('Cupoanele originale au fost adăugate în baza de date!');
+      alert(t('alerts.couponsAdded'));
     }
   };
 
@@ -92,18 +94,18 @@ export default function AdminPage({ onLogout }) {
         
         {/* STATISTICI LIVE */}
         <section style={{ background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee' }}>
-          <h3>Statistici Live</h3>
+          <h3>{t('admin.statsTitle')}</h3>
           <ul style={{ listStyle: 'none', padding: 0, lineHeight: '2' }}>
-            <li><strong>Cupoane folosite azi:</strong> {usedCount} / {coupons.length}</li>
-            <li><strong>Loz răzuit azi:</strong> {systemState.scratchCards?.revealed ? 'Da ✅' : 'Nu ❌'}</li>
-            <li><strong>Total Evenimente Calendar:</strong> {events.length}</li>
-            <li><strong>Ultima stare postată:</strong> {moods[0]?.emoji || 'Nu a pus nimic'}</li>
+            <li><strong>{t('admin.couponsToday')}</strong> {usedCount} / {coupons.length}</li>
+            <li><strong>{t('admin.scratchToday')}</strong> {systemState.scratchCards?.revealed ? t('admin.yes') : t('admin.no')}</li>
+            <li><strong>{t('admin.totalEvents')}</strong> {events.length}</li>
+            <li><strong>{t('admin.lastMood')}</strong> {moods[0]?.emoji || t('admin.noMood')}</li>
           </ul>
         </section>
 
         {/* ACTIUNI RAPIDE */}
         <section style={{ background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee' }}>
-          <h3>Acțiuni Rapide</h3>
+          <h3>{t('admin.quickActions')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button 
               onClick={handleResetCoupons}
@@ -129,14 +131,14 @@ export default function AdminPage({ onLogout }) {
 
         {/* ADMINISTRARE SURPRIZA ZILEI */}
         <section style={{ background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee' }}>
-          <h3>Setează Surpriza Zilei</h3>
+          <h3>{t('admin.setSurprise')}</h3>
           <form onSubmit={handleSetCustomScratchCard} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input 
                 type="text" 
                 value={customCard.emoji} 
                 onChange={e => setCustomCard({...customCard, emoji: e.target.value})}
-                placeholder="Emoji (ex: 💍)" 
+                placeholder={t('admin.emojiPlaceholder')} 
                 style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '8px', width: '80px', textAlign: 'center' }}
                 required 
               />
@@ -144,7 +146,7 @@ export default function AdminPage({ onLogout }) {
                 type="text" 
                 value={customCard.message} 
                 onChange={e => setCustomCard({...customCard, message: e.target.value})}
-                placeholder="Mesaj surpriză..." 
+                placeholder={t('admin.messagePlaceholder')} 
                 style={{ flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
                 required 
               />
@@ -162,7 +164,7 @@ export default function AdminPage({ onLogout }) {
 
         {/* ADMINISTRARE CUPOANE */}
         <section style={{ background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee', gridColumn: '1 / -1' }}>
-          <h3>Gestionare Cupoane</h3>
+          <h3>{t('admin.manageCoupons')}</h3>
           
           <button 
             onClick={handleLoadDefaults}
@@ -172,9 +174,9 @@ export default function AdminPage({ onLogout }) {
           </button>
           
           <form onSubmit={handleAddCoupon} style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <input required type="text" placeholder="Titlu" value={newCoupon.title} onChange={e=>setNewCoupon({...newCoupon, title: e.target.value})} style={{ padding: '8px', flex: 1 }} />
-            <input required type="text" placeholder="Descriere" value={newCoupon.description} onChange={e=>setNewCoupon({...newCoupon, description: e.target.value})} style={{ padding: '8px', flex: 2 }} />
-            <input required type="text" placeholder="Emoji" value={newCoupon.emoji} onChange={e=>setNewCoupon({...newCoupon, emoji: e.target.value})} style={{ padding: '8px', width: '60px' }} />
+            <input required type="text" placeholder={t('admin.titlePlaceholder')} value={newCoupon.title} onChange={e=>setNewCoupon({...newCoupon, title: e.target.value})} style={{ padding: '8px', flex: 1 }} />
+            <input required type="text" placeholder={t('admin.descPlaceholder')} value={newCoupon.description} onChange={e=>setNewCoupon({...newCoupon, description: e.target.value})} style={{ padding: '8px', flex: 2 }} />
+            <input required type="text" placeholder={t('admin.emojiShort')} value={newCoupon.emoji} onChange={e=>setNewCoupon({...newCoupon, emoji: e.target.value})} style={{ padding: '8px', width: '60px' }} />
             <input type="color" value={newCoupon.color} onChange={e=>setNewCoupon({...newCoupon, color: e.target.value})} style={{ padding: '0', width: '40px', height: '40px' }} />
             <button type="submit" style={{ padding: '8px 16px', background: 'var(--color-rose)', color: 'white', border: 'none', borderRadius: '8px' }}>+ Adaugă</button>
           </form>

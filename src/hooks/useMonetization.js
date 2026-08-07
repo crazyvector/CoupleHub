@@ -101,7 +101,7 @@ export function useMonetization() {
     try {
       await AdMob.prepareRewardVideoAd({
         adId: 'ca-app-pub-8580245815605338/1215103221', // Real Rewarded ID
-        isTesting: true
+        isTesting: false
       });
     } catch (e) {
       console.error("Failed to prepare rewarded ad", e);
@@ -152,7 +152,7 @@ export function useMonetization() {
       await AdMob.showRewardVideoAd();
     } catch (e) {
       console.error("Show Rewarded Ad error:", e);
-      alert("Nu am putut afișa reclama. Încearcă din nou mai târziu.");
+      alert(t('alerts.adError'));
       rewardCallbackRef.current = null;
     }
   };
@@ -249,7 +249,7 @@ export function useMonetization() {
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.TOP_CENTER,
         margin: 0,
-        isTesting: true
+        isTesting: false
       };
       await AdMob.showBanner(options);
     } catch (e) {

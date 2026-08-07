@@ -1179,6 +1179,70 @@ export const translations = {
     },
     "unsplash": {
       "ideaFallback": "Idee {category}"
+    },
+    "alerts": {
+      "errorTitle": "Oops! S-a produs o eroare 😢",
+      "proRequired": "Funcția de fundal personalizat este disponibilă doar pentru conturile Premium! 👑",
+      "drawingSent": "Desen trimis cu succes! ✈️",
+      "drawingSaved": "Desenul a fost salvat în Amintiri! ❤️",
+      "adError": "Nu am putut afișa reclama. Încearcă din nou mai târziu.",
+      "storageLimit": "Ați atins limita de 1GB de stocare gratuită! Ștergeți din amintiri sau treceți la PRO.",
+      "couponsReset": "Cupoanele au fost resetate!",
+      "scratchesReset": "Lozurile au fost resetate pentru amândoi!",
+      "baristaReset": "Cererile Barista au fost resetate!",
+      "scratchSet": "Lozul personalizat a fost setat cu succes!",
+      "couponsAdded": "Cupoanele originale au fost adăugate în baza de date!",
+      "imageSavedDb": "Imaginea a fost salvată cu succes direct în baza de date! 💕",
+      "imageSaveError": "A apărut o eroare la salvarea imaginii.",
+      "profileUpdated": "Profil actualizat cu succes! 💕",
+      "enterCurrentPass": "Introdu parola curentă!",
+      "passNotMatch": "Parolele noi nu coincid!",
+      "passMinLength": "Noua parolă trebuie să aibă minim 6 caractere.",
+      "passChangeError": "Eroare la schimbarea parolei. Verifică parola veche și încearcă din nou.",
+      "passChangeSuccess": "Parola a fost schimbată cu succes!",
+      "passChangeLogSuccess": "Parola a fost schimbată și jurnalul a fost re-criptat cu succes! 💕",
+      "passChangeLogWarning": "Parola a fost schimbată, dar unele intrări din jurnal nu au putut fi decriptate.",
+      "passChangeLogError": "Parola a fost schimbată, dar a apărut o eroare la actualizarea jurnalului."
+    },
+    "admin": {
+      "statsTitle": "Statistici Live",
+      "couponsToday": "Cupoane folosite azi:",
+      "scratchToday": "Loz răzuit azi:",
+      "yes": "Da ✅",
+      "no": "Nu ❌",
+      "totalEvents": "Total Evenimente Calendar:",
+      "lastMood": "Ultima stare postată:",
+      "noMood": "Nu a pus nimic",
+      "quickActions": "Acțiuni Rapide",
+      "setSurprise": "Setează Surpriza Zilei",
+      "manageCoupons": "Gestionare Cupoane",
+      "emojiPlaceholder": "Emoji (ex: 💍)",
+      "messagePlaceholder": "Mesaj surpriză...",
+      "titlePlaceholder": "Titlu",
+      "descPlaceholder": "Descriere",
+      "emojiShort": "Emoji"
+    },
+    "catalog": {
+      "fullCatalog": "Catalog Complet 🌍",
+      "allGenres": "Toate Genurile",
+      "loadingCatalog": "Se încarcă catalogul..."
+    },
+    "recommended": {
+      "allRecommendations": "Toate Recomandările ✨",
+      "onlyMyPreferences": "Doar preferințele mele",
+      "loadingRecs": "Se încarcă recomandările..."
+    },
+    "mood": {
+      "historyTitle": "Ultimele stări trimise",
+      "swipeToDelete": "Glisează stânga sau dreapta pentru a șterge"
+    },
+    "itemDetails": {
+      "noImage": "No Image"
+    },
+    "profileText": {
+      "email": "Email",
+      "secretKey": "Secret key"
+    },
     }
   },
   "en": {
@@ -2361,6 +2425,70 @@ export const translations = {
     },
     "unsplash": {
       "ideaFallback": "{category} Idea"
+    }
+    },
+    "alerts": {
+      "errorTitle": "Oops! An error occurred 😢",
+      "proRequired": "Custom background feature is only available for Premium accounts! 👑",
+      "drawingSent": "Drawing sent successfully! ✈️",
+      "drawingSaved": "The drawing was saved to Memories! ❤️",
+      "adError": "Could not load the ad. Please try again later.",
+      "storageLimit": "You have reached your 1GB free storage limit! Delete some memories or upgrade to PRO.",
+      "couponsReset": "Coupons have been reset!",
+      "scratchesReset": "Scratch cards have been reset for both of you!",
+      "baristaReset": "Barista requests have been reset!",
+      "scratchSet": "Custom scratch card set successfully!",
+      "couponsAdded": "Original coupons have been added to the database!",
+      "imageSavedDb": "Image saved successfully directly to the database! 💕",
+      "imageSaveError": "An error occurred while saving the image.",
+      "profileUpdated": "Profile updated successfully! 💕",
+      "enterCurrentPass": "Enter current password!",
+      "passNotMatch": "New passwords do not match!",
+      "passMinLength": "The new password must be at least 6 characters long.",
+      "passChangeError": "Error changing password. Check your old password and try again.",
+      "passChangeSuccess": "Password changed successfully!",
+      "passChangeLogSuccess": "Password changed and diary successfully re-encrypted! 💕",
+      "passChangeLogWarning": "Password changed, but some diary entries could not be decrypted.",
+      "passChangeLogError": "Password changed, but an error occurred while updating the diary."
+    },
+    "admin": {
+      "statsTitle": "Live Stats",
+      "couponsToday": "Coupons used today:",
+      "scratchToday": "Scratch card revealed today:",
+      "yes": "Yes ✅",
+      "no": "No ❌",
+      "totalEvents": "Total Calendar Events:",
+      "lastMood": "Last mood posted:",
+      "noMood": "None yet",
+      "quickActions": "Quick Actions",
+      "setSurprise": "Set Daily Surprise",
+      "manageCoupons": "Manage Coupons",
+      "emojiPlaceholder": "Emoji (e.g. 💍)",
+      "messagePlaceholder": "Surprise message...",
+      "titlePlaceholder": "Title",
+      "descPlaceholder": "Description",
+      "emojiShort": "Emoji"
+    },
+    "catalog": {
+      "fullCatalog": "Full Catalog 🌍",
+      "allGenres": "All Genres",
+      "loadingCatalog": "Loading catalog..."
+    },
+    "recommended": {
+      "allRecommendations": "All Recommendations ✨",
+      "onlyMyPreferences": "Only my preferences",
+      "loadingRecs": "Loading recommendations..."
+    },
+    "mood": {
+      "historyTitle": "Latest moods sent",
+      "swipeToDelete": "Swipe left or right to delete"
+    },
+    "itemDetails": {
+      "noImage": "No Image"
+    },
+    "profileText": {
+      "email": "Email",
+      "secretKey": "Secret key"
     }
   }
 };

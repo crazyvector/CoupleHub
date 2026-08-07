@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import styles from './MoviesPage.module.css'; // Refolosim fix aceleași stiluri
 import { discoverMedia, MOVIE_GENRES, TV_GENRES, getImageUrl, getMediaDetails } from '../utils/tmdb';
 import { saveMoviePreference, removeMoviePreference, useWatchlistMovies, useMoviePreferences } from '../hooks/useDatabase';
 
 export default function CatalogPage({ role }) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('movie'); // 'movie' sau 'tv'
@@ -121,7 +123,7 @@ export default function CatalogPage({ role }) {
         <button className={styles.coupleMatchBtn} onClick={() => navigate(-1)} style={{padding: '10px 15px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}>
           ← Înapoi
         </button>
-        <h1 className={styles.title} style={{fontSize: '1.4rem'}}>Catalog Complet 🌍</h1>
+        <h1 className={styles.title} style={{fontSize: '1.4rem'}}>{t('catalog.fullCatalog')}</h1>
       </div>
 
       <div className={styles.tabs}>
@@ -155,7 +157,7 @@ export default function CatalogPage({ role }) {
           value={selectedGenre} 
           onChange={e => { setSelectedGenre(e.target.value); setPage(1); }}
         >
-          <option value="all">Toate Genurile</option>
+          <option value="all">{t('catalog.allGenres')}</option>
           {activeGenres.map(g => (
             <option key={g.id} value={g.id}>{g.name}</option>
           ))}
@@ -163,7 +165,7 @@ export default function CatalogPage({ role }) {
       </div>
 
       {loading && page === 1 ? (
-        <div className={styles.loading}>Se încarcă catalogul...</div>
+        <div className={styles.loading}>{t('catalog.loadingCatalog')}</div>
       ) : (
         <>
           <div className={styles.mediaGrid}>

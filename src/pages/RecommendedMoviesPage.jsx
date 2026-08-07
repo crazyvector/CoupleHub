@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import styles from './MoviesPage.module.css'; // Refolosim fix aceleași stiluri
 import { discoverMedia, MOVIE_GENRES, getImageUrl, getMediaDetails } from '../utils/tmdb';
 import { saveMoviePreference, removeMoviePreference, useMoviePreferences, useWatchlistMovies } from '../hooks/useDatabase';
 
 export default function RecommendedMoviesPage({ role }) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -128,7 +130,7 @@ export default function RecommendedMoviesPage({ role }) {
         <button className={styles.coupleMatchBtn} onClick={() => navigate(-1)} style={{padding: '10px 15px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}>
           ← Înapoi
         </button>
-        <h1 className={styles.title} style={{fontSize: '1.4rem'}}>Toate Recomandările ✨</h1>
+        <h1 className={styles.title} style={{fontSize: '1.4rem'}}>{t('recommended.allRecommendations')}</h1>
       </div>
 
       <div className={styles.filterRow}>
@@ -147,7 +149,7 @@ export default function RecommendedMoviesPage({ role }) {
           value={selectedGenre} 
           onChange={e => { setSelectedGenre(e.target.value); setPage(1); }}
         >
-          <option value="all">Doar preferințele mele</option>
+          <option value="all">{t('recommended.onlyMyPreferences')}</option>
           {MOVIE_GENRES.map(g => (
             <option key={g.id} value={g.id}>{g.name}</option>
           ))}
@@ -155,7 +157,7 @@ export default function RecommendedMoviesPage({ role }) {
       </div>
 
       {loading && page === 1 ? (
-        <div className={styles.loading}>Se încarcă recomandările...</div>
+        <div className={styles.loading}>{t('recommended.loadingRecs')}</div>
       ) : (
         <>
           <div className={styles.mediaGrid}>
